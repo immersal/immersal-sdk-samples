@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: db23a89bd5a8428419cb8d9742c9e2a4
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - navigationPath: {fileID: 8334439697003780456, guid: 5aeff5284196ad94f83515d2b39756fc,
+      type: 3}
+  - targetsList: {instanceID: 0}
+  - ui_arrivedAtTarget: {instanceID: 0}
+  - ui_pathNotFound: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

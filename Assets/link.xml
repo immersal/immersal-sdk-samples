@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="Unity.XR.ARCore" preserve="none" ignoreIfMissing="1" />
+  <assembly fullname="Unity.XR.ARKit" preserve="none" ignoreIfMissing="1" />
+</linker>
