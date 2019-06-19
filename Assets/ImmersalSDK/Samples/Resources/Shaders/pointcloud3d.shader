@@ -11,6 +11,7 @@ Shader "Immersal/pointcloud3d"
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
+			#pragma multi_compile __ IN_EDITOR
 			#pragma target 3.0
 
 			#include "UnityCG.cginc"
@@ -32,13 +33,16 @@ Shader "Immersal/pointcloud3d"
 
 			VertexOut vert(Vertex vertex, out float4 outpos : SV_POSITION)
 			{
-                float4 f_col = vertex.color*0.7f;
-                float4 n_col = vertex.color;
+				float4 f_col = float4(0.2, 0.7, 1.0, 1.0);
+				float4 n_col = vertex.color;
 				VertexOut o;
 				outpos = UnityObjectToClipPos(vertex.vertex);
-				o.color = lerp(n_col, f_col, saturate(abs(outpos.w) / 4.0));
-				o.psize = 0.02f / outpos.w * _ScreenParams.y;
-				o.psize = clamp(o.psize, 4.0f, 32.f);
+				o.color = n_col;
+#if !IN_EDITOR
+				o.color = lerp(n_col, f_col, saturate(abs(outpos.w) / 15.0));
+#endif
+				o.psize = 0.01f / outpos.w * _ScreenParams.y;
+				o.psize = clamp(o.psize, 6.0f, 32.f);
 				o.size = o.psize;
 				float4 clp = outpos;
 #if !SHADER_API_GLES3
@@ -56,9 +60,11 @@ Shader "Immersal/pointcloud3d"
 				center.xy /= center.w;
 				center.xy *= _ScreenParams.xy;
 				float d = distance(vpos.xy, center.xy);
+#if !IN_EDITOR
 				if (d > i.size*0.5) {
 					discard;
 				}
+#endif
 				UNITY_APPLY_FOG(input.fogCoord, c);
 				return c;
 			}

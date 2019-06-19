@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -17,6 +17,8 @@ namespace Immersal.Samples.Navigation
 {
     public class NavigationManager : MonoBehaviour
     {
+        [SerializeField]
+        private Immersal.AR.ARSpace m_ARSpace;
         [SerializeField]
         private GameObject m_NavigationPath = null;
         [SerializeField]
@@ -70,6 +72,16 @@ namespace Immersal.Samples.Navigation
 
         private void Start()
         {
+            if(m_ARSpace == null)
+            {
+                m_ARSpace = GameObject.FindObjectOfType<Immersal.AR.ARSpace>();
+
+                if (m_ARSpace == null)
+                {
+                    Debug.Log("No AR Space found");
+                }
+            }
+
             if (m_TargetsList != null)
             {
                 m_TargetsList.SetActive(false);
@@ -134,8 +146,11 @@ namespace Immersal.Samples.Navigation
             if (m_NavigationPath != null)
             {
                 DeletePath();
-                m_Path = Instantiate(m_NavigationPath, transform);
-                m_Path.GetComponent<BuildNavigationPath>().BuildPath(button);
+                m_Path = Instantiate(m_NavigationPath, m_ARSpace.transform);
+                BuildNavigationPath navpath = m_Path.GetComponent<BuildNavigationPath>();
+
+                navpath.m_ARSpace = m_ARSpace;
+                navpath.BuildPath(button);
             }
         }
 

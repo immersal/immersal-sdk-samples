@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -12,62 +12,97 @@ Contact sdk@immersal.com for licensing requests.
 using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 namespace Immersal.Samples.Mapping
 {
     [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
-    public class CreateNotification : MonoBehaviour {
+    public class CreateNotification : MonoBehaviour
+    {
+        [HideInInspector]
+        public enum NotificationType { Success, Info, Warning, Error}
         [SerializeField]
-        private TextMeshProUGUI textMeshProUGUI = null;
+        private RectTransform m_RectTransform = null;
         [SerializeField]
-        private float durationBeforeFadeOut = 0.5f;
+        private TextMeshProUGUI m_TextMeshProUGUI = null;
+
         [SerializeField]
-        private float fadeOutDuration = 1f;
+        private Image m_Image = null;
+        [SerializeField]
+        private float m_DurationBeforeFadeOut = 0.5f;
+        [SerializeField]
+        private float m_FadeOutDuration = 1f;
+        [SerializeField]
+        private Sprite m_SuccessIcon = null;
+        [SerializeField]
+        private Sprite m_InfoIcon = null;
+        [SerializeField]
+        private Sprite m_WarningIcon = null;
+        [SerializeField]
+        private Sprite m_ErrorIcon = null;
 
-        private RectTransform rectTransform;
-        private CanvasGroup canvasGroup;
+        private int m_MinWidth = 192;
+        private int m_MaxWidth = 800;
+        private int m_MinHeight = 128;
+        private int m_MaxHeight = 512;
+        private int m_Padding = 32;
 
-        private int minWidth = 192;
-        private int maxWidth = 800;
-        private int minHeight = 128;
-        private int maxHeight = 512;
-        private int padding = 32;
-
-        public void SetText(string text)
+        public void SetIconAndText(NotificationType notificationType, string text)
         {
-            if(textMeshProUGUI == null)
+            m_TextMeshProUGUI.text = text;
+
+            Sprite icon = m_InfoIcon;
+            int iconSize = 96;
+
+            switch (notificationType)
             {
-                Destroy(gameObject, 1f);
-                return;
+                case NotificationType.Success:
+                    icon = m_SuccessIcon;
+                    break;
+                case NotificationType.Info:
+                    icon = m_InfoIcon;
+                    break;
+                case NotificationType.Warning:
+                    icon = m_WarningIcon;
+                    break;
+                case NotificationType.Error:
+                    icon = m_ErrorIcon;
+                    break;
+                default:
+                    icon = m_InfoIcon;
+                    break;
             }
 
-            rectTransform = GetComponent<RectTransform>();
-            canvasGroup = GetComponent<CanvasGroup>();
-            textMeshProUGUI.text = text;
+            m_Image.sprite = icon;
 
-            Vector2 size = textMeshProUGUI.GetPreferredValues(textMeshProUGUI.text);
+            Vector2 size = m_TextMeshProUGUI.GetPreferredValues(m_TextMeshProUGUI.text);
 
-            float lines = Mathf.Ceil(size.x / maxWidth);
-            int width = Mathf.Max(Mathf.Min((int)size.x, maxWidth), minWidth);
-            int height = Mathf.Max(Mathf.Min((int)(size.y * lines), maxHeight), minHeight) + padding;
+            float lines = Mathf.Ceil(size.x / m_MaxWidth);
+            int width = Mathf.Max(Mathf.Min((int)size.x, m_MaxWidth), m_MinWidth) + iconSize;
+            int height = Mathf.Max(Mathf.Min((int)(size.y * lines), m_MaxHeight), m_MinHeight) + m_Padding;
 
-            rectTransform.sizeDelta = new Vector2(width, height);
-            textMeshProUGUI.ForceMeshUpdate();
+            m_RectTransform.sizeDelta = new Vector2(width, height);
+            m_TextMeshProUGUI.ForceMeshUpdate();
 
-            StartCoroutine(FadeOut(fadeOutDuration, durationBeforeFadeOut));
+            StartCoroutine(FadeOut(m_FadeOutDuration, m_DurationBeforeFadeOut));
+        }
+
+        private void Start()
+        {
+            StartCoroutine(FadeOut(m_FadeOutDuration, m_DurationBeforeFadeOut));
         }
 
         IEnumerator FadeOut(float duration, float startAfter)
         {
+            CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
             for (float t = -startAfter; t < 1f; t += (Time.deltaTime / duration))
             {
                 float alpha = Mathf.Lerp(1f, 0f, Mathf.Pow(Mathf.Max(t, 0f), 1.6f));
                 canvasGroup.alpha = alpha;
                 yield return null;
             }
-
-            Destroy(gameObject);
+            gameObject.SetActive(false);
         }
     }
 }

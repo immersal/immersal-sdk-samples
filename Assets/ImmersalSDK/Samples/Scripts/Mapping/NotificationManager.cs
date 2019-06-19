@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -9,16 +9,16 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 namespace Immersal.Samples.Mapping
 {
     public class NotificationManager : MonoBehaviour
     {
         [SerializeField]
-        private GameObject notification = null;
+        private GameObject m_Notification = null;
+        private CreateNotification m_CreateNotification = null;
 
         public static NotificationManager Instance
         {
@@ -54,14 +54,36 @@ namespace Immersal.Samples.Mapping
             }
         }
 
+        private void Start()
+        {
+            m_Notification.SetActive(false);
+            m_CreateNotification = m_Notification.GetComponent<CreateNotification>();
+        }
+
+        private void InitNotification(CreateNotification.NotificationType type, string text)
+        {
+            m_Notification.SetActive(true);
+            m_CreateNotification.SetIconAndText(type, text);
+        }
+
         public void GenerateNotification(string text)
         {
-            if (notification != null)
-            {
-                GameObject go = Instantiate(notification, transform);
-                CreateNotification createNotification = go.GetComponent<CreateNotification>();
-                createNotification.SetText(text);
-            }
+            InitNotification(CreateNotification.NotificationType.Info, text);
+        }
+
+        public void GenerateWarning(string text)
+        {
+            InitNotification(CreateNotification.NotificationType.Warning, text);
+        }
+
+        public void GenerateError(string text)
+        {
+            InitNotification(CreateNotification.NotificationType.Error, text);
+        }
+
+        public void GenerateSuccess(string text)
+        {
+            InitNotification(CreateNotification.NotificationType.Success, text);
         }
     }
 }

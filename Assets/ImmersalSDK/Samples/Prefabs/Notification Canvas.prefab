@@ -301,6 +301,7 @@ GameObject:
   - component: {fileID: 7415504718991856138}
   - component: {fileID: 2382981614655704577}
   - component: {fileID: 8618174029029407725}
+  - component: {fileID: 6826765684608576149}
   m_Layer: 5
   m_Name: Background
   m_TagString: Untagged
@@ -326,7 +327,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 400, y: 128}
+  m_SizeDelta: {x: 600, y: 128}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &7415504718991856138
 CanvasGroup:
@@ -377,3 +378,15 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
+--- !u!114 &6826765684608576149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8153003896061988303}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb396a23b756e47f697f9b983f58d986, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

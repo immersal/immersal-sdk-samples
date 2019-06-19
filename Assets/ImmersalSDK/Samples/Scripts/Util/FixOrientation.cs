@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -10,9 +10,7 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using UnityEngine;
-using UnityEngine.UI;
 using System;
-using System.Collections;
 
 namespace Immersal.Samples.Util
 {
@@ -24,11 +22,21 @@ namespace Immersal.Samples.Util
 		private bool m_bDoRotate = false;
 
 		// Use this for initialization
-		void Start () {
+		private void Awake () {
 			m_rt = GetComponent<RectTransform>();
 		}
 
-		void Update () {
+        private void Start()
+        {
+            SetOrientation();
+        }
+
+        private void OnEnable()
+        {
+            SetOrientation();
+        }
+
+        void Update () {
 			DeviceOrientation orientation = Input.deviceOrientation;
 
 			if (orientation == DeviceOrientation.Unknown)
@@ -67,6 +75,27 @@ namespace Immersal.Samples.Util
 				m_rt.rotation = Quaternion.Slerp(m_rt.rotation, target, Time.deltaTime * 10f);
 			}
 		}
+
+        void SetOrientation()
+        {
+            DeviceOrientation orientation = Input.deviceOrientation;
+
+            switch (orientation)
+            {
+                case DeviceOrientation.LandscapeLeft:
+                    m_rotAngle = -90f;
+                    break;
+                case DeviceOrientation.LandscapeRight:
+                    m_rotAngle = 90f;
+                    break;
+                default:
+                    m_rotAngle = 0f;
+                    break;
+            }
+
+            m_rt.localEulerAngles = new Vector3(0, 0, m_rotAngle);
+            m_previousOrientation = orientation;
+        }
 #endif
 	}
 }

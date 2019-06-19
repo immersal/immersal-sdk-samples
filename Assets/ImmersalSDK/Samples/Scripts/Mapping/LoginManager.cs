@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -9,9 +9,8 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
+using System.Net;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
@@ -40,6 +39,11 @@ namespace Immersal.Samples.Mapping
             m_canvasGroup = loginPanel.GetComponent<CanvasGroup>();
             m_toggleMappingMode = loginPanel.GetComponent<ToggleMappingMode>();
 
+            Invoke("FillFields", 0.5f);
+        }
+
+        void FillFields()
+        {
             emailField.text = PlayerPrefs.GetString("login", "");
             passwordField.text = PlayerPrefs.GetString("password", "");
         }
@@ -58,6 +62,8 @@ namespace Immersal.Samples.Mapping
             loginRequest.login = emailField.text;
             loginRequest.password = passwordField.text;
 
+            loginErrorText.gameObject.SetActive(false);
+
             string jsonString = JsonUtility.ToJson(loginRequest);
             //Debug.Log("jsonString: " + jsonString);
             byte[] myData = System.Text.Encoding.UTF8.GetBytes(jsonString);
@@ -74,6 +80,11 @@ namespace Immersal.Samples.Mapping
                 if (request.isNetworkError || request.isHttpError)
                 {
                     Debug.Log(request.error);
+                    if (request.responseCode == (long)HttpStatusCode.BadRequest)
+                    {
+                        loginErrorText.text = "Login failed, please try again";
+                        loginErrorText.gameObject.SetActive(true);
+                    }
                 }
                 else
                 {

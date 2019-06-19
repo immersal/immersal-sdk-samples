@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -17,8 +17,8 @@ namespace Immersal.Samples.Navigation
 {
     public class BuildNavigationPath : MonoBehaviour
     {
-        [SerializeField]
-        private Immersal.AR.ARSpace m_ARSpace;
+        [HideInInspector]
+        public Immersal.AR.ARSpace m_ARSpace;
         [SerializeField]
         private GameObject m_WaypointPrefab = null;
         [SerializeField]
@@ -50,7 +50,7 @@ namespace Immersal.Samples.Navigation
             // check if main camera exists
             if (m_CameraTransform == null)
             {
-                Debug.Log("Could not find main camera. Do you have the tag applied?");
+                Debug.Log("Could not find the main camera. Do you have the MainCamera tag applied?");
                 return;
             }
 
@@ -64,7 +64,7 @@ namespace Immersal.Samples.Navigation
             // check if AR Space exists
             if (m_ARSpace == null)
             {
-                m_ARSpace = GameObject.Find("Space").GetComponent<Immersal.AR.ARSpace>();
+                m_ARSpace = gameObject.GetComponentInParent<Immersal.AR.ARSpace>();
                 if (m_ARSpace == null)
                 {
                     Debug.Log("No AR Space found. Does one exist in scene?");

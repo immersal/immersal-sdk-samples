@@ -1,7 +1,7 @@
 /*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -14,18 +14,15 @@ using System.Collections;
 using System.Net;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using Immersal.Samples.Util;
-using Immersal.Samples.Mapping;
 using Immersal.REST;
-using UnityEngine.XR.ARExtensions;
 using UnityEngine.XR.ARFoundation;
-using UnityEngine.Experimental.XR;
+using UnityEngine.XR.ARSubsystems;
 using System.Runtime.InteropServices;
+using UnityEngine.Events;
 
 namespace Immersal.Samples.Mapping
 {
@@ -153,7 +150,9 @@ namespace Immersal.Samples.Mapping
 
 	public class CoroutineJobCapture : CoroutineJob
 	{
-		public string server;
+        public UnityEvent onConnect;
+        public UnityEvent onFailedToConnect;
+        public string server;
 		public string token;
 		public int bank;
 		public int run;
@@ -168,15 +167,17 @@ namespace Immersal.Samples.Mapping
 		public int height;
 		public int channels;
 
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobCapture ***************************");
+        public bool sessionFirstImage;
 
-			byte[] capture = new byte[4 * 1024 * 1024];    // should need less than 2 megs when reso is 1440p
-			Task<string> t = Task.Run(() =>
-			{
-				int size = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-				return Convert.ToBase64String(capture, 0, size);
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobCapture ***************************");
+
+            byte[] capture = new byte[4 * 1024 * 1024];    // should need less than 2 megs when reso is 1440p
+            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+            {
+                icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
 			});
 
 			while (!t.IsCompleted)
@@ -184,9 +185,22 @@ namespace Immersal.Samples.Mapping
 				yield return null;
 			}
 
-			string encodedImage = t.Result;
+            string encodedImage = t.Result.Item1;
 
-			SDKImageRequest imageRequest = new SDKImageRequest();
+            icvCaptureInfo captureInfo = t.Result.Item2;
+            if (!sessionFirstImage)
+            {
+                if (captureInfo.connected == 0)
+                {
+                    onFailedToConnect.Invoke();
+                }
+                else
+                {
+                    onConnect.Invoke();
+                }
+            }
+
+            SDKImageRequest imageRequest = new SDKImageRequest();
 			imageRequest.token = this.token;
 			imageRequest.run = this.run;
 			imageRequest.bank = this.bank;
@@ -300,7 +314,8 @@ namespace Immersal.Samples.Mapping
 		public string server;
 		public string token;
 		public int bank;
-		public MappingUIManager mappingUIManager;
+		public VisualizeManager visualizeManager;
+		public List<int> activeMaps;
 
 		public override IEnumerator RunJob()
 		{
@@ -328,7 +343,7 @@ namespace Immersal.Samples.Mapping
 
 					if (result.error == "none" && result.count > 0)
 					{
-						this.mappingUIManager.SetSelectSlotData(result.jobs);
+						this.visualizeManager.SetSelectSlotData(result.jobs, activeMaps);
 					}
 				}
 			}
@@ -461,6 +476,8 @@ namespace Immersal.Samples.Mapping
 
 	public class Mapper : MonoBehaviour
 	{
+        public UnityEvent onConnect;
+        public UnityEvent onFailedToConnect;
 		public MapperStats stats = new MapperStats();
 		private bool rgbCapture = false;
 		private int bank = 0;
@@ -471,9 +488,13 @@ namespace Immersal.Samples.Mapping
 		private List<CoroutineJob> jobs = new List<CoroutineJob>();
 		private int jobLock = 0;
 		private ImmersalARCloudSDK sdk;
-		private MappingUIManager m_mappingUIManager;
-		private AudioSource m_cameraShutterClick;
+		private ARSession m_Session;
+		private ARCameraManager m_CameraManager;
+		private WorkspaceManager m_workspaceManager;
+        private VisualizeManager m_visualizeManager;
+        private AudioSource m_cameraShutterClick;
         private Dictionary<int, PointCloudRenderer> pcr = new Dictionary<int, PointCloudRenderer>();
+        private bool sessionFirstImage = true;
 
         private IEnumerator m_updateJobList;
 
@@ -487,27 +508,33 @@ namespace Immersal.Samples.Mapping
 			imageRun = (imageRun ^ data) * 16777619;
 		}
 
-		private void SessionSubsystem_TrackingStateChanged(SessionTrackingStateChangedEventArgs args)
+		private void SessionStateChanged(ARSessionStateChangedEventArgs args)
 		{
 			ImageRunUpdate();
 
-			var captureButton = m_mappingUIManager.captureButton.GetComponent<Button>();
-			var localizeButton = m_mappingUIManager.localizeButton.GetComponent<Button>();
-			captureButton.interactable = args.NewState != TrackingState.Unavailable;
-			localizeButton.interactable = args.NewState != TrackingState.Unavailable;
+			bool isTracking = (args.state == ARSessionState.SessionTracking && m_Session.subsystem.trackingState != TrackingState.None);
+
+			var captureButton = m_workspaceManager.captureButton.GetComponent<Button>();
+			var localizeButton = m_visualizeManager.localizeButton.GetComponent<Button>();
+			captureButton.interactable = isTracking;
+			localizeButton.interactable = isTracking;
 		}
 
 		void Awake()
 		{
             m_cameraShutterClick = GetComponent<AudioSource>();
-			m_mappingUIManager = GetComponent<MappingUIManager>();
-			m_mappingUIManager.OnItemSelected += OnItemSelected;
-			m_mappingUIManager.OnSelectorOpened += OnSelectorOpened;
-			m_mappingUIManager.OnSelectorClosed += OnSelectorClosed;
-			#if !UNITY_EDITOR
-			ARSubsystemManager.sessionSubsystem.TrackingStateChanged += SessionSubsystem_TrackingStateChanged;
-			#endif
-			ImageRunUpdate();
+			m_workspaceManager = GetComponentInChildren<WorkspaceManager>();
+            m_visualizeManager = GetComponentInChildren<VisualizeManager>();
+            m_visualizeManager.OnItemSelected += OnItemSelected;
+            m_visualizeManager.OnSelectorOpened += OnSelectorOpened;
+            m_visualizeManager.OnSelectorClosed += OnSelectorClosed;
+			m_Session = UnityEngine.Object.FindObjectOfType<ARSession>();
+			m_CameraManager = Camera.main.GetComponent<ARCameraManager>();
+#if !UNITY_EDITOR
+			ARSession.stateChanged += SessionStateChanged;
+//			ARSubsystemManager.sessionSubsystem.TrackingStateChanged += SessionSubsystem_TrackingStateChanged;
+#endif
+            ImageRunUpdate();
 		}
 
 		void Start()
@@ -547,9 +574,19 @@ namespace Immersal.Samples.Mapping
 			PointCloudRenderer.visible = toggle.isOn;
 		}
 
-		public void SetToken(string aToken = null)
+        public void ToggleVisualization(bool active)
+        {
+            PointCloudRenderer.visible = active;
+        }
+
+        public void SetToken(string aToken = null)
 		{
 			this.token = (aToken != null) ? aToken: PlayerPrefs.GetString("token");
+
+			if (this.token == null)
+			{
+				Debug.LogError("No valid developer token. Contact sdk@immersal.com.");
+			}
 		}
 
 		public void SetServer(string aServer = null)
@@ -635,7 +672,9 @@ namespace Immersal.Samples.Mapping
 			j.bank = this.bank;
 			j.anchor = false;
 			jobs.Add(j);
-		}
+
+            sessionFirstImage = true;
+        }
 
 		public void ResetMapperAll()
 		{
@@ -645,7 +684,9 @@ namespace Immersal.Samples.Mapping
 			j.bank = this.bank;
 			j.anchor = true;
 			jobs.Add(j);
-		}
+
+            sessionFirstImage = true;
+        }
 
 		public void Construct()
 		{
@@ -653,41 +694,21 @@ namespace Immersal.Samples.Mapping
 			j.server = this.server;
 			j.token = this.token;
 			j.bank = this.bank;
-			j.name = m_mappingUIManager.newMapName.text;
+			j.name = m_workspaceManager.newMapName.text;
 			jobs.Add(j);
-		}
-
-		private static Vector4 GetIntrinsics(float width, float height)
-		{
-			Vector4 intrinsics = Vector4.zero;
-			Matrix4x4 proj = Matrix4x4.identity;
-
-            if (ARSubsystemManager.cameraSubsystem.TryGetProjectionMatrix(ref proj))
-			{
-                float fy = 0.5f * proj.m11 * width;
-
-                float cx = 0.5f * (proj.m02 + 1.0f) * height;
-                float cy = 0.5f * (proj.m12 + 1.0f) * width;
-
-                intrinsics.x = intrinsics.y = fy;
-                intrinsics.z = cy;
-                intrinsics.w = cx;
-            }
-
-            return intrinsics;
 		}
 
 		private IEnumerator Capture(bool anchor)
 		{
 			yield return new WaitForSeconds(0.25f);
 
-			var cameraSubsystem = ARSubsystemManager.cameraSubsystem;
-
-			CameraImage image;
-			if (cameraSubsystem.TryGetLatestImage(out image))
+			XRCameraImage image;
+			if (m_CameraManager.TryGetLatestImage(out image))
 			{
 				CoroutineJobCapture j = new CoroutineJobCapture();
-				j.server = this.server;
+                j.onConnect = onConnect;
+                j.onFailedToConnect = onFailedToConnect;
+                j.server = this.server;
 				j.token = this.token;
 				j.bank = this.bank;
 				j.run = (int)(this.imageRun & 0xEFFFFFFF);
@@ -701,13 +722,13 @@ namespace Immersal.Samples.Mapping
 				Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
 				j.rotation = r;
 				j.position = p;
-				j.intrinsics = GetIntrinsics(image.width, image.height);
+				j.intrinsics = ARHelper.GetIntrinsics(m_CameraManager);
 				j.width = image.width;
 				j.height = image.height;
 
 				if (rgbCapture)
 				{
-					var conversionParams = new CameraImageConversionParams
+					var conversionParams = new XRCameraImageConversionParams
 					{
 						inputRect = new RectInt(0, 0, image.width, image.height),
 						outputDimensions = new Vector2Int(image.width, image.height),
@@ -723,13 +744,17 @@ namespace Immersal.Samples.Mapping
 				}
 				else
 				{
-					CameraImagePlane plane = image.GetPlane(0); // use the Y plane
+					XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
 					j.pixels = new byte[plane.data.Length];
 					j.channels = 1;
 					plane.data.CopyTo(j.pixels);
 				}
 
-				jobs.Add(j);
+                j.sessionFirstImage = sessionFirstImage;
+                if (sessionFirstImage)
+                    sessionFirstImage = false;
+
+                jobs.Add(j);
 				image.Dispose();
 
 				m_cameraShutterClick.Play();
@@ -748,22 +773,20 @@ namespace Immersal.Samples.Mapping
 
 		public void Localize()
 		{
-			var cameraSubsystem = ARSubsystemManager.cameraSubsystem;
-
-			CameraImage image;
-			if (cameraSubsystem.TryGetLatestImage(out image))
+			XRCameraImage image;
+			if (m_CameraManager.TryGetLatestImage(out image))
 			{
 				CoroutineJobLocalize j = new CoroutineJobLocalize();
                 Camera cam = Camera.main;
                 j.rotation = cam.transform.rotation;
 				j.position = cam.transform.position;
-				j.intrinsics = GetIntrinsics(image.width, image.height);
+				j.intrinsics = ARHelper.GetIntrinsics(m_CameraManager);
 				j.width = image.width;
 				j.height = image.height;
 				j.stats = this.stats;
                 j.pcr = this.pcr;
 
-				CameraImagePlane plane = image.GetPlane(0); // use the Y plane
+				XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
 				j.pixels = new byte[plane.data.Length];
 				plane.data.CopyTo(j.pixels);
 				jobs.Add(j);
@@ -799,7 +822,12 @@ namespace Immersal.Samples.Mapping
 			j.server = this.server;
 			j.token = this.token;
 			j.bank = this.bank;
-			j.mappingUIManager = this.m_mappingUIManager;
+			j.visualizeManager = this.m_visualizeManager;
+			j.activeMaps = new List<int>();
+			foreach (int id in pcr.Keys)
+			{
+				j.activeMaps.Add(id);
+			}
 			jobs.Add(j);
 		}
 

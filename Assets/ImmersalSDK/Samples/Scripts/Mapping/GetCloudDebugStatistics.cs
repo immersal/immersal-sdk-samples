@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -9,8 +9,6 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
@@ -50,7 +48,7 @@ namespace Immersal.Samples.Mapping
                         textMeshProUGUI.text = string.Format("{0} {1}", textAppend, s.queueLen);
                         break;
                     case DebugMode.posesFound:
-                        textMeshProUGUI.text = string.Format("{0} {1}/{2}", textAppend, s.locSucc, s.locFail);
+                        textMeshProUGUI.text = string.Format("{0} {1}/{2}", textAppend, s.locSucc, s.locSucc + s.locFail);
                         break;
                 }
             }

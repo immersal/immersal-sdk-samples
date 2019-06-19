@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -10,8 +10,6 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -26,7 +24,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 		private SDKJob m_data = null;
 
 		[SerializeField]
-		private MappingUIManager manager = null;
+		private VisualizeManager visualizeManager = null;
 		[SerializeField]
 		private Sprite sprite_queued = null;
 		[SerializeField]
@@ -44,6 +42,31 @@ namespace Immersal.Samples.Mapping.ScrollList
 		private TextMeshProUGUI dateField = null;
 		[SerializeField]
 		private Toggle toggle = null;
+		private bool m_ToggleLock = false;
+
+		public SDKJob data
+		{
+			get { return m_data; }
+			set
+			{
+				m_data = value;
+				switch (m_data.status)
+				{
+					case "done":
+					mapState = MapState.Done; break;
+					case "processing":
+					mapState = MapState.Processing; break;
+					case "failed":
+					mapState = MapState.Failed; break;
+					case "pending":
+					mapState = MapState.Queued; break;
+				}
+
+				SetName();
+				SetDate();
+				SetIcon();
+			}
+		}
 
 		public void OnClick() {
 			toggle.isOn = !toggle.isOn;
@@ -51,15 +74,15 @@ namespace Immersal.Samples.Mapping.ScrollList
 
 		public void OnToggleChanged(bool value)
 		{
-			SelectListItem();
+			if (!m_ToggleLock)
+				SelectListItem();
 		}
 
 		private void SelectListItem()
 		{
-			if (manager != null && m_data.status == "done")
+			if (visualizeManager != null && m_data.status == "done")
 			{
-				manager.OnListItemSelect(m_data);
-				SetActiveMap();
+                visualizeManager.OnListItemSelect(m_data);
 			}
 			else
 			{
@@ -68,32 +91,13 @@ namespace Immersal.Samples.Mapping.ScrollList
 			}
 		}
 
-		public void SetActiveMap() {
-			if(manager != null) {
-				manager.UpdateActiveMapName(string.Format("{0}: {1}", m_data.bank, m_data.name), false);
-			}
-		}
-
-		public void PopulateData(SDKJob data) {
-			m_data = data;
+		public void PopulateData(SDKJob data, bool isActive) {
+			this.data = data;
 			
-			switch (data.status)
-			{
-				case "done":
-				mapState = MapState.Done; break;
-				case "processing":
-				mapState = MapState.Processing; break;
-				case "failed":
-				mapState = MapState.Failed; break;
-				case "pending":
-				mapState = MapState.Queued; break;
-			}
-
-			SetName();
-			SetDate();
-			SetIcon();
+			m_ToggleLock = true;
+			toggle.isOn = isActive;
+			m_ToggleLock = false;
 		}
-
 
 		private void SetName() {
 			if (nameField != null) {
@@ -133,8 +137,8 @@ namespace Immersal.Samples.Mapping.ScrollList
 		}
 
 		private void Start() {
-			if(manager == null) {
-				manager = transform.root.GetComponent<MappingUIManager>();
+			if(visualizeManager == null) {
+                visualizeManager = GetComponentInParent<VisualizeManager>();
 			}
 		}
 	}

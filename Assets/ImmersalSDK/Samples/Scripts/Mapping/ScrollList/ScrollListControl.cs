@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -9,8 +9,6 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,15 +26,13 @@ namespace Immersal.Samples.Mapping.ScrollList
 		private ScrollRect scrollRect;
 		private List<GameObject> items = new List<GameObject>();
 		private SDKJob[] m_Data;
+		private List<int> m_ActiveMaps;
 
-		public SDKJob[] data
+		public void SetData(SDKJob[] data, List<int> activeMaps)
 		{
-			get { return m_Data; }
-			set
-			{
-				m_Data = value;
-				GenerateItems();
-			}
+			m_Data = data;
+			m_ActiveMaps = activeMaps;
+			GenerateItems();
 		}
 
 		public void GenerateItems() {
@@ -48,7 +44,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 				for (int i = 0; i < items.Count; i++)
 				{
 					ScrollListItem scrollListItem = items[i].GetComponent<ScrollListItem>();
-					scrollListItem.PopulateData(m_Data[i]);
+					scrollListItem.data = m_Data[i];
 				}
 				return;
 			}
@@ -60,13 +56,14 @@ namespace Immersal.Samples.Mapping.ScrollList
 			if (m_Data != null && m_Data.Length > 0)
 			{
 				for (int i = 0; i < m_Data.Length; i++) {
+					SDKJob job = m_Data[i];
 					GameObject item = Instantiate(itemTemplate);
 					items.Add(item);
 					item.SetActive(true);
 					item.transform.SetParent(contentParent, false);
 
 					ScrollListItem scrollListItem = item.GetComponent<ScrollListItem>();
-					scrollListItem.PopulateData(m_Data[i]);
+					scrollListItem.PopulateData(job, IsActive(job.id));
 				}
 			}
 
@@ -74,6 +71,16 @@ namespace Immersal.Samples.Mapping.ScrollList
 			{
 				ScrollToTop();
 			}
+		}
+
+		private bool IsActive(int mapId)
+		{
+			foreach (int id in m_ActiveMaps)
+			{
+				if (mapId == id)
+					return true;
+			}
+			return false;
 		}
 
 		public void DestroyItems() {
@@ -98,7 +105,6 @@ namespace Immersal.Samples.Mapping.ScrollList
 			GenerateItems();
 			scrollRect = GetComponent<ScrollRect>();
 			ScrollToTop();
-			//ScrollToBottom();
 		}
 	}
 }

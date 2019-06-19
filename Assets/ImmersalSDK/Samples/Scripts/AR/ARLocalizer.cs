@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK Early Access project.
+This file is part of the Immersal AR Cloud SDK project.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -12,9 +12,9 @@ Contact sdk@immersal.com for licensing requests.
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.XR.ARExtensions;
+using Immersal.Samples.Util;
 using UnityEngine.XR.ARFoundation;
-using UnityEngine.Experimental.XR;
+using UnityEngine.XR.ARSubsystems;
 using System.Threading.Tasks;
 using TMPro;
 
@@ -22,13 +22,19 @@ namespace Immersal.AR
 {
 	public class SpaceContainer
 	{
+        public int mapCount = 0;
 		public Vector3 targetPosition = Vector3.zero;
 		public Quaternion targetRotation = Quaternion.identity;
 		public PoseFilter filter = new PoseFilter();
-		public List<Transform> nodes = new List<Transform>();
 	}
 
-	public class ARLocalizer : MonoBehaviour
+    public class MapOffset
+    {
+        public Matrix4x4 offset;
+        public SpaceContainer space;
+    }
+
+    public class ARLocalizer : MonoBehaviour
 	{
 		[Tooltip("Time between localization requests in seconds")]
 		[SerializeField]
@@ -37,16 +43,22 @@ namespace Immersal.AR
 		[SerializeField]
 		private bool m_Downsample = false;
 		[SerializeField]
+		private ARCameraManager m_CameraManager;
+		[SerializeField]
+		private ARSession m_ArSession;
+		[SerializeField]
 		private TextMeshProUGUI m_debugText = null;
 		private bool m_bIsTracking = false;
 		private bool m_bIsLocalizing = false;
+		private bool m_bHighFrequencyMode = true;
 		private float m_LastLocalizeTime = 0.0f;
 		private LocalizerStats m_stats = new LocalizerStats();
 		private float m_WarpThresholdDistSq = 5.0f * 5.0f;
 		private float m_WarpThresholdCosAngle = Mathf.Cos(20.0f * Mathf.PI / 180.0f);
-		static private Dictionary<int, SpaceContainer> m_Spaces = new Dictionary<int, SpaceContainer>();
+        static private Dictionary<Transform, SpaceContainer> m_TransformToSpace = new Dictionary<Transform, SpaceContainer>();
+        static private Dictionary<int, MapOffset> m_MapIdToOffset= new Dictionary<int, MapOffset>();
 
-		public bool downsample
+        public bool downsample
 		{
 			get { return m_Downsample; }
 			set
@@ -54,6 +66,18 @@ namespace Immersal.AR
 				m_Downsample = value;
 				SetDownsample();
 			}
+		}
+
+		public ARCameraManager cameraManager
+		{
+			get { return m_CameraManager; }
+			set { m_CameraManager = value; }
+		}
+
+		public ARSession arSession
+		{
+			get { return m_ArSession; }
+			set { m_ArSession = value; }
 		}
 
 		public LocalizerStats stats
@@ -65,8 +89,8 @@ namespace Immersal.AR
 		{
 			// TODO: handle differently
 			get {
-				if (m_Spaces.ContainsKey(0))
-					return m_Spaces[0].filter.position;
+				if (m_MapIdToOffset.ContainsKey(0))
+					return m_MapIdToOffset[0].space.filter.position;
 				else
 					return Vector3.zero;
 			}
@@ -76,19 +100,19 @@ namespace Immersal.AR
 		{
 			// TODO: handle differently
 			get {
-				if (m_Spaces.ContainsKey(0))
-					return m_Spaces[0].filter.rotation;
+				if (m_MapIdToOffset.ContainsKey(0))
+					return m_MapIdToOffset[0].space.filter.rotation;
 				else
 					return Quaternion.identity;
 			}
 		}
 
-		private void SessionSubsystem_TrackingStateChanged(SessionTrackingStateChangedEventArgs args)
+		private void ARSessionStateChanged(ARSessionStateChangedEventArgs args)
 		{
-			m_bIsTracking = args.NewState == TrackingState.Tracking;
+			m_bIsTracking = (args.state == ARSessionState.SessionTracking && arSession.subsystem.trackingState != TrackingState.None);
 			if (!m_bIsTracking)
 			{
-				foreach (KeyValuePair<int, SpaceContainer> item in m_Spaces)
+				foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
 					item.Value.filter.InvalidateHistory();
 			}
 		}
@@ -96,7 +120,7 @@ namespace Immersal.AR
 		void Start()
 		{
 #if !UNITY_EDITOR
-			ARSubsystemManager.sessionSubsystem.TrackingStateChanged += SessionSubsystem_TrackingStateChanged;
+			ARSession.stateChanged += ARSessionStateChanged;
 
 			SetDownsample();
 #endif
@@ -112,13 +136,13 @@ namespace Immersal.AR
 
 		void OnApplicationPause(bool pauseStatus)
 		{
-			foreach (KeyValuePair<int, SpaceContainer> item in m_Spaces)
+			foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
 				item.Value.filter.ResetFiltering();
 		}
 
 		void Update()
 		{
-			foreach (KeyValuePair<int, SpaceContainer> item in m_Spaces)
+			foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
 			{
 				float distSq = (item.Value.filter.position - item.Value.targetPosition).sqrMagnitude;
 				float cosAngle = Quaternion.Dot(item.Value.filter.rotation, item.Value.targetRotation);
@@ -144,6 +168,19 @@ namespace Immersal.AR
 			}
 
 			float curTime = Time.unscaledTime;
+			if (m_bHighFrequencyMode)	// try to localize at max speed at first
+			{
+				if (!m_bIsLocalizing && m_bIsTracking)
+				{
+					m_bIsLocalizing = true;
+					StartCoroutine(Localize());
+					if (m_stats.localizationSuccessCount == 10 || curTime >= 15f)
+					{
+						m_bHighFrequencyMode = false;
+					}
+				}
+			}
+
 			if (!m_bIsLocalizing && m_bIsTracking && (curTime-m_LastLocalizeTime) >= m_LocalizationDelay)
 			{
 				m_LastLocalizeTime = curTime;
@@ -152,42 +189,21 @@ namespace Immersal.AR
 			}
 		}
 
-        private static Vector4 GetIntrinsics(float width, float height)
-        {
-            Vector4 intrinsics = Vector4.zero;
-            Matrix4x4 proj = Matrix4x4.identity;
-
-            if (ARSubsystemManager.cameraSubsystem.TryGetProjectionMatrix(ref proj))
-            {
-                float fy = 0.5f * proj.m11 * width;
-
-                float cx = 0.5f * (proj.m02 + 1.0f) * height;
-                float cy = 0.5f * (proj.m12 + 1.0f) * width;
-
-                intrinsics.x = intrinsics.y = fy;
-                intrinsics.z = cy;
-                intrinsics.w = cx;
-            }
-
-            return intrinsics;
-        }
-
         private IEnumerator Localize()
 		{
-			var cameraSubsystem = ARSubsystemManager.cameraSubsystem;
-			CameraImage image;
-			if (cameraSubsystem.TryGetLatestImage(out image))
+			XRCameraImage image;
+			if (cameraManager.TryGetLatestImage(out image))
 			{
-				m_stats.localizationAttemptCount++;
 				Camera cam = Camera.main;
+				m_stats.localizationAttemptCount++;
 				Vector3 camPos = cam.transform.position;
 				Quaternion camRot = cam.transform.rotation;
-				Vector4 intrinsics = GetIntrinsics(image.width, image.height);
+				Vector4 intrinsics = ARHelper.GetIntrinsics(cameraManager);
 
 				int width = image.width;
 				int height = image.height;
 
-				CameraImagePlane plane = image.GetPlane(0); // use the Y plane
+				XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
 				byte[] pixels = new byte[plane.data.Length];
 				plane.data.CopyTo(pixels);
 				image.Dispose();
@@ -209,16 +225,16 @@ namespace Immersal.AR
 
                 int mapHandle = t.Result;
 
-                if (mapHandle >= 0)
+                if (mapHandle >= 0 && m_MapIdToOffset.ContainsKey(mapHandle))
                 {
+                    MapOffset mo = m_MapIdToOffset[mapHandle];
                     float elapsedTime = Time.realtimeSinceStartup - startTime;
                     Debug.Log(string.Format("Relocalised in {0} seconds", elapsedTime));
                     m_stats.localizationSuccessCount++;
-                    Matrix4x4 cloudSpace = Matrix4x4.TRS(pos, rot, new Vector3(1, 1, 1));
-                    Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, new Vector3(1, 1, 1));
+                    Matrix4x4 cloudSpace = mo.offset*Matrix4x4.TRS(pos, rot, Vector3.one);
+                    Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
                     Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-                    if (m_Spaces.ContainsKey(mapHandle))
-                        m_Spaces[mapHandle].filter.RefinePose(m);
+                    mo.space.filter.RefinePose(m);
                 }
 
                 if (m_debugText != null)
@@ -235,31 +251,45 @@ namespace Immersal.AR
 
 		#region ARSpace
 
-
-		static public void RegisterSpace(Transform tr, int spaceId)
+        static public void RegisterSpace(Transform tr, int mapId, Matrix4x4 offset)
 		{
-			if (!m_Spaces.ContainsKey(spaceId))
-				m_Spaces[spaceId] = new SpaceContainer();
-			m_Spaces[spaceId].nodes.Add(tr);
+            SpaceContainer sc;
+
+            if (!m_TransformToSpace.ContainsKey(tr))
+            {
+                sc = new SpaceContainer();
+                m_TransformToSpace[tr] = sc;
+            }
+            else
+            {
+                sc = m_TransformToSpace[tr];
+            }
+
+            sc.mapCount++;
+
+            MapOffset mo = new MapOffset();
+            mo.offset = offset;
+            mo.space = sc;
+
+            m_MapIdToOffset[mapId] = mo;
 		}
 
-		static public void UnregisterSpace(Transform tr, int spaceId)
+        static public void RegisterSpace(Transform tr, int mapId)
+        {
+            RegisterSpace(tr, mapId, Matrix4x4.identity);
+        }
+
+        static public void UnregisterSpace(Transform tr, int spaceId)
 		{
-			if (m_Spaces.ContainsKey(spaceId))
-			{
-				m_Spaces[spaceId].nodes.Remove(tr);
-				if (m_Spaces[spaceId].nodes.Count == 0)
-					m_Spaces.Remove(spaceId);
-			}
+            SpaceContainer sc = m_TransformToSpace[tr];
+            if (--sc.mapCount == 0)
+                m_TransformToSpace.Remove(tr);
+            m_MapIdToOffset.Remove(spaceId);
 		}
 
-		private void UpdateSpace(Vector3 pos, Quaternion rot, int id)
-		{
-			if (m_Spaces.ContainsKey(id))
-			{
-				foreach (Transform tr in m_Spaces[id].nodes)
-					tr.SetPositionAndRotation(pos, rot);
-			}
+		private void UpdateSpace(Vector3 pos, Quaternion rot, Transform tr)
+        {
+    		tr.SetPositionAndRotation(pos, rot);
 		}
 		#endregion
 	}

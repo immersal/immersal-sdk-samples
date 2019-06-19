@@ -1,10 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityEngine.Experimental.XR;
 using UnityEngine.XR.ARFoundation;
+using UnityEngine.XR.ARSubsystems;
 using Immersal.AR;
 
 namespace Immersal.Samples.Util
@@ -28,6 +26,9 @@ namespace Immersal.Samples.Util
         public int secondsToDecayPose = 10;
 
 		[SerializeField]
+		private ARSession m_ArSession;
+
+		[SerializeField]
 		private UnityEvent onPoseLost = null;
 		[SerializeField]
 		private UnityEvent onPoseFound = null;
@@ -38,10 +39,15 @@ namespace Immersal.Samples.Util
 
 		private float m_latestPoseUpdated = 0f;
 		private int m_trackingQuality = 0;
-		private bool m_firstTime = true;
 		private bool m_hasPose = false;
 		private ImmersalARCloudSDK m_sdk;
 		private ARLocalizer m_localizer;
+
+		public ARSession arSession
+		{
+			get { return m_ArSession; }
+			set { m_ArSession = value; }
+		}
 
 		void Start () {
 			m_image = GetComponent<Image> ();
@@ -57,31 +63,21 @@ namespace Immersal.Samples.Util
 			onPoseLost.Invoke();
         }
 
-		public void ARFrameUpdated(FrameReceivedEventArgs args) {
-			switch (ARSubsystemManager.sessionSubsystem.TrackingState)
-			{
-				case TrackingState.Tracking:
-					m_trackingQuality = 4;
-					break;
-				case TrackingState.Unknown:
-					m_trackingQuality = 1;
-					break;
-				case TrackingState.Unavailable:
-					m_trackingQuality = 0;
-					break;
-			}
-		}
-
-		void OnDestroy() {
-			if (ARSubsystemManager.cameraSubsystem != null)
-				ARSubsystemManager.cameraSubsystem.FrameReceived -= ARFrameUpdated;
-		}
-
 		void Update () {
-
-			if (m_firstTime && ARSubsystemManager.cameraSubsystem != null) {
-				ARSubsystemManager.cameraSubsystem.FrameReceived += ARFrameUpdated;
-				m_firstTime = false;
+			if (arSession != null && arSession.subsystem.running)
+			{
+				switch (arSession.subsystem.trackingState)
+				{
+					case TrackingState.Tracking:
+						m_trackingQuality = 4;
+						break;
+					case TrackingState.Limited:
+						m_trackingQuality = 1;
+						break;
+					case TrackingState.None:
+						m_trackingQuality = 0;
+						break;
+				}
 			}
 
 			LocalizerStats stats = m_localizer.stats;
