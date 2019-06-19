@@ -9,14 +9,14 @@ EditorBuildSettings:
     path: Assets/ImmersalSDK/Samples/Scenes/MappingApp.unity
     guid: 7a27266a32fe24d6fabb7b0b9550074d
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/NavigationSample.unity
-    guid: d62819e2ea015884fbcb4ee8862c24c8
+    path: Assets/ImmersalSDK/Samples/Scenes/MultimapSampleScene.unity
+    guid: 4c3ba03e0e9ac9f498780a755184ee4d
   - enabled: 0
     path: Assets/ImmersalSDK/Samples/Scenes/ContentPlacementSample.unity
     guid: a5347933d518cc34ba0c72bc19f2f118
+  - enabled: 0
+    path: Assets/ImmersalSDK/Samples/Scenes/NavigationSample.unity
+    guid: d62819e2ea015884fbcb4ee8862c24c8
   m_configObjects:
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20,
       type: 2}
