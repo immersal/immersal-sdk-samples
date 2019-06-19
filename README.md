@@ -1,7 +1,7 @@
 # Immersal AR Cloud SDK Samples
 Example projects that use [Immersal AR Cloud SDK](https://immersal.com/developers/ "Register and download SDK") and demonstrate some of its functionalities. Currently included examples are:
 
-* MultimapSampleScene: a simple scene that localizes the device using previously generated (embedded) maps and displays 3D objects relative to the maps. You need to capture and download your own maps to demonstrate this functionality, see Mapping App below.
+* MultimapSampleScene: a simple scene that localizes the device using previously generated (embedded) maps and displays 3D objects relative to the maps. You need to capture and download your own maps to demonstrate this functionality, see MappingApp below.
 * ContentPlacementSample: allows for dropping objects in the AR space. The locations are saved locally, but not persisted across devices.
 * NavigationSample: AR wayfinding example
 * MappingApp: a full-featured app for mapping spaces using an iPhone or Android phone.
