@@ -27,8 +27,8 @@ Note: Unity 2019.1 [has a bug](https://issuetracker.unity3d.com/issues/mobile-un
 git clone https://github.com/immersal/arcloud-sdk-samples.git
 ```
 2. Download our Unity Plugin (`ImmersalARCloudSDKvX_X.unitypackage`) from [here](https://immersal.com/developers)
-3. Launch Unity, click on Open Project, navigate to `arcloud-sdk-samples` and press Apply/OK.
-4. Click on **Assets -> Import Package -> Custom Package** and load the `ImmersalARCloudSDKvX_X.unitypackage`
+3. Launch Unity, click on **Open Project**, navigate to the `arcloud-sdk-samples` folder on your computer and press Apply/OK.
+4. Click on **Assets -> Import Package -> Custom Package** and load the `ImmersalARCloudSDKvX_X.unitypackage`.
 
 Optional step:
 
