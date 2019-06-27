@@ -31,6 +31,7 @@ git clone https://github.com/immersal/arcloud-sdk-samples.git
 4. Click on **Assets -> Import Package -> Custom Package** and load the `ImmersalARCloudSDKvX_X.unitypackage`
 
 Optional step:
+
 5. Click on **Window -> Package Manager** and install `AR Foundation`, `ARCore XR Plugin`, `ARKit XR Plugin` and `TextMesh Pro` if required.
 
-Please visit our [Developer Documentation](https://immersal.com/developers/docs/ "SDK Documentation") to further understand how to use these examples.
+Please visit our [Developer Documentation](https://immersal.com/developers/docs/ "SDK Documentation") for more detailed instructions as to how to use these examples.
