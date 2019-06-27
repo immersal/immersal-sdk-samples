@@ -35,3 +35,4 @@ Optional step:
 5. Click on **Window -> Package Manager** and install `AR Foundation`, `ARCore XR Plugin`, `ARKit XR Plugin` and `TextMesh Pro` if required.
 
 Please visit our [Developer Documentation](https://immersal.com/developers/docs/ "SDK Documentation") for more detailed instructions as to how to use these examples.
+
