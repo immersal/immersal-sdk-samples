@@ -7,6 +7,12 @@ A simple scene that localizes the device using previously generated (embedded) m
 ## ContentPlacementSample
 Allows for dropping objects in the AR space. The locations are saved locally, but not persisted across devices.
 
+### Content.json
+
+Q: Oh noes! I ran ContentPlacementSample locally on the Unity Editor, and got a `content.json not found` error.
+
+A: Relax, the `content.json` is generated when the app is run on an Android or iOS device.
+
 ## NavigationSample
 An AR wayfinding example.
 
