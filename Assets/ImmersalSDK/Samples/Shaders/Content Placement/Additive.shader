@@ -8,7 +8,7 @@
 		_Tint("Tint", Color) = (1.0, 1.0, 1.0, 1.0)
 		_Intensity("Intensity", Range(0, 5)) = 1.0
 
-		_TrailSpeed("Trail Speed", Range(0.0, 5.0)) = 0.85
+		_TrailSpeed("Trail Speed", Range(-1.0, 1.0)) = 0.0
 	}
 		SubShader
 		{

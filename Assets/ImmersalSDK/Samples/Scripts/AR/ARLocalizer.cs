@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK project.
+This file is part of Immersal AR Cloud SDK v1.1.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -12,7 +12,6 @@ Contact sdk@immersal.com for licensing requests.
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using Immersal.Samples.Util;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using System.Threading.Tasks;
@@ -38,16 +37,13 @@ namespace Immersal.AR
 	{
 		[Tooltip("Time between localization requests in seconds")]
 		[SerializeField]
-		private float m_LocalizationDelay = 2.0f;
+		private float m_LocalizationInterval = 2.0f;
 		[Tooltip("Downsample image to HD resolution")]
 		[SerializeField]
 		private bool m_Downsample = false;
 		[SerializeField]
-		private ARCameraManager m_CameraManager;
-		[SerializeField]
-		private ARSession m_ArSession;
-		[SerializeField]
 		private TextMeshProUGUI m_debugText = null;
+		private ImmersalARCloudSDK m_Sdk;
 		private bool m_bIsTracking = false;
 		private bool m_bIsLocalizing = false;
 		private bool m_bHighFrequencyMode = true;
@@ -66,18 +62,6 @@ namespace Immersal.AR
 				m_Downsample = value;
 				SetDownsample();
 			}
-		}
-
-		public ARCameraManager cameraManager
-		{
-			get { return m_CameraManager; }
-			set { m_CameraManager = value; }
-		}
-
-		public ARSession arSession
-		{
-			get { return m_ArSession; }
-			set { m_ArSession = value; }
 		}
 
 		public LocalizerStats stats
@@ -109,7 +93,10 @@ namespace Immersal.AR
 
 		private void ARSessionStateChanged(ARSessionStateChangedEventArgs args)
 		{
-			m_bIsTracking = (args.state == ARSessionState.SessionTracking && arSession.subsystem.trackingState != TrackingState.None);
+			if (m_Sdk == null || m_Sdk.arSession == null)
+				return;
+			
+			m_bIsTracking = (args.state == ARSessionState.SessionTracking && m_Sdk.arSession.subsystem.trackingState != TrackingState.None);
 			if (!m_bIsTracking)
 			{
 				foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
@@ -119,10 +106,23 @@ namespace Immersal.AR
 
 		void Start()
 		{
+			m_Sdk = ImmersalARCloudSDK.Instance;
+#if !UNITY_EDITOR
+			SetDownsample();
+#endif
+		}
+
+		void OnEnable()
+		{
 #if !UNITY_EDITOR
 			ARSession.stateChanged += ARSessionStateChanged;
+#endif
+		}
 
-			SetDownsample();
+		void OnDisable()
+		{
+#if !UNITY_EDITOR
+			ARSession.stateChanged -= ARSessionStateChanged;
 #endif
 		}
 
@@ -181,7 +181,7 @@ namespace Immersal.AR
 				}
 			}
 
-			if (!m_bIsLocalizing && m_bIsTracking && (curTime-m_LastLocalizeTime) >= m_LocalizationDelay)
+			if (!m_bIsLocalizing && m_bIsTracking && (curTime-m_LastLocalizeTime) >= m_LocalizationInterval)
 			{
 				m_LastLocalizeTime = curTime;
 				m_bIsLocalizing = true;
@@ -192,7 +192,10 @@ namespace Immersal.AR
         private IEnumerator Localize()
 		{
 			XRCameraImage image;
-			if (cameraManager.TryGetLatestImage(out image))
+			ARCameraManager cameraManager = m_Sdk.cameraManager;
+			var cameraSubsystem = cameraManager.subsystem;
+
+			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
 			{
 				Camera cam = Camera.main;
 				m_stats.localizationAttemptCount++;
@@ -203,9 +206,8 @@ namespace Immersal.AR
 				int width = image.width;
 				int height = image.height;
 
-				XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
-				byte[] pixels = new byte[plane.data.Length];
-				plane.data.CopyTo(pixels);
+				byte[] pixels;
+				ARHelper.GetPlaneData(out pixels, image);
 				image.Dispose();
 
 				Vector3 pos = Vector3.zero;
@@ -239,11 +241,11 @@ namespace Immersal.AR
 
                 if (m_debugText != null)
 				{
-					m_debugText.text = string.Format("Localization status: {0}/{1}", m_stats.localizationSuccessCount, m_stats.localizationAttemptCount);
+					m_debugText.text = string.Format("Successful localizations: {0}/{1}", m_stats.localizationSuccessCount, m_stats.localizationAttemptCount);
 				}
 				else
 				{
-					Debug.Log(string.Format("Localization status: {0}/{1}", m_stats.localizationSuccessCount, m_stats.localizationAttemptCount));
+					Debug.Log(string.Format("Successful localizations: {0}/{1}", m_stats.localizationSuccessCount, m_stats.localizationAttemptCount));
 				}
 			}
 			m_bIsLocalizing = false;
@@ -281,10 +283,14 @@ namespace Immersal.AR
 
         static public void UnregisterSpace(Transform tr, int spaceId)
 		{
-            SpaceContainer sc = m_TransformToSpace[tr];
-            if (--sc.mapCount == 0)
-                m_TransformToSpace.Remove(tr);
-            m_MapIdToOffset.Remove(spaceId);
+			if (m_TransformToSpace.ContainsKey(tr))
+			{
+				SpaceContainer sc = m_TransformToSpace[tr];
+				if (--sc.mapCount == 0)
+					m_TransformToSpace.Remove(tr);
+				if (m_MapIdToOffset.ContainsKey(spaceId))
+					m_MapIdToOffset.Remove(spaceId);
+			}
 		}
 
 		private void UpdateSpace(Vector3 pos, Quaternion rot, Transform tr)

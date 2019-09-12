@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK project.
+This file is part of Immersal AR Cloud SDK v1.1.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -32,6 +32,7 @@ namespace Immersal.AR
 
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
+        private ARSpace m_ArSpace = null;
 
         public void InitMesh()
         {
@@ -72,7 +73,7 @@ namespace Immersal.AR
                     if (Application.isEditor && !Application.isPlaying)
                     {
                         FreeMap();
-                        m_MapHandle = LoadMap();
+                        LoadMap();
                         m_MeshRenderer.enabled = true;
                     }
                     else
@@ -84,7 +85,7 @@ namespace Immersal.AR
                     if (Application.isEditor && !Application.isPlaying)
                     {
                         FreeMap();
-                        m_MapHandle = LoadMap();
+                        LoadMap();
                         m_MeshRenderer.enabled = true;
                     }
                     else
@@ -97,28 +98,47 @@ namespace Immersal.AR
             }
         }
 
-        private void FreeMap()
+        public void FreeMap()
         {
             if (m_MapHandle != -1)
             {
                 Immersal.Core.FreeMap(m_MapHandle);
+                if (!Application.isEditor)
+                {
+                    ARLocalizer.UnregisterSpace(m_Root, m_MapHandle);
+                }
             }
         }
 
-        private int LoadMap()
+        public int LoadMap(byte[] mapBytes = null)
         {
-            int handle = -1;
-
-            if (m_MapFile)
+            if (mapBytes == null && m_MapFile != null)
             {
-                handle = Immersal.Core.LoadMap(m_MapFile.bytes);
-                Vector3[] points = new Vector3[65536];
-                int num = Immersal.Core.GetPointCloud(handle, points);
-
-                CreateCloud(points, num);
+                mapBytes = m_MapFile.bytes;
+            }
+            else
+            {
+                return -1;
             }
 
-            return handle;
+            m_MapHandle = Immersal.Core.LoadMap(mapBytes);
+
+            if (m_MapHandle != -1)
+            {
+                Vector3[] points = new Vector3[65536];
+                int num = Immersal.Core.GetPointCloud(m_MapHandle, points);
+
+                CreateCloud(points, num);
+
+                if (!Application.isEditor)
+                {
+                    m_Root = m_ArSpace.transform;
+                    Matrix4x4 offset = Matrix4x4.TRS(transform.localPosition, transform.localRotation, Vector3.one);
+                    ARLocalizer.RegisterSpace(m_Root, m_MapHandle, offset);
+                }
+            }
+
+            return m_MapHandle;
         }
 
         public void CreateCloud(Vector3[] points, int totalPoints, Matrix4x4 offset)
@@ -148,34 +168,30 @@ namespace Immersal.AR
             CreateCloud(points, totalPoints, Matrix4x4.identity);
         }
 
-        private void Start()
+        void Awake()
         {
-            InitMesh();
-
-            ARSpace space = gameObject.GetComponentInParent<ARSpace>();
-            if (!space)
+            m_ArSpace = gameObject.GetComponentInParent<ARSpace>();
+            if (!m_ArSpace)
             {
                 GameObject go = new GameObject("AR Space");
-                space = go.AddComponent<ARSpace>();
+                m_ArSpace = go.AddComponent<ARSpace>();
                 transform.SetParent(go.transform);
-            }
-
-            m_MapHandle = LoadMap();
-
-            if (m_MapHandle != -1)
-            {
-                m_Root = space.transform;
-                Matrix4x4 offset = Matrix4x4.TRS(transform.localPosition, transform.localRotation, new Vector3(1f, 1f, 1f));
-                Immersal.AR.ARLocalizer.RegisterSpace(m_Root, m_MapHandle, offset);
             }
         }
 
         private void OnEnable()
         {
-            if (Application.isEditor && !Application.isPlaying)
+            InitMesh();
+
+            if (!(Application.isEditor && !Application.isPlaying))
             {
-                InitMesh();
+                LoadMap();
             }
+        }
+
+        private void OnDisable()
+        {
+            FreeMap();
         }
     }
 }

@@ -21,10 +21,10 @@ A full-featured app for mapping spaces using an iOS or Android device.
 
 # Compatibility
 
-- Unity 2018.4 LTS
-- AR Foundation 1.5
+- Unity 2019.2+
+- AR Foundation 2.1+
 
-Note: Unity 2019.1 [has a bug](https://issuetracker.unity3d.com/issues/mobile-unitywebrequest-with-large-post-payload-corrupted-on-ios) with large UnityWebRequests on iOS, so it is not officially supported by us yet.
+Note: Unity 2018 should still work with corresponding AR Foundation packages, but we are not officially supporting it.
 
 # Installation steps
 

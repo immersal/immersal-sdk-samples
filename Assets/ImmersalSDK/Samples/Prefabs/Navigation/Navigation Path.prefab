@@ -10,6 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 3840175146554866646}
   - component: {fileID: 2395647565364873682}
+  - component: {fileID: 7158299622223907419}
+  - component: {fileID: 4841525252935132494}
+  - component: {fileID: 5277650881150488587}
   m_Layer: 0
   m_Name: Navigation Path
   m_TagString: Untagged
@@ -51,3 +54,66 @@ MonoBehaviour:
   m_ArrivedDistanceThreshold: 1
   m_WaypointStepSize: 0.33
   m_WaypointScale: 1
+--- !u!114 &7158299622223907419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8334439697003780456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6d50d91178da0445ab81a0d94dff446, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Transforms: []
+  m_StepSize: 1
+  m_ResampledStepSize: 0.5
+  m_Resample: 1
+  m_GenerateMesh: 1
+  m_PathWidth: 0.7
+--- !u!33 &4841525252935132494
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8334439697003780456}
+  m_Mesh: {fileID: 0}
+--- !u!23 &5277650881150488587
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8334439697003780456}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 1f5a9ae0f2121ff4aaa6ea4ead3f1332, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0

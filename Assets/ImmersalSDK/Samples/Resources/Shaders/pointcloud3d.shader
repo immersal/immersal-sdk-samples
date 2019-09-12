@@ -1,11 +1,17 @@
 Shader "Immersal/pointcloud3d"
 {
-	SubShader
+	Properties
+	{
+		_MinSize("Minimum Size In Pixels", Range(1.0, 8.0)) = 2.0
+		_MaxSize("Maximum Size In Pixels", Range(1.0, 32.0)) = 8.0
+	}
+
+		SubShader
 	{
 		Cull Off
 		Tags{ "RenderType" = "Opaque" }
 		LOD 100
-		
+
 		Pass
 		{
 			CGPROGRAM
@@ -15,6 +21,9 @@ Shader "Immersal/pointcloud3d"
 			#pragma target 3.0
 
 			#include "UnityCG.cginc"
+
+			half _MinSize;
+			half _MaxSize;
 
 			struct Vertex
 			{
@@ -42,7 +51,7 @@ Shader "Immersal/pointcloud3d"
 				o.color = lerp(n_col, f_col, saturate(abs(outpos.w) / 15.0));
 #endif
 				o.psize = 0.01f / outpos.w * _ScreenParams.y;
-				o.psize = clamp(o.psize, 6.0f, 32.f);
+				o.psize = clamp(o.psize, _MinSize, _MaxSize);
 				o.size = o.psize;
 				float4 clp = outpos;
 #if !SHADER_API_GLES3

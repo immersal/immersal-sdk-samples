@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK project.
+This file is part of Immersal AR Cloud SDK v1.1.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -15,6 +15,7 @@ using UnityEngine.AI;
 
 namespace Immersal.Samples.Navigation
 {
+    [RequireComponent(typeof(CatmullRomPath))]
     public class BuildNavigationPath : MonoBehaviour
     {
         [HideInInspector]
@@ -34,6 +35,7 @@ namespace Immersal.Samples.Navigation
         private Transform m_TargetTransform;
         private GameObject m_Arrow;
         private LookTowardsTarget m_ArrowDirection;
+        private CatmullRomPath m_catmullRomPath;
 
         private List<GameObject> m_Waypoints = new List<GameObject>();
 
@@ -98,6 +100,19 @@ namespace Immersal.Samples.Navigation
             {
                 m_Arrow.SetActive(false);
             }
+
+            if (m_catmullRomPath)
+            {
+                m_catmullRomPath.ClearMesh();
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (!m_catmullRomPath)
+            {
+                m_catmullRomPath = GetComponent<CatmullRomPath>();
+            }
         }
 
         private void Update()
@@ -142,9 +157,12 @@ namespace Immersal.Samples.Navigation
                         m_NavigationArrived = false;
                     }
 
-                    ClearPath();
+                    //ClearPath();
                     m_IsNavigating = true;
-                    CreateWaypoints(path.corners);
+                    //CreateWaypoints(path.corners);
+
+                    List<Vector3> corners = new List<Vector3>(path.corners);
+                    m_catmullRomPath.GeneratePath(corners, m_ARSpace.transform.up);
                 }
                 else
                 {

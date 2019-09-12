@@ -1,7 +1,17 @@
-﻿using UnityEngine;
+﻿/*===============================================================================
+Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+
+This file is part of Immersal AR Cloud SDK v1.1.
+
+The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+third-parties for commercial purposes without written permission of Immersal Ltd.
+
+Contact sdk@immersal.com for licensing requests.
+===============================================================================*/
+
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using Immersal.AR;
 
@@ -26,9 +36,6 @@ namespace Immersal.Samples.Util
         public int secondsToDecayPose = 10;
 
 		[SerializeField]
-		private ARSession m_ArSession;
-
-		[SerializeField]
 		private UnityEvent onPoseLost = null;
 		[SerializeField]
 		private UnityEvent onPoseFound = null;
@@ -43,30 +50,28 @@ namespace Immersal.Samples.Util
 		private ImmersalARCloudSDK m_sdk;
 		private ARLocalizer m_localizer;
 
-		public ARSession arSession
-		{
-			get { return m_ArSession; }
-			set { m_ArSession = value; }
-		}
-
 		void Start () {
+			m_sdk = ImmersalARCloudSDK.Instance;
+			m_localizer = m_sdk.gameObject.GetComponent<ARLocalizer>();
 			m_image = GetComponent<Image> ();
-			m_localizer = UnityEngine.Object.FindObjectOfType<ARLocalizer>();
 
             if (indicatorMode == IndicatorMode.multiplyColor)
             {
                 m_image.color = noPose;
             }
 
-			m_sdk = ImmersalARCloudSDK.Instance;
-
 			onPoseLost.Invoke();
         }
 
 		void Update () {
-			if (arSession != null && arSession.subsystem.running)
+			if (m_sdk.arSession == null)
+				return;
+			
+			var arSubsystem = m_sdk.arSession.subsystem;
+			
+			if (arSubsystem != null && arSubsystem.running)
 			{
-				switch (arSession.subsystem.trackingState)
+				switch (arSubsystem.trackingState)
 				{
 					case TrackingState.Tracking:
 						m_trackingQuality = 4;

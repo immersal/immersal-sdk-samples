@@ -1,7 +1,7 @@
 /*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of the Immersal AR Cloud SDK project.
+This file is part of Immersal AR Cloud SDK v1.1.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -17,8 +17,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
-using Immersal.Samples.Util;
+using Immersal.AR;
 using Immersal.REST;
+using Immersal.Samples.Util;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using System.Runtime.InteropServices;
@@ -173,7 +174,7 @@ namespace Immersal.Samples.Mapping
         {
             Debug.Log("*************************** CoroutineJobCapture ***************************");
 
-            byte[] capture = new byte[4 * 1024 * 1024];    // should need less than 2 megs when reso is 1440p
+            byte[] capture = new byte[channels * width * height + 1024];
             Task<(string, icvCaptureInfo)> t = Task.Run(() =>
             {
                 icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
@@ -186,8 +187,8 @@ namespace Immersal.Samples.Mapping
 			}
 
             string encodedImage = t.Result.Item1;
-
             icvCaptureInfo captureInfo = t.Result.Item2;
+
             if (!sessionFirstImage)
             {
                 if (captureInfo.connected == 0)
@@ -284,8 +285,8 @@ namespace Immersal.Samples.Mapping
 				stats.locSucc++;
 
 				Debug.Log("*************************** Localization Succeeded ***************************");
-				Matrix4x4 cloudSpace = Matrix4x4.TRS(pos, rot, new Vector3(1, 1, 1));
-				Matrix4x4 trackerSpace = Matrix4x4.TRS(position, rotation, new Vector3(1, 1, 1));
+				Matrix4x4 cloudSpace = Matrix4x4.TRS(pos, rot, Vector3.one);
+				Matrix4x4 trackerSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
 				Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
 						  "ft 4x4\n" + trackerSpace);
 
@@ -309,7 +310,116 @@ namespace Immersal.Samples.Mapping
 		}
 	}
 
-	public class CoroutineJobListJobs : CoroutineJob
+    public class CoroutineJobLocalizeServer : CoroutineJob
+    {
+        public string server;
+        public string token;
+        public Vector4 intrinsics;
+        public Quaternion rotation;
+        public Vector3 position;
+        public byte[] pixels;
+
+        public int width;
+        public int height;
+
+        public Dictionary<int, PointCloudRenderer> pcr;
+        public MapperStats stats;
+
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobLocalize On-Server ***************************");
+
+            byte[] capture = new byte[width * height + 1024];
+            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+            {
+                icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, 1);
+                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
+            });
+
+            while (!t.IsCompleted)
+            {
+                yield return null;
+            }
+
+            string encodedImage = t.Result.Item1;
+            icvCaptureInfo captureInfo = t.Result.Item2;
+
+            SDKLocalizeRequest imageRequest = new SDKLocalizeRequest();
+            imageRequest.token = this.token;
+            imageRequest.fx = intrinsics.x;
+            imageRequest.fy = intrinsics.y;
+            imageRequest.ox = intrinsics.z;
+            imageRequest.oy = intrinsics.w;
+            imageRequest.b64 = encodedImage;
+
+            int n = pcr.Count;
+
+            imageRequest.mapIds = new SDKMapId[n];
+
+            int count = 0;
+            foreach (int id in pcr.Keys)
+            {
+                imageRequest.mapIds[count] = new SDKMapId();
+                imageRequest.mapIds[count++].id = id;
+            }
+
+            string jsonString = JsonUtility.ToJson(imageRequest);
+
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "17"), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.Log(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    SDKLocalizeResult result = JsonUtility.FromJson<SDKLocalizeResult>(request.downloadHandler.text);
+
+                    if (result.success)
+                    {
+                        Matrix4x4 cloudSpace = Matrix4x4.identity;
+                        cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
+                        cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
+                        cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
+                        Matrix4x4 trackerSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
+                        stats.locSucc++;
+
+                        Debug.Log("*************************** On-Server Localization Succeeded ***************************");
+                        Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
+                                  "ft 4x4\n" + trackerSpace);
+
+                        Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+
+
+                        foreach (KeyValuePair<int, PointCloudRenderer> p in pcr)
+                        {
+                            if (p.Key == result.map)
+                            {
+                                p.Value.go.transform.position = m.GetColumn(3);
+                                p.Value.go.transform.rotation = m.rotation;
+                                break;
+                            }
+                        }
+
+                        Debug.Log(result.error);
+                    }
+                    else
+                    {
+                        stats.locFail++;
+                        Debug.Log("*************************** On-Server Localization Failed ***************************");
+                    }
+                }
+            }
+        }
+    }
+
+    public class CoroutineJobListJobs : CoroutineJob
 	{
 		public string server;
 		public string token;
@@ -488,8 +598,6 @@ namespace Immersal.Samples.Mapping
 		private List<CoroutineJob> jobs = new List<CoroutineJob>();
 		private int jobLock = 0;
 		private ImmersalARCloudSDK sdk;
-		private ARSession m_Session;
-		private ARCameraManager m_CameraManager;
 		private WorkspaceManager m_workspaceManager;
         private VisualizeManager m_visualizeManager;
         private AudioSource m_cameraShutterClick;
@@ -510,9 +618,12 @@ namespace Immersal.Samples.Mapping
 
 		private void SessionStateChanged(ARSessionStateChangedEventArgs args)
 		{
+			if (sdk.arSession == null)
+				return;
+			
 			ImageRunUpdate();
 
-			bool isTracking = (args.state == ARSessionState.SessionTracking && m_Session.subsystem.trackingState != TrackingState.None);
+			bool isTracking = (args.state == ARSessionState.SessionTracking && sdk.arSession.subsystem.trackingState != TrackingState.None);
 
 			var captureButton = m_workspaceManager.captureButton.GetComponent<Button>();
 			var localizeButton = m_visualizeManager.localizeButton.GetComponent<Button>();
@@ -522,18 +633,13 @@ namespace Immersal.Samples.Mapping
 
 		void Awake()
 		{
+			sdk = ImmersalARCloudSDK.Instance;
             m_cameraShutterClick = GetComponent<AudioSource>();
 			m_workspaceManager = GetComponentInChildren<WorkspaceManager>();
             m_visualizeManager = GetComponentInChildren<VisualizeManager>();
             m_visualizeManager.OnItemSelected += OnItemSelected;
             m_visualizeManager.OnSelectorOpened += OnSelectorOpened;
             m_visualizeManager.OnSelectorClosed += OnSelectorClosed;
-			m_Session = UnityEngine.Object.FindObjectOfType<ARSession>();
-			m_CameraManager = Camera.main.GetComponent<ARCameraManager>();
-#if !UNITY_EDITOR
-			ARSession.stateChanged += SessionStateChanged;
-//			ARSubsystemManager.sessionSubsystem.TrackingStateChanged += SessionSubsystem_TrackingStateChanged;
-#endif
             ImageRunUpdate();
 		}
 
@@ -542,9 +648,24 @@ namespace Immersal.Samples.Mapping
 
 		}
 
+        public int SwitchBank(int max_banks)
+        {
+            bank = (bank + 1) % max_banks;
+            sessionFirstImage = true;
+
+            return bank;
+        }
+
+        public int GetCurrentBank()
+        {
+            return bank;
+        }
+
 		void OnEnable()
 		{
-			sdk = ImmersalARCloudSDK.Instance;
+#if !UNITY_EDITOR
+			ARSession.stateChanged += SessionStateChanged;
+#endif
 
 			SetServer();
 			SetToken();
@@ -560,6 +681,10 @@ namespace Immersal.Samples.Mapping
 
 		void OnDisable()
 		{
+#if !UNITY_EDITOR
+			ARSession.stateChanged -= SessionStateChanged;
+#endif
+
 			PlayerPrefs.DeleteKey("token");
 			sdk.developerToken = null;
 		}
@@ -591,8 +716,8 @@ namespace Immersal.Samples.Mapping
 
 		public void SetServer(string aServer = null)
 		{
-			this.server = (aServer != null) ? aServer : sdk.localizationServer;
-		}
+            this.server = (aServer != null) ? aServer : sdk.localizationServer;
+        }
 
 		private void OnItemSelected(SDKJob job)
 		{
@@ -703,7 +828,10 @@ namespace Immersal.Samples.Mapping
 			yield return new WaitForSeconds(0.25f);
 
 			XRCameraImage image;
-			if (m_CameraManager.TryGetLatestImage(out image))
+			ARCameraManager cameraManager = sdk.cameraManager;
+			var cameraSubsystem = cameraManager.subsystem;
+
+			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
 			{
 				CoroutineJobCapture j = new CoroutineJobCapture();
                 j.onConnect = onConnect;
@@ -722,32 +850,19 @@ namespace Immersal.Samples.Mapping
 				Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
 				j.rotation = r;
 				j.position = p;
-				j.intrinsics = ARHelper.GetIntrinsics(m_CameraManager);
+				j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
 				j.width = image.width;
 				j.height = image.height;
 
 				if (rgbCapture)
 				{
-					var conversionParams = new XRCameraImageConversionParams
-					{
-						inputRect = new RectInt(0, 0, image.width, image.height),
-						outputDimensions = new Vector2Int(image.width, image.height),
-						outputFormat = TextureFormat.RGB24,
-						transformation = CameraImageTransformation.None
-					};
-					int size = image.GetConvertedDataSize(conversionParams);
-					j.pixels = new byte[size];
+					ARHelper.GetPlaneDataRGB(out j.pixels, image);
 					j.channels = 3;
-					GCHandle bufferHandle = GCHandle.Alloc(j.pixels, GCHandleType.Pinned);
-					image.Convert(conversionParams, bufferHandle.AddrOfPinnedObject(), j.pixels.Length);
-					bufferHandle.Free();
 				}
 				else
 				{
-					XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
-					j.pixels = new byte[plane.data.Length];
+					ARHelper.GetPlaneData(out j.pixels, image);
 					j.channels = 1;
-					plane.data.CopyTo(j.pixels);
 				}
 
                 j.sessionFirstImage = sessionFirstImage;
@@ -773,28 +888,56 @@ namespace Immersal.Samples.Mapping
 
 		public void Localize()
 		{
-			XRCameraImage image;
-			if (m_CameraManager.TryGetLatestImage(out image))
+            XRCameraImage image;
+			ARCameraManager cameraManager = sdk.cameraManager;
+			var cameraSubsystem = cameraManager.subsystem;
+
+			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
 			{
 				CoroutineJobLocalize j = new CoroutineJobLocalize();
                 Camera cam = Camera.main;
                 j.rotation = cam.transform.rotation;
 				j.position = cam.transform.position;
-				j.intrinsics = ARHelper.GetIntrinsics(m_CameraManager);
+				j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
 				j.width = image.width;
 				j.height = image.height;
 				j.stats = this.stats;
                 j.pcr = this.pcr;
 
-				XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
-				j.pixels = new byte[plane.data.Length];
-				plane.data.CopyTo(j.pixels);
+				ARHelper.GetPlaneData(out j.pixels, image);
 				jobs.Add(j);
 				image.Dispose();
 			}
 		}
 
-		public void LoadMap(int mapId)
+        public void LocalizeServer()
+        {
+            ARCameraManager cameraManager = sdk.cameraManager;
+            var cameraSubsystem = cameraManager.subsystem;
+
+            XRCameraImage image;
+            if (cameraSubsystem.TryGetLatestImage(out image))
+            {
+                CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
+                j.server = this.server;
+                j.token = this.token;
+
+                Camera cam = Camera.main;
+                j.rotation = cam.transform.rotation;
+                j.position = cam.transform.position;
+                j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
+                j.width = image.width;
+                j.height = image.height;
+                j.stats = this.stats;
+                j.pcr = this.pcr;
+
+				ARHelper.GetPlaneData(out j.pixels, image);
+                jobs.Add(j);
+                image.Dispose();
+            }
+        }
+
+        public void LoadMap(int mapId)
 		{
             if (pcr.ContainsKey(mapId))
             {
