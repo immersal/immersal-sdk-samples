@@ -41,9 +41,16 @@ namespace Immersal.Samples
         {
             m_Dropdown = GetComponent<TMP_Dropdown>();
             m_Dropdown.ClearOptions();
-            m_Dropdown.AddOptions( new List<string>() { string.Format("<{0}>", m_ARMap.m_MapFile.name) });
+            if (m_ARMap.m_MapFile != null)
+            {
+                m_Dropdown.AddOptions( new List<string>() { string.Format("<{0}>", m_ARMap.m_MapFile.name) });
+                m_EmbeddedMap = m_ARMap.m_MapFile;
+            }
+            else
+            {
+                m_Dropdown.AddOptions( new List<string>() { "Load map..." });
+            }
             m_Maps = new List<SDKJob>();
-            m_EmbeddedMap = m_ARMap.m_MapFile;
         }
 
         void Start()
@@ -70,16 +77,21 @@ namespace Immersal.Samples
         {
             m_ARMap.FreeMap();
 
+            int value = dropdown.value - 1;
+
             // use embedded map
-            if (m_EmbeddedMap != null && dropdown.value == 0)
+            if (m_EmbeddedMap != null && value == -1)
             {
                 m_ARMap.m_MapFile = m_EmbeddedMap;
                 m_ARMap.LoadMap();
             }
             else
             {
-                SDKJob map = m_Maps[dropdown.value - 1];
-                LoadMap(map.id);
+                if (value >= 0)
+                {
+                    SDKJob map = m_Maps[value];
+                    LoadMap(map.id);
+                }
             }
         }
 
