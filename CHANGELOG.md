@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - On-device localization was sometimes giving false results.
 
 ### Changed
-- Supported Unity version is now 2019.2.3f1+, should work on 2018 still with correct AR Foundation packages.
+- Supported Unity version is now 2019.2.3f1+, but it still works on 2018 with corresponding AR Foundation packages.
 - Android plugin is now an .aar file with both 32-bit and 64-bit binaries.
 
 ## [1.01] - 2019-06-24
