@@ -6,12 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.1] - 2019-09-12
 ### Added
-- A simple multiplayer scene using Unity Networking (Note: You need to enable Multiplayer in Unity Services).
+- A simple Multiplayer Sample using Unity Networking (Note: You need to enable Multiplayer in Unity Services).
 - Variable lighting adaptation
 - Android 64-bit support
-- SampleScene and `MapListController.cs` are back by popular demand.
+- Map Download Sample (previously SampleScene) and `MapListController.cs` are back by popular demand.
 - On-server localization
-- Gravity-based map alignment
+- Gravity-based map alignment when constructing a new map.
 
 ### Fixed
 - Mapping and localization now work on iPad Mini (probably fixes problems with various Android devices as well).
@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - On-device localization was sometimes giving false results.
 
 ### Changed
-- Supported Unity version is now 2019.2.3f1+, but it still works on 2018 with corresponding AR Foundation packages.
-- Android plugin is now an .aar file with both 32-bit and 64-bit binaries.
+- Supported Unity version is now 2019.2.3f1+, should work on 2018 with corresponding AR Foundation packages.
+- Android plugin is now an `.aar` file with both 32-bit and 64-bit binaries.
 
 ## [1.01] - 2019-06-24
 ### Added
