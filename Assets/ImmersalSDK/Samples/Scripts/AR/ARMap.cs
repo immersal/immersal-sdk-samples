@@ -112,14 +112,13 @@ namespace Immersal.AR
 
         public int LoadMap(byte[] mapBytes = null)
         {
-            if (mapBytes == null && m_MapFile != null)
+            if (mapBytes == null)
             {
-                mapBytes = m_MapFile.bytes;
+                mapBytes = (m_MapFile != null) ? m_MapFile.bytes : null;
             }
-            else
-            {
+
+            if (mapBytes == null)
                 return -1;
-            }
 
             m_MapHandle = Immersal.Core.LoadMap(mapBytes);
 
