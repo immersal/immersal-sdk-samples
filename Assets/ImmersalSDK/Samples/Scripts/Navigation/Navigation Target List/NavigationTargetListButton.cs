@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -16,7 +16,7 @@ using TMPro;
 
 namespace Immersal.Samples.Navigation
 {
-    public class NavigationTargetListButton : MonoBehaviour, IPointerClickHandler
+    public class NavigationTargetListButton : Button, IPointerClickHandler
     {
         [HideInInspector]
         public GameObject targetObject = null;
@@ -50,9 +50,10 @@ namespace Immersal.Samples.Navigation
             targetObject = go;
         }
 
-        public void OnPointerClick(PointerEventData pointerEventData)
+        override public void OnPointerClick(PointerEventData pointerEventData)
         {
             NavigationManager.Instance.TryToFindPath(this);
+            base.OnPointerClick(pointerEventData);
         }
     }
 }

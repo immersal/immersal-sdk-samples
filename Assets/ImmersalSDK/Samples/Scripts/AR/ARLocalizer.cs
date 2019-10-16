@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -67,28 +67,6 @@ namespace Immersal.AR
 		public LocalizerStats stats
 		{
 			get { return m_stats; }
-		}
-
-		public Vector3 position
-		{
-			// TODO: handle differently
-			get {
-				if (m_MapIdToOffset.ContainsKey(0))
-					return m_MapIdToOffset[0].space.filter.position;
-				else
-					return Vector3.zero;
-			}
-		}
-
-		public Quaternion rotation
-		{
-			// TODO: handle differently
-			get {
-				if (m_MapIdToOffset.ContainsKey(0))
-					return m_MapIdToOffset[0].space.filter.rotation;
-				else
-					return Quaternion.identity;
-			}
 		}
 
 		private void ARSessionStateChanged(ARSessionStateChangedEventArgs args)

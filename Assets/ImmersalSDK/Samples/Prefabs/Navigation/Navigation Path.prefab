@@ -46,14 +46,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63767f1bc22bea64fa3377da66858d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ARSpace: {fileID: 0}
-  m_WaypointPrefab: {fileID: 4442049311702343116, guid: 05475a5d5e7c08c4dae7a9353f600e05,
-    type: 3}
   m_ArrowPrefab: {fileID: 5710806455456612459, guid: 5a297c6822cc79747b598b01ee25c258,
     type: 3}
   m_ArrivedDistanceThreshold: 1
-  m_WaypointStepSize: 0.33
-  m_WaypointScale: 1
+  m_yOffset: 0.1
 --- !u!114 &7158299622223907419
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67,11 +63,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Transforms: []
-  m_StepSize: 1
-  m_ResampledStepSize: 0.5
+  m_StepSize: 0.25
+  m_ResampledStepSize: 0.25
   m_Resample: 1
   m_GenerateMesh: 1
-  m_PathWidth: 0.7
+  m_PathWidth: 0.4
 --- !u!33 &4841525252935132494
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -105,6 +101,7 @@ MeshRenderer:
   m_ProbeAnchor: {fileID: 0}
   m_LightProbeVolumeOverride: {fileID: 0}
   m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
   m_PreserveUVs: 0
   m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0

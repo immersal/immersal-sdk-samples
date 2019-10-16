@@ -4,6 +4,23 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2] - 2019-10-16
+### Added
+- Developer Portal: Map stitching; you can select multiple maps and combine them into one new map (assuming the maps have overlapping features).
+- Samples: Mapping App; continue updating older maps by restoring the map source data.
+- Samples: Mapping App; you can now delete maps in the app.
+- SDK: Mapping performance improvements.
+- SDK: REST API updated and cleaned up.
+
+### Fixed
+- Samples: The "AR Cloud space" rotation and position can now be get from `ARSpace.cs` instead of `ARLocalizer.cs`, which was buggy anyway and returned only the first map's pose, thus giving incorrect results when using multimaps.
+- Samples: Navigation and multiplayer samples fixed to work with multimaps.
+- Samples: UI fixes
+
+### Changed
+- Samples: Updated project to Unity 2019.2.8f1 and AR Foundation 3.0.0 preview.3, should continue to work just fine with older versions.
+- Developer Portal: Updated EULA.
+
 ## [1.1] - 2019-09-12
 ### Added
 - A simple Multiplayer Sample using Unity Networking (Note: You need to enable Multiplayer in Unity Services).

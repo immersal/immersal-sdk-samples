@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -9,16 +9,28 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
+using Immersal.AR;
 using TMPro;
 
 namespace Immersal.Samples.Navigation
 {
+    [System.Serializable]
+    public class NavigationEvent : UnityEvent<Transform>
+    {
+    }
+
     public class NavigationManager : MonoBehaviour
     {
         [SerializeField]
-        private Immersal.AR.ARSpace m_ARSpace;
+        private NavigationEvent onTargetFound = new NavigationEvent();
+        [SerializeField]
+        private NavigationEvent onTargetNotFound = new NavigationEvent();
+        [SerializeField]
+        private ARSpace m_ARSpace;
         [SerializeField]
         private GameObject m_NavigationPath = null;
         [SerializeField]
@@ -33,8 +45,13 @@ namespace Immersal.Samples.Navigation
         private TextMeshProUGUI m_TargetsListText = null;
         [SerializeField]
         private GameObject m_StopNavigationButton = null;
+        [SerializeField]
+        private float m_ArrivedDistanceThreshold = 1.0f;
 
         private GameObject m_Path = null;
+        private Transform m_TargetTransform = null;
+
+        private static NavigationManager instance = null;
 
         public static NavigationManager Instance
         {
@@ -54,7 +71,26 @@ namespace Immersal.Samples.Navigation
             }
         }
 
-        private static NavigationManager instance = null;
+        public float arrivedDistanceThreshold
+        {
+            get { return m_ArrivedDistanceThreshold; }
+        }
+
+        private ARSpace arSpace
+        {
+            get
+            {
+                if (m_ARSpace == null)
+                    m_ARSpace = GameObject.FindObjectOfType<ARSpace>();
+                
+                if (m_ARSpace == null)
+                {
+                    Debug.Log("No AR Space found");
+                }
+                return m_ARSpace;
+            }
+            set { m_ARSpace = value; }
+        }
 
         void Awake()
         {
@@ -72,34 +108,17 @@ namespace Immersal.Samples.Navigation
 
         private void Start()
         {
-            if(m_ARSpace == null)
-            {
-                m_ARSpace = GameObject.FindObjectOfType<Immersal.AR.ARSpace>();
-
-                if (m_ARSpace == null)
-                {
-                    Debug.Log("No AR Space found");
-                }
-            }
-
             if (m_TargetsList != null)
-            {
                 m_TargetsList.SetActive(false);
-            }
 
             if (m_StopNavigationButton != null)
-            {
                 m_StopNavigationButton.SetActive(false);
-            }
 
             if (m_TargetsListIcon != null && m_SelectTargetIcon != null)
-            {
                 m_TargetsListIcon.sprite = m_ShowListIcon;
-            }
+
             if (m_TargetsListText != null)
-            {
                 m_TargetsListText.text = "Show Navigation Targets";
-            }
 
             DeletePath();
         }
@@ -139,18 +158,16 @@ namespace Immersal.Samples.Navigation
         public void TryToFindPath(NavigationTargetListButton button)
         {
             if (m_StopNavigationButton != null)
-            {
                 m_StopNavigationButton.SetActive(false);
-            }
 
             if (m_NavigationPath != null)
             {
                 DeletePath();
-                m_Path = Instantiate(m_NavigationPath, m_ARSpace.transform);
-                BuildNavigationPath navpath = m_Path.GetComponent<BuildNavigationPath>();
+                m_Path = Instantiate(m_NavigationPath);
+                NavigationPath navpath = m_Path.GetComponent<NavigationPath>();
 
-                navpath.m_ARSpace = m_ARSpace;
-                navpath.BuildPath(button);
+                navpath.arSpace = arSpace;
+                m_TargetTransform = navpath.BuildPath(button);
             }
         }
 
@@ -160,15 +177,15 @@ namespace Immersal.Samples.Navigation
             Handheld.Vibrate();
 #endif
             Mapping.NotificationManager.Instance.GenerateNotification("Path to target could not be found.");
+
+            onTargetNotFound.Invoke(m_TargetTransform);
         }
 
         public void DisplayNavigation()
         {
             if (m_StopNavigationButton != null)
-            {
                 m_StopNavigationButton.SetActive(true);
-            }
-
+            
             ToggleTargetsList();
         }
 
@@ -180,9 +197,9 @@ namespace Immersal.Samples.Navigation
             Mapping.NotificationManager.Instance.GenerateNotification("You have arrived!");
 
             if (m_StopNavigationButton != null)
-            {
                 m_StopNavigationButton.SetActive(false);
-            }
+
+            onTargetFound.Invoke(m_TargetTransform);
 
             DeletePath();
         }
@@ -190,14 +207,10 @@ namespace Immersal.Samples.Navigation
         public void CloseNavigation()
         {
             if (m_StopNavigationButton != null)
-            {
                 m_StopNavigationButton.SetActive(false);
-            }
 
             if (m_TargetsList != null)
-            {
                 m_TargetsList.SetActive(false);
-            }
 
             DeletePath();
         }
@@ -205,9 +218,7 @@ namespace Immersal.Samples.Navigation
         public void DeletePath()
         {
             if (m_Path != null)
-            {
                 Destroy(m_Path);
-            }
         }
     }
 }

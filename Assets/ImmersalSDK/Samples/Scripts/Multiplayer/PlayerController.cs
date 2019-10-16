@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -21,28 +21,27 @@ namespace Immersal.Samples.Multiplayer
 		public Renderer playerBodyRenderer;
 
 		private Camera m_MainCamera;
-		private ARLocalizer m_Loc;
 		private Vector3 m_Position;
 		private Quaternion m_Rotation;
-		private GameObject m_ArSpace;
-		private ImmersalARCloudSDK m_Sdk;
+		private ARSpace m_ArSpace;
 
 		private void Start() {
 			m_MainCamera = Camera.main;
-			m_Sdk = ImmersalARCloudSDK.Instance;
-			m_Loc = m_Sdk.gameObject.GetComponent<ARLocalizer>();
-	#if UNITY_EDITOR || UNITY_STANDALONE
-			TrackedPoseDriver tpd = m_MainCamera.GetComponent<TrackedPoseDriver>();
-			if (tpd)
-				tpd.enabled = false;
-	#endif
-			Vector3 pos = transform.position;
-			transform.position = pos;
+
+			if (Application.isEditor)
+			{
+				TrackedPoseDriver tpd = m_MainCamera.GetComponent<TrackedPoseDriver>();
+				if (tpd)
+					tpd.enabled = false;
+			}
 		}
 
 		void OnEnable()
 		{
-			m_ArSpace = GameObject.Find("AR Space");
+			m_ArSpace = UnityEngine.Object.FindObjectOfType<ARSpace>();
+			if (m_ArSpace == null)
+				Debug.LogError("No ARSpace found");
+			
 			var scale = transform.localScale;
 			var pos = transform.localPosition;
 			transform.SetParent(m_ArSpace.transform);
@@ -57,57 +56,60 @@ namespace Immersal.Samples.Multiplayer
 				return;
 			}
 
-	#if UNITY_EDITOR || UNITY_STANDALONE
-			var x = Input.GetAxis("Horizontal") * Time.deltaTime * 150.0f;
-			var z = Input.GetAxis("Vertical") * Time.deltaTime * 3.0f;
-			Vector3 oldPos = transform.position;
-			Quaternion oldRot = transform.rotation;
-
-			transform.Rotate(0, x, 0);
-			transform.Translate(0, 0, z);
-
-			m_Position = transform.position;
-			m_Rotation = transform.rotation;
-
-			if (m_Position != oldPos || m_Rotation != oldRot)
+			if (Application.isEditor)
 			{
-				m_MainCamera.transform.position = m_Position;
-				m_MainCamera.transform.rotation = m_Rotation;
+				var x = Input.GetAxis("Horizontal") * Time.deltaTime * 150.0f;
+				var z = Input.GetAxis("Vertical") * Time.deltaTime * 3.0f;
+				Vector3 oldPos = transform.position;
+				Quaternion oldRot = transform.rotation;
 
-				if (isServer)
+				transform.Rotate(0, x, 0);
+				transform.Translate(0, 0, z);
+
+				m_Position = transform.position;
+				m_Rotation = transform.rotation;
+
+				if (m_Position != oldPos || m_Rotation != oldRot)
 				{
-					UpdateClientsPos();
-				}
-				else
-				{
-					CmdMove(m_Position, m_Rotation);
+					m_MainCamera.transform.position = m_Position;
+					m_MainCamera.transform.rotation = m_Rotation;
+
+					if (isServer)
+					{
+						UpdateClientsPos();
+					}
+					else
+					{
+						CmdMove(m_Position, m_Rotation);
+					}
 				}
 			}
-	#elif UNITY_IOS || UNITY_ANDROID
-			Vector3 oldPos = transform.localPosition;
-			Quaternion oldRot = transform.localRotation;
-			Vector3 camPos = m_MainCamera.transform.position;
-			Quaternion camRot = m_MainCamera.transform.rotation;
-			camPos += m_MainCamera.transform.up * .2f;
-			Matrix4x4 cloudSpace = ARHelper.ToCloudSpace(camPos, camRot, m_Loc.position, m_Loc.rotation);
-			m_Rotation = cloudSpace.rotation;
-			m_Position = cloudSpace.GetColumn(3);
-
-			if (m_Position != oldPos || m_Rotation != oldRot)
+			else
 			{
-				transform.localPosition = m_Position;
-				transform.localRotation = m_Rotation;
+				Vector3 oldPos = transform.localPosition;
+				Quaternion oldRot = transform.localRotation;
+				Vector3 camPos = m_MainCamera.transform.position;
+				Quaternion camRot = m_MainCamera.transform.rotation;
+				camPos += m_MainCamera.transform.up * .2f;
+				Pose p = m_ArSpace.ToCloudSpace(camPos, camRot);
+				m_Rotation = p.rotation;
+				m_Position = p.position;
 
-				if (isServer)
+				if (m_Position != oldPos || m_Rotation != oldRot)
 				{
-					UpdateClientsPos();
-				}
-				else
-				{
-					CmdMove(m_Position, m_Rotation);
+					transform.localPosition = m_Position;
+					transform.localRotation = m_Rotation;
+
+					if (isServer)
+					{
+						UpdateClientsPos();
+					}
+					else
+					{
+						CmdMove(m_Position, m_Rotation);
+					}
 				}
 			}
-	#endif
 		}
 
 		[ClientRpc]

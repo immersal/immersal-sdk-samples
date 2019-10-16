@@ -1,7 +1,7 @@
 /*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -29,7 +29,8 @@ namespace Immersal.Samples.Mapping
 {
 	public class CoroutineJob
 	{
-		protected const string URL_FORMAT = "{0}/fcgi?{1}";
+		public string server;
+		public string token;
 
 		public virtual IEnumerator RunJob()
 		{
@@ -39,8 +40,6 @@ namespace Immersal.Samples.Mapping
 
 	public class CoroutineJobClear : CoroutineJob
 	{
-		public string server;
-		public string token;
 		public int bank;
 		public bool anchor;
 
@@ -53,7 +52,7 @@ namespace Immersal.Samples.Mapping
 			r.bank = this.bank;
 			r.anchor = this.anchor;
 			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, server, "9"), jsonString))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, server, Endpoint.CLEAR_JOB), jsonString))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -65,7 +64,7 @@ namespace Immersal.Samples.Mapping
 
 				if (request.isNetworkError || request.isHttpError)
 				{
-					Debug.Log(request.error);
+					Debug.LogError(request.error);
 				}
 				else if (request.responseCode == (long)HttpStatusCode.OK)
 				{
@@ -77,8 +76,6 @@ namespace Immersal.Samples.Mapping
 
 	public class CoroutineJobConstruct : CoroutineJob
 	{
-		public string server;
-		public string token;
 		public int bank;
 		public string name;
 
@@ -91,7 +88,7 @@ namespace Immersal.Samples.Mapping
 			r.bank = this.bank;
 			r.name = this.name;
 			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "2"), jsonString))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.CONSTRUCT_MAP), jsonString))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -103,7 +100,71 @@ namespace Immersal.Samples.Mapping
 
 				if (request.isNetworkError || request.isHttpError)
 				{
-					Debug.Log(request.error);
+					Debug.LogError(request.error);
+				}
+				else if (request.responseCode == (long)HttpStatusCode.OK)
+				{
+					Debug.Log(request.downloadHandler.text);
+				}
+			}
+		}
+	}
+
+	public class CoroutineJobRestoreMapImages : CoroutineJob
+	{
+		public int mapId;
+
+		public override IEnumerator RunJob()
+		{
+			Debug.Log("*************************** CoroutineJobRestoreMapImages ***************************");
+
+			SDKRestoreMapImagesRequest r = new SDKRestoreMapImagesRequest();
+			r.token = this.token;
+			r.id = this.mapId;
+			string jsonString = JsonUtility.ToJson(r);
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.RESTORE_MAP_IMAGES), jsonString))
+			{
+				request.method = UnityWebRequest.kHttpVerbPOST;
+				request.useHttpContinue = false;
+				request.SetRequestHeader("Content-Type", "application/json");
+				request.SetRequestHeader("Accept", "application/json");
+				yield return request.SendWebRequest();
+
+				if (request.isNetworkError || request.isHttpError)
+				{
+					Debug.LogError(request.error);
+				}
+				else if (request.responseCode == (long)HttpStatusCode.OK)
+				{
+					Debug.Log(request.downloadHandler.text);
+				}
+			}
+		}
+	}
+
+	public class CoroutineJobDeleteMap : CoroutineJob
+	{
+		public int mapId;
+
+		public override IEnumerator RunJob()
+		{
+			Debug.Log("*************************** CoroutineJobDeleteMap ***************************");
+
+			SDKDeleteMapRequest r = new SDKDeleteMapRequest();
+			r.token = this.token;
+			r.id = this.mapId;
+			string jsonString = JsonUtility.ToJson(r);
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.DELETE_MAP), jsonString))
+			{
+				request.method = UnityWebRequest.kHttpVerbPOST;
+				request.useHttpContinue = false;
+				request.SetRequestHeader("Content-Type", "application/json");
+				request.SetRequestHeader("Accept", "application/json");
+				yield return request.SendWebRequest();
+
+				if (request.isNetworkError || request.isHttpError)
+				{
+					Debug.LogError(request.error);
 				}
 				else if (request.responseCode == (long)HttpStatusCode.OK)
 				{
@@ -115,8 +176,6 @@ namespace Immersal.Samples.Mapping
 
 	public class CoroutineJobStatus : CoroutineJob
 	{
-		public string server;
-		public string token;
 		public int bank;
 		public MapperStats stats;
 
@@ -128,7 +187,7 @@ namespace Immersal.Samples.Mapping
 			r.token = this.token;
 			r.bank = this.bank;
 			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "10"), jsonString))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.STATUS), jsonString))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -138,7 +197,7 @@ namespace Immersal.Samples.Mapping
 
 				if (request.isNetworkError || request.isHttpError)
 				{
-					Debug.Log(request.error);
+					Debug.LogError(request.error);
 				}
 				else if (request.responseCode == (long)HttpStatusCode.OK)
 				{
@@ -153,8 +212,6 @@ namespace Immersal.Samples.Mapping
 	{
         public UnityEvent onConnect;
         public UnityEvent onFailedToConnect;
-        public string server;
-		public string token;
 		public int bank;
 		public int run;
 		public int index;
@@ -227,7 +284,7 @@ namespace Immersal.Samples.Mapping
 
 			string jsonString = JsonUtility.ToJson(imageRequest);
 
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "1"), jsonString))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.CAPTURE_IMAGE), jsonString))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -239,7 +296,7 @@ namespace Immersal.Samples.Mapping
 
 				if (request.isNetworkError || request.isHttpError)
 				{
-					Debug.Log(request.error);
+					Debug.LogError(request.error);
 				}
 				else if (request.responseCode == (long)HttpStatusCode.OK)
 				{
@@ -312,8 +369,6 @@ namespace Immersal.Samples.Mapping
 
     public class CoroutineJobLocalizeServer : CoroutineJob
     {
-        public string server;
-        public string token;
         public Vector4 intrinsics;
         public Quaternion rotation;
         public Vector3 position;
@@ -365,7 +420,7 @@ namespace Immersal.Samples.Mapping
 
             string jsonString = JsonUtility.ToJson(imageRequest);
 
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "17"), jsonString))
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.SERVER_LOCALIZE), jsonString))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
                 request.useHttpContinue = false;
@@ -375,7 +430,7 @@ namespace Immersal.Samples.Mapping
 
                 if (request.isNetworkError || request.isHttpError)
                 {
-                    Debug.Log(request.error);
+                    Debug.LogError(request.error);
                 }
                 else if (request.responseCode == (long)HttpStatusCode.OK)
                 {
@@ -421,8 +476,6 @@ namespace Immersal.Samples.Mapping
 
     public class CoroutineJobListJobs : CoroutineJob
 	{
-		public string server;
-		public string token;
 		public int bank;
 		public VisualizeManager visualizeManager;
 		public List<int> activeMaps;
@@ -435,7 +488,7 @@ namespace Immersal.Samples.Mapping
 			r.token = this.token;
 			r.bank = this.bank;
 			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "8"), jsonString))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LIST_JOBS), jsonString))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -445,7 +498,7 @@ namespace Immersal.Samples.Mapping
 
 				if (request.isNetworkError || request.isHttpError)
 				{
-					Debug.Log(request.error);
+					Debug.LogError(request.error);
 				}
 				else if (request.responseCode == (long)HttpStatusCode.OK)
 				{
@@ -462,8 +515,6 @@ namespace Immersal.Samples.Mapping
 
 	public class CoroutineJobLoadMap : CoroutineJob
 	{
-		public string server;
-		public string token;
 		public int bank;
 		public int id;
 		public MapperStats stats;
@@ -478,7 +529,7 @@ namespace Immersal.Samples.Mapping
 			r.id = this.id;
 
 			string jsonString2 = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "3"), jsonString2))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LOAD_MAP), jsonString2))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -490,7 +541,7 @@ namespace Immersal.Samples.Mapping
 
 				if (request.isNetworkError || request.isHttpError)
 				{
-					Debug.Log(request.error);
+					Debug.LogError(request.error);
 				}
 				else if (request.responseCode == (long)HttpStatusCode.OK)
 				{
@@ -535,7 +586,9 @@ namespace Immersal.Samples.Mapping
 						PointCloudRenderer renderer = go.AddComponent<PointCloudRenderer>();
 						renderer.CreateCloud(vector3Array, num);
 						renderer.handle = handle;
-						pcr.Add(id, renderer);
+						if (!pcr.ContainsKey(id)) {
+							pcr.Add(id, renderer);
+						}
 
                         stats.locFail = 0;
 						stats.locSucc = 0;
@@ -638,6 +691,8 @@ namespace Immersal.Samples.Mapping
 			m_workspaceManager = GetComponentInChildren<WorkspaceManager>();
             m_visualizeManager = GetComponentInChildren<VisualizeManager>();
             m_visualizeManager.OnItemSelected += OnItemSelected;
+			m_visualizeManager.OnItemDeleted += OnItemDeleted;
+			m_visualizeManager.OnItemRestored += OnItemRestored;
             m_visualizeManager.OnSelectorOpened += OnSelectorOpened;
             m_visualizeManager.OnSelectorClosed += OnSelectorClosed;
             ImageRunUpdate();
@@ -724,6 +779,16 @@ namespace Immersal.Samples.Mapping
 			LoadMap(job.id);
 		}
 
+		private void OnItemDeleted(SDKJob job)
+		{
+			DeleteMap(job.id);
+		}
+
+		private void OnItemRestored(SDKJob job)
+		{
+			RestoreMapImages(job.id);
+		}
+
 		private void OnSelectorOpened()
 		{
 			if (m_updateJobList != null)
@@ -787,6 +852,25 @@ namespace Immersal.Samples.Mapping
 				jobLock = 1;
 				StartCoroutine(RunJob(jobs[0]));
 			}
+		}
+
+		public void DeleteMap(int mapId)
+		{
+			CoroutineJobDeleteMap j = new CoroutineJobDeleteMap();
+			j.server = this.server;
+			j.token = this.token;
+			j.mapId = mapId;
+			jobs.Add(j);
+		}
+
+		public void RestoreMapImages(int mapId)
+		{
+			CoroutineJobRestoreMapImages j = new CoroutineJobRestoreMapImages();
+			j.server = this.server;
+			j.token = this.token;
+			j.mapId = mapId;
+			jobs.Add(j);
+			sessionFirstImage = true;
 		}
 
 		public void ResetMapperPictures()

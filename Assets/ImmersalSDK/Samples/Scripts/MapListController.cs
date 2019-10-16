@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -127,8 +127,6 @@ namespace Immersal.Samples
 
     public class CoroutineListMaps : CoroutineJob
     {
-        public string server;
-        public string token;
         public int bank;
         public List<SDKJob> maps;
         public TMP_Dropdown dropdown;
@@ -140,7 +138,7 @@ namespace Immersal.Samples
             r.bank = this.bank;
             string jsonString = JsonUtility.ToJson(r);
 
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "8"), jsonString))
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LIST_JOBS), jsonString))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -178,8 +176,6 @@ namespace Immersal.Samples
 
 	public class CoroutineLoadMap : CoroutineJob
 	{
-		public string server;
-		public string token;
 		public int bank;
 		public int id;
         public ARMap arMap;
@@ -192,7 +188,7 @@ namespace Immersal.Samples
 			r.id = this.id;
 
 			string jsonString2 = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(URL_FORMAT, this.server, "3"), jsonString2))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LOAD_MAP), jsonString2))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;

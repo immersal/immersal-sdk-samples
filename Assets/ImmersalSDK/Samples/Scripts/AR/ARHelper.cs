@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -75,24 +75,6 @@ namespace Immersal.AR
 			GCHandle bufferHandle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
 			image.Convert(conversionParams, bufferHandle.AddrOfPinnedObject(), pixels.Length);
 			bufferHandle.Free();
-		}
-
-		public static Matrix4x4 ToCloudSpace(Vector3 camPos, Quaternion camRot, Vector3 cloudPos, Quaternion cloudRot)
-		{
-			Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-			Matrix4x4 trackerToCloudSpace = Matrix4x4.TRS(cloudPos, cloudRot, Vector3.one);
-			Matrix4x4 cloudSpace = trackerToCloudSpace.inverse * trackerSpace;
-
-			return cloudSpace;
-		}
-
-		public static Matrix4x4 FromCloudSpace(Vector3 cloudPos, Quaternion cloudRot, Vector3 camPos, Quaternion camRot)
-		{
-			Matrix4x4 cloudSpace = Matrix4x4.TRS(cloudPos, cloudRot, Vector3.one);
-			Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-			Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-
-			return m;
 		}
 	}
 }

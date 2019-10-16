@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.1.
+This file is part of Immersal AR Cloud SDK v1.2.
 
 The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -67,7 +67,7 @@ namespace Immersal.Samples.Mapping
             string jsonString = JsonUtility.ToJson(loginRequest);
             //Debug.Log("jsonString: " + jsonString);
             byte[] myData = System.Text.Encoding.UTF8.GetBytes(jsonString);
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format("{0}/{1}", m_server, "fcgi?6"), jsonString))
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, m_server, Endpoint.LOGIN), jsonString))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
