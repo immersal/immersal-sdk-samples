@@ -35,6 +35,31 @@ namespace Immersal.AR
             return intrinsics;
         }
 
+		public static void GetRotation(ref Quaternion rot)
+		{
+			float angle = 0f;
+			switch (Screen.orientation)
+			{
+				case ScreenOrientation.Portrait:
+					angle = 0f;
+					break;
+				case ScreenOrientation.LandscapeLeft:
+					angle = -90f;
+					break;
+				case ScreenOrientation.LandscapeRight:
+					angle = 90f;
+					break;
+				case ScreenOrientation.PortraitUpsideDown:
+					angle = 180f;
+					break;
+				default:
+					angle = 0f;
+					break;
+			}
+
+			rot *= Quaternion.Euler(0f, 0f, angle);
+		}
+
 		public static void GetPlaneData(out byte[] pixels, XRCameraImage image)
 		{
 			XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane

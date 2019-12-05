@@ -116,6 +116,9 @@ namespace Immersal.AR
 		{
 			foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
 				item.Value.filter.ResetFiltering();
+			
+			if (!pauseStatus)
+				m_bHighFrequencyMode = true;
 		}
 
 		void Update()
@@ -146,13 +149,14 @@ namespace Immersal.AR
 			}
 
 			float curTime = Time.unscaledTime;
-			if (m_bHighFrequencyMode)	// try to localize at max speed at first
+			if (m_bHighFrequencyMode)	// try to localize at max speed during app start/resume
 			{
 				if (!m_bIsLocalizing && m_bIsTracking)
 				{
+					float elapsedTime = Time.realtimeSinceStartup - m_LastLocalizeTime;
 					m_bIsLocalizing = true;
 					StartCoroutine(Localize());
-					if (m_stats.localizationSuccessCount == 10 || curTime >= 15f)
+					if (m_stats.localizationSuccessCount == 10 || elapsedTime >= 15f)
 					{
 						m_bHighFrequencyMode = false;
 					}
@@ -207,6 +211,7 @@ namespace Immersal.AR
 
                 if (mapHandle >= 0 && m_MapIdToOffset.ContainsKey(mapHandle))
                 {
+					ARHelper.GetRotation(ref rot);
                     MapOffset mo = m_MapIdToOffset[mapHandle];
                     float elapsedTime = Time.realtimeSinceStartup - startTime;
                     Debug.Log(string.Format("Relocalised in {0} seconds", elapsedTime));
