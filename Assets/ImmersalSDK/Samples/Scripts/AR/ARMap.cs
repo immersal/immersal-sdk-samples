@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -27,12 +27,12 @@ namespace Immersal.AR
         [HideInInspector]
         public RenderMode m_RenderMode = RenderMode.DoNotRender;
 
-        private int m_MapHandle = -1;
+        private int m_MapId = -1;
         private Mesh m_Mesh = null;
 
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
-        private ARSpace m_ArSpace = null;
+        private ARSpace m_ARSpace = null;
 
         public void InitMesh()
         {
@@ -100,12 +100,12 @@ namespace Immersal.AR
 
         public void FreeMap()
         {
-            if (m_MapHandle != -1)
+            if (m_MapId != -1)
             {
-                Immersal.Core.FreeMap(m_MapHandle);
+                Immersal.Core.FreeMap(m_MapId);
                 if (!Application.isEditor)
                 {
-                    ARLocalizer.UnregisterSpace(m_Root, m_MapHandle);
+                    ARLocalizer.UnregisterSpace(m_Root, m_MapId);
                 }
             }
         }
@@ -120,24 +120,24 @@ namespace Immersal.AR
             if (mapBytes == null)
                 return -1;
 
-            m_MapHandle = Immersal.Core.LoadMap(mapBytes);
+            m_MapId = Immersal.Core.LoadMap(mapBytes);
 
-            if (m_MapHandle != -1)
+            if (m_MapId != -1)
             {
                 Vector3[] points = new Vector3[65536];
-                int num = Immersal.Core.GetPointCloud(m_MapHandle, points);
+                int num = Immersal.Core.GetPointCloud(m_MapId, points);
 
                 CreateCloud(points, num);
 
                 if (!Application.isEditor)
                 {
-                    m_Root = m_ArSpace.transform;
+                    m_Root = m_ARSpace.transform;
                     Matrix4x4 offset = Matrix4x4.TRS(transform.localPosition, transform.localRotation, Vector3.one);
-                    ARLocalizer.RegisterSpace(m_Root, m_MapHandle, offset);
+                    ARLocalizer.RegisterSpace(m_Root, m_MapId, offset);
                 }
             }
 
-            return m_MapHandle;
+            return m_MapId;
         }
 
         public void CreateCloud(Vector3[] points, int totalPoints, Matrix4x4 offset)
@@ -169,11 +169,11 @@ namespace Immersal.AR
 
         void Awake()
         {
-            m_ArSpace = gameObject.GetComponentInParent<ARSpace>();
-            if (!m_ArSpace)
+            m_ARSpace = gameObject.GetComponentInParent<ARSpace>();
+            if (!m_ARSpace)
             {
                 GameObject go = new GameObject("AR Space");
-                m_ArSpace = go.AddComponent<ARSpace>();
+                m_ARSpace = go.AddComponent<ARSpace>();
                 transform.SetParent(go.transform);
             }
         }

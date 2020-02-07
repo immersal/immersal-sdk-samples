@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -40,70 +40,68 @@ namespace Immersal.Samples.Util
 		[SerializeField]
 		private UnityEvent onPoseFound = null;
 
-		private Image m_image;
-		private int m_previousResults = 0;
-		private int m_currentResults = 0;
+		private Image m_Image;
+		private int m_PreviousResults = 0;
+		private int m_CurrentResults = 0;
 
-		private float m_latestPoseUpdated = 0f;
-		private int m_trackingQuality = 0;
-		private bool m_hasPose = false;
-		private ImmersalARCloudSDK m_sdk;
-		private ARLocalizer m_localizer;
+		private float m_LatestPoseUpdated = 0f;
+		private int m_TrackingQuality = 0;
+		private bool m_HasPose = false;
+		private ImmersalSDK m_Sdk;
+		private ARLocalizer m_Localizer;
 
 		void Start () {
-			m_sdk = ImmersalARCloudSDK.Instance;
-			m_localizer = m_sdk.gameObject.GetComponent<ARLocalizer>();
-			m_image = GetComponent<Image> ();
+			m_Sdk = ImmersalSDK.Instance;
+			m_Localizer = m_Sdk.gameObject.GetComponent<ARLocalizer>();
+			m_Image = GetComponent<Image> ();
 
             if (indicatorMode == IndicatorMode.multiplyColor)
             {
-                m_image.color = noPose;
+                m_Image.color = noPose;
             }
 
-			onPoseLost.Invoke();
+			onPoseLost?.Invoke();
         }
 
 		void Update () {
-			if (m_sdk.arSession == null)
+			if (m_Sdk.arSession == null)
 				return;
 			
-			var arSubsystem = m_sdk.arSession.subsystem;
+			var arSubsystem = m_Sdk.arSession.subsystem;
 			
 			if (arSubsystem != null && arSubsystem.running)
 			{
 				switch (arSubsystem.trackingState)
 				{
 					case TrackingState.Tracking:
-						m_trackingQuality = 4;
+						m_TrackingQuality = 4;
 						break;
 					case TrackingState.Limited:
-						m_trackingQuality = 1;
+						m_TrackingQuality = 1;
 						break;
 					case TrackingState.None:
-						m_trackingQuality = 0;
+						m_TrackingQuality = 0;
 						break;
 				}
 			}
 
-			LocalizerStats stats = m_localizer.stats;
+			LocalizerStats stats = m_Localizer.stats;
 			if (stats.localizationAttemptCount > 0)
 			{
 				int q = CurrentResults(stats.localizationSuccessCount);
-				if (q > m_trackingQuality)
-					q = m_trackingQuality;
+				if (q > m_TrackingQuality)
+					q = m_TrackingQuality;
 				
-				if (!m_hasPose && q > 1)
+				if (!m_HasPose && q > 1)
 				{
-					m_hasPose = true;
-					if (onPoseFound != null)
-						onPoseFound.Invoke();
+					m_HasPose = true;
+					onPoseFound?.Invoke();
 				}
 
-				if (m_hasPose && q < 1 && m_trackingQuality == 0)
+				if (m_HasPose && q < 1 && m_TrackingQuality == 0)
 				{
-					m_hasPose = false;
-					if (onPoseLost != null)
-						onPoseLost.Invoke();
+					m_HasPose = false;
+					onPoseLost?.Invoke();
 				}
 
                 if (indicatorMode == IndicatorMode.multiplyColor)
@@ -111,16 +109,16 @@ namespace Immersal.Samples.Util
                     switch (q)
                     {
                         case 0:
-                            m_image.color = noPose;
+                            m_Image.color = noPose;
                             break;
                         case 1:
-                            m_image.color = weakPose;
+                            m_Image.color = weakPose;
                             break;
                         case 2:
-                            m_image.color = goodPose;
+                            m_Image.color = goodPose;
                             break;
                         default:
-                            m_image.color = excellentPose;
+                            m_Image.color = excellentPose;
                             break;
                     }
                 }
@@ -129,16 +127,16 @@ namespace Immersal.Samples.Util
                     switch (q)
                     {
                         case 0:
-                            m_image.sprite = noPoseSprite;
+                            m_Image.sprite = noPoseSprite;
                             break;
                         case 1:
-                            m_image.sprite = weakPoseSprite;
+                            m_Image.sprite = weakPoseSprite;
                             break;
                         case 2:
-                            m_image.sprite = goodPoseSprite;
+                            m_Image.sprite = goodPoseSprite;
                             break;
                         default:
-                            m_image.sprite = excellentPoseSprite;
+                            m_Image.sprite = excellentPoseSprite;
                             break;
                     }
                 }
@@ -146,21 +144,27 @@ namespace Immersal.Samples.Util
 		}
 
 		int CurrentResults(int localizationResults) {
-			int diffResults = localizationResults - m_previousResults;
-			m_previousResults = localizationResults;
-			if (diffResults > 0) {
-				m_latestPoseUpdated = Time.time;
-				m_currentResults += diffResults;
-				if (m_currentResults > 3)
-					m_currentResults = 3;
-			} else if (Time.time - m_latestPoseUpdated > secondsToDecayPose) {
-				m_latestPoseUpdated = Time.time;
-				if (m_currentResults > 0) {
-					m_currentResults--;
+			int diffResults = localizationResults - m_PreviousResults;
+			m_PreviousResults = localizationResults;
+			if (diffResults > 0)
+			{
+				m_LatestPoseUpdated = Time.time;
+				m_CurrentResults += diffResults;
+				if (m_CurrentResults > 3)
+				{
+					m_CurrentResults = 3;
+				}
+			}
+			else if (Time.time - m_LatestPoseUpdated > secondsToDecayPose)
+			{
+				m_LatestPoseUpdated = Time.time;
+				if (m_CurrentResults > 0)
+				{
+					m_CurrentResults--;
 				}
 			}
 				
-			return m_currentResults;
+			return m_CurrentResults;
 		}
 	}
 }

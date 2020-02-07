@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -20,7 +20,7 @@ namespace Immersal.Samples.Util
 		[HideInInspector]
 		public GameObject go;
 		[HideInInspector]
-        public int handle;
+        public int mapId;
 		public static bool visible = true;
 
 		public void Init()

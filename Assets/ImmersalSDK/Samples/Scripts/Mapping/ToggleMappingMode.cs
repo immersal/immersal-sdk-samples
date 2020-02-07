@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -16,33 +16,30 @@ namespace Immersal.Samples.Mapping
     public class ToggleMappingMode : MonoBehaviour
     {
         public GameObject mappingUIPrefab;
-        private GameObject m_mappingUI;
+        private GameObject m_MappingUI;
 
         public GameObject MappingUI
         {
-            get
-            {
-                return m_mappingUI;
-            }
+            get { return m_MappingUI; }
         }
 
         public void EnableMappingMode()
         {
-            if (m_mappingUI == null)
+            if (m_MappingUI == null)
             {
-                m_mappingUI = Instantiate(mappingUIPrefab);
+                m_MappingUI = Instantiate(mappingUIPrefab);
             }
             else
             {
-                m_mappingUI.SetActive(true);
+                m_MappingUI.SetActive(true);
             }
         }
 
         public void DisableMappingMode()
         {
-            if (m_mappingUI != null)
+            if (m_MappingUI != null)
             {
-                m_mappingUI.SetActive(false);
+                m_MappingUI.SetActive(false);
             }
         }
     }

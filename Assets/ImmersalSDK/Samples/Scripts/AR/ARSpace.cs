@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -15,15 +15,12 @@ namespace Immersal.AR
 {
     public class ARSpace : MonoBehaviour
     {
+        private Matrix4x4 m_InitialOffset = Matrix4x4.identity;
+
         public Matrix4x4 initialOffset
         {
-            get
-            {
-                return m_initialOffset;
-            }
+            get { return m_InitialOffset; }
         }
-
-        private Matrix4x4 m_initialOffset = Matrix4x4.identity;
 
 		public Pose ToCloudSpace(Vector3 camPos, Quaternion camRot)
 		{
@@ -50,7 +47,7 @@ namespace Immersal.AR
 
             Matrix4x4 offset = Matrix4x4.TRS(pos, rot, Vector3.one);
 
-            m_initialOffset = offset;
+            m_InitialOffset = offset;
         }
     }
 }

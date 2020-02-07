@@ -1,9 +1,9 @@
 /*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -24,403 +24,107 @@ using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using System.Runtime.InteropServices;
 using UnityEngine.Events;
+using TMPro;
 
 namespace Immersal.Samples.Mapping
 {
-	public class CoroutineJob
-	{
-		public string server;
-		public string token;
+    public class CoroutineJob
+    {
+        public IJobHost host;
 
-		public virtual IEnumerator RunJob()
-		{
-			yield return null;
-		}
-	}
+        public virtual IEnumerator RunJob()
+        {
+            yield return null;
+        }
+    }
 
-	public class CoroutineJobClear : CoroutineJob
-	{
-		public int bank;
-		public bool anchor;
-
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobClear ***************************");
-
-			SDKClearRequest r = new SDKClearRequest();
-			r.token = this.token;
-			r.bank = this.bank;
-			r.anchor = this.anchor;
-			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, server, Endpoint.CLEAR_JOB), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				Debug.Log("Response code: " + request.responseCode);
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					Debug.Log(request.downloadHandler.text);
-				}
-			}
-		}
-	}
-
-	public class CoroutineJobConstruct : CoroutineJob
-	{
-		public int bank;
-		public string name;
-
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobConstruct ***************************");
-
-			SDKConstructRequest r = new SDKConstructRequest();
-			r.token = this.token;
-			r.bank = this.bank;
-			r.name = this.name;
-			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.CONSTRUCT_MAP), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				Debug.Log("Response code: " + request.responseCode);
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					Debug.Log(request.downloadHandler.text);
-				}
-			}
-		}
-	}
-
-	public class CoroutineJobRestoreMapImages : CoroutineJob
-	{
-		public int mapId;
-
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobRestoreMapImages ***************************");
-
-			SDKRestoreMapImagesRequest r = new SDKRestoreMapImagesRequest();
-			r.token = this.token;
-			r.id = this.mapId;
-			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.RESTORE_MAP_IMAGES), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					Debug.Log(request.downloadHandler.text);
-				}
-			}
-		}
-	}
-
-	public class CoroutineJobDeleteMap : CoroutineJob
-	{
-		public int mapId;
-
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobDeleteMap ***************************");
-
-			SDKDeleteMapRequest r = new SDKDeleteMapRequest();
-			r.token = this.token;
-			r.id = this.mapId;
-			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.DELETE_MAP), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					Debug.Log(request.downloadHandler.text);
-				}
-			}
-		}
-	}
-
-	public class CoroutineJobStatus : CoroutineJob
-	{
-		public int bank;
-		public MapperStats stats;
-
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobStatus ***************************");
-
-			SDKStatusRequest r = new SDKStatusRequest();
-			r.token = this.token;
-			r.bank = this.bank;
-			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.STATUS), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					SDKStatusResult result = JsonUtility.FromJson<SDKStatusResult>(request.downloadHandler.text);
-					stats.imageCount = result.imageCount;
-				}
-			}
-		}
-	}
-
-	public class CoroutineJobCapture : CoroutineJob
-	{
-        public UnityEvent onConnect;
-        public UnityEvent onFailedToConnect;
-		public int bank;
-		public int run;
-		public int index;
-		public bool anchor;
-		public Vector4 intrinsics;
-		public Matrix4x4 rotation;
-		public Vector3 position;
-		public byte[] pixels;
-
-		public int width;
-		public int height;
-		public int channels;
-
-        public bool sessionFirstImage;
+    public class CoroutineJobClear : CoroutineJob
+    {
+        public bool anchor;
 
         public override IEnumerator RunJob()
         {
-            Debug.Log("*************************** CoroutineJobCapture ***************************");
+            Debug.Log("*************************** CoroutineJobClear ***************************");
 
-            byte[] capture = new byte[channels * width * height + 1024];
-            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+            SDKClearRequest r = new SDKClearRequest();
+            r.token = host.token;
+            r.bank = (host as Mapper).currentBank;
+            r.anchor = this.anchor;
+            string jsonString = JsonUtility.ToJson(r);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CLEAR_JOB), jsonString))
             {
-                icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
-			});
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
 
-			while (!t.IsCompleted)
-			{
-				yield return null;
-			}
+                Debug.Log("Response code: " + request.responseCode);
 
-            string encodedImage = t.Result.Item1;
-            icvCaptureInfo captureInfo = t.Result.Item2;
-
-            if (!sessionFirstImage)
-            {
-                if (captureInfo.connected == 0)
+                if (request.isNetworkError || request.isHttpError)
                 {
-                    onFailedToConnect.Invoke();
+                    Debug.LogError(request.error);
                 }
-                else
+                else if (request.responseCode == (long)HttpStatusCode.OK)
                 {
-                    onConnect.Invoke();
+                    Debug.Log(request.downloadHandler.text);
                 }
             }
+        }
+    }
 
-            SDKImageRequest imageRequest = new SDKImageRequest();
-			imageRequest.token = this.token;
-			imageRequest.run = this.run;
-			imageRequest.bank = this.bank;
-			imageRequest.index = this.index;
-			imageRequest.anchor = this.anchor;
-			imageRequest.px = position.x;
-			imageRequest.py = position.y;
-			imageRequest.pz = position.z;
-			imageRequest.r00 = rotation.m00;
-			imageRequest.r01 = rotation.m01;
-			imageRequest.r02 = rotation.m02;
-			imageRequest.r10 = rotation.m10;
-			imageRequest.r11 = rotation.m11;
-			imageRequest.r12 = rotation.m12;
-			imageRequest.r20 = rotation.m20;
-			imageRequest.r21 = rotation.m21;
-			imageRequest.r22 = rotation.m22;
-			imageRequest.fx = intrinsics.x;
-			imageRequest.fy = intrinsics.y;
-			imageRequest.ox = intrinsics.z;
-			imageRequest.oy = intrinsics.w;
-			imageRequest.b64 = encodedImage;
-
-			string jsonString = JsonUtility.ToJson(imageRequest);
-
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.CAPTURE_IMAGE), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				Debug.Log("Response code: " + request.responseCode);
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					Debug.Log(request.downloadHandler.text);
-				}
-			}
-		}
-	}
-
-	public class CoroutineJobLocalize : CoroutineJob
-	{
-		public Vector4 intrinsics;
-		public Quaternion rotation;
-		public Vector3 position;
-		public byte[] pixels;
-		public int width;
-		public int height;
-		public MapperStats stats;
-		public Transform transform;
-        public Dictionary<int, PointCloudRenderer> pcr;
+    public class CoroutineJobConstruct : CoroutineJob
+    {
+        public string name;
 
         public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobLocalize ***************************");
+        {
+            Debug.Log("*************************** CoroutineJobConstruct ***************************");
 
-			Vector3 pos = new Vector3();
-			Quaternion rot = new Quaternion();
+            SDKConstructRequest r = new SDKConstructRequest();
+            r.token = host.token;
+            r.bank = (host as Mapper).currentBank;
+            r.name = this.name;
+            string jsonString = JsonUtility.ToJson(r);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CONSTRUCT_MAP), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
 
-            Task<int> t = Task.Run(() =>
-			{
-				return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, pixels);
-			});
+                Debug.Log("Response code: " + request.responseCode);
 
-			while (!t.IsCompleted)
-			{
-				yield return null;
-			}
-
-			int mapHandle = t.Result;
-
-			if (mapHandle >= 0)
-			{
-				stats.locSucc++;
-
-				Debug.Log("*************************** Localization Succeeded ***************************");
-				Matrix4x4 cloudSpace = Matrix4x4.TRS(pos, rot, Vector3.one);
-				Matrix4x4 trackerSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
-				Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
-						  "ft 4x4\n" + trackerSpace);
-
-                Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
-
-                foreach (PointCloudRenderer p in pcr.Values)
+                if (request.isNetworkError || request.isHttpError)
                 {
-                    if (p.handle == mapHandle)
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    SDKConstructResult result = JsonUtility.FromJson<SDKConstructResult>(request.downloadHandler.text);
+                    if (result.error == "none")
                     {
-                        p.go.transform.position = m.GetColumn(3);
-                        p.go.transform.rotation = m.rotation;
-                        break;
+                        Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images", result.id, result.size));
                     }
                 }
-			}
-			else
-			{
-				stats.locFail++;
-				Debug.Log("*************************** Localization Failed ***************************");
-			}
-		}
-	}
+            }
+        }
+    }
 
-    public class CoroutineJobLocalizeServer : CoroutineJob
+    public class CoroutineJobRestoreMapImages : CoroutineJob
     {
-        public Vector4 intrinsics;
-        public Quaternion rotation;
-        public Vector3 position;
-        public byte[] pixels;
-
-        public int width;
-        public int height;
-
-        public Dictionary<int, PointCloudRenderer> pcr;
-        public MapperStats stats;
+        public int mapId;
 
         public override IEnumerator RunJob()
         {
-            Debug.Log("*************************** CoroutineJobLocalize On-Server ***************************");
+            Debug.Log("*************************** CoroutineJobRestoreMapImages ***************************");
 
-            byte[] capture = new byte[width * height + 1024];
-            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
-            {
-                icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, 1);
-                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
-            });
-
-            while (!t.IsCompleted)
-            {
-                yield return null;
-            }
-
-            string encodedImage = t.Result.Item1;
-            icvCaptureInfo captureInfo = t.Result.Item2;
-
-            SDKLocalizeRequest imageRequest = new SDKLocalizeRequest();
-            imageRequest.token = this.token;
-            imageRequest.fx = intrinsics.x;
-            imageRequest.fy = intrinsics.y;
-            imageRequest.ox = intrinsics.z;
-            imageRequest.oy = intrinsics.w;
-            imageRequest.b64 = encodedImage;
-
-            int n = pcr.Count;
-
-            imageRequest.mapIds = new SDKMapId[n];
-
-            int count = 0;
-            foreach (int id in pcr.Keys)
-            {
-                imageRequest.mapIds[count] = new SDKMapId();
-                imageRequest.mapIds[count++].id = id;
-            }
-
-            string jsonString = JsonUtility.ToJson(imageRequest);
-
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.SERVER_LOCALIZE), jsonString))
+            SDKRestoreMapImagesRequest r = new SDKRestoreMapImagesRequest();
+            r.token = host.token;
+            r.id = this.mapId;
+            string jsonString = JsonUtility.ToJson(r);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.RESTORE_MAP_IMAGES), jsonString))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
                 request.useHttpContinue = false;
@@ -434,27 +138,321 @@ namespace Immersal.Samples.Mapping
                 }
                 else if (request.responseCode == (long)HttpStatusCode.OK)
                 {
-                    SDKLocalizeResult result = JsonUtility.FromJson<SDKLocalizeResult>(request.downloadHandler.text);
+                    Debug.Log(request.downloadHandler.text);
+                }
+            }
+        }
+    }
 
-                    if (result.success)
+    public class CoroutineJobDeleteMap : CoroutineJob
+    {
+        public int mapId;
+
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobDeleteMap ***************************");
+
+            SDKDeleteMapRequest r = new SDKDeleteMapRequest();
+            r.token = host.token;
+            r.id = this.mapId;
+            string jsonString = JsonUtility.ToJson(r);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.DELETE_MAP), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    Debug.Log(request.downloadHandler.text);
+                }
+            }
+        }
+    }
+
+    public class CoroutineJobStatus : CoroutineJob
+    {
+        public override IEnumerator RunJob()
+        {
+//            Debug.Log("*************************** CoroutineJobStatus ***************************");
+
+            Mapper mapper = host as Mapper;
+            SDKStatusRequest r = new SDKStatusRequest();
+            r.token = mapper.token;
+            r.bank = mapper.currentBank;
+            string jsonString = JsonUtility.ToJson(r);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, mapper.server, Endpoint.STATUS), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    SDKStatusResult result = JsonUtility.FromJson<SDKStatusResult>(request.downloadHandler.text);
+                    mapper.stats.imageCount = result.imageCount;
+                }
+            }
+        }
+    }
+
+    public class CoroutineJobCapture : CoroutineJob
+    {
+        public int run;
+        public int index;
+        public bool anchor;
+        public Vector4 intrinsics;
+        public Matrix4x4 rotation;
+        public Vector3 position;
+        public double latitude;
+        public double longitude;
+        public double altitude;
+        public string encodedImage;
+
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobCapture ***************************");
+            Mapper mapper = host as Mapper;
+
+            SDKImageRequest imageRequest = new SDKImageRequest();
+            imageRequest.token = mapper.token;
+            imageRequest.run = this.run;
+            imageRequest.bank = mapper.currentBank;
+            imageRequest.index = this.index;
+            imageRequest.anchor = this.anchor;
+            imageRequest.px = position.x;
+            imageRequest.py = position.y;
+            imageRequest.pz = position.z;
+            imageRequest.r00 = rotation.m00;
+            imageRequest.r01 = rotation.m01;
+            imageRequest.r02 = rotation.m02;
+            imageRequest.r10 = rotation.m10;
+            imageRequest.r11 = rotation.m11;
+            imageRequest.r12 = rotation.m12;
+            imageRequest.r20 = rotation.m20;
+            imageRequest.r21 = rotation.m21;
+            imageRequest.r22 = rotation.m22;
+            imageRequest.fx = intrinsics.x;
+            imageRequest.fy = intrinsics.y;
+            imageRequest.ox = intrinsics.z;
+            imageRequest.oy = intrinsics.w;
+            imageRequest.latitude = latitude;
+            imageRequest.longitude = longitude;
+            imageRequest.altitude = altitude;
+            imageRequest.b64 = encodedImage;
+
+            string jsonString = JsonUtility.ToJson(imageRequest);
+
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, mapper.server, Endpoint.CAPTURE_IMAGE), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
+
+                Debug.Log("Response code: " + request.responseCode);
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    Debug.Log(request.downloadHandler.text);
+                }
+            }
+        }
+    }
+
+    public class CoroutineJobLocalize : CoroutineJob
+    {
+        public Vector4 intrinsics;
+        public Quaternion rotation;
+        public Vector3 position;
+        public byte[] pixels;
+        public int width;
+        public int height;
+
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobLocalize ***************************");
+
+            Mapper mapper = host as Mapper;
+            Vector3 pos = new Vector3();
+            Quaternion rot = new Quaternion();
+
+            Task<int> t = Task.Run(() =>
+            {
+                return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, pixels);
+            });
+
+            while (!t.IsCompleted)
+            {
+                yield return null;
+            }
+
+            int mapId = t.Result;
+
+            if (mapId >= 0)
+            {
+                mapper.stats.locSucc++;
+
+                Debug.Log("*************************** Localization Succeeded ***************************");
+                Matrix4x4 cloudSpace = Matrix4x4.TRS(pos, rot, Vector3.one);
+                Matrix4x4 trackerSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
+                Debug.Log("id " + mapId + "\n" +
+                          "fc 4x4\n" + cloudSpace + "\n" +
+                          "ft 4x4\n" + trackerSpace);
+
+                Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
+
+                double[] mapToecef = new double[13];
+                double[] wgs84 = new double[3];
+                Immersal.Core.MapToEcefGet(mapToecef, mapId);
+                int r = Immersal.Core.PosMapToWgs84(wgs84, pos, mapToecef);
+                mapper.vlatitude = wgs84[0];
+                mapper.vlongitude = wgs84[1];
+                mapper.valtitude = wgs84[2];
+
+                if (r == 0)
+                    mapper.lastLocalizedPose = (true, mapToecef, m.inverse, new Pose(pos, rot));
+
+                foreach (PointCloudRenderer p in mapper.pcr.Values)
+                {
+                    if (p.mapId == mapId)
                     {
-                        Matrix4x4 cloudSpace = Matrix4x4.identity;
-                        cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
-                        cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
-                        cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
+                        p.go.transform.position = m.GetColumn(3);
+                        p.go.transform.rotation = m.rotation;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                mapper.stats.locFail++;
+                Debug.Log("*************************** Localization Failed ***************************");
+            }
+        }
+    }
+
+    public class CoroutineJobLocalizeServer : CoroutineJob
+    {
+        public Vector4 intrinsics;
+        public Quaternion rotation;
+        public Vector3 position;
+        public byte[] pixels;
+        public int width;
+        public int height;
+        public int channels;
+        public double latitude = 0.0;
+        public double longitude = 0.0;
+        public double radius = 0.0;
+        public bool useGPS = false;
+
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobLocalize On-Server ***************************");
+
+            Mapper mapper = host as Mapper;
+            byte[] capture = new byte[channels * width * height + 1024];
+            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+            {
+                icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
+            });
+
+            while (!t.IsCompleted)
+            {
+                yield return null;
+            }
+
+            string encodedImage = t.Result.Item1;
+            icvCaptureInfo captureInfo = t.Result.Item2;
+
+            SDKLocalizeRequest imageRequest = this.useGPS ? new SDKGeoLocalizeRequest() : new SDKLocalizeRequest();
+            imageRequest.token = mapper.token;
+            imageRequest.fx = intrinsics.x;
+            imageRequest.fy = intrinsics.y;
+            imageRequest.ox = intrinsics.z;
+            imageRequest.oy = intrinsics.w;
+            imageRequest.b64 = encodedImage;
+
+            if (this.useGPS)
+            {
+                SDKGeoLocalizeRequest gr = imageRequest as SDKGeoLocalizeRequest;
+                gr.latitude = this.latitude;
+                gr.longitude = this.longitude;
+                gr.radius = this.radius;
+            }
+            else
+            {
+                int n = mapper.pcr.Count;
+
+                imageRequest.mapIds = new SDKMapId[n];
+
+                int count = 0;
+                foreach (int id in mapper.pcr.Keys)
+                {
+                    imageRequest.mapIds[count] = new SDKMapId();
+                    imageRequest.mapIds[count++].id = id;
+                }
+            }
+
+            string jsonString = JsonUtility.ToJson(imageRequest);
+            string endpoint = this.useGPS ? Endpoint.SERVER_GEOLOCALIZE : Endpoint.SERVER_LOCALIZE;
+
+            SDKLocalizeResult locResult = new SDKLocalizeResult();
+            locResult.success = false;
+            Matrix4x4 m = new Matrix4x4();
+            Matrix4x4 cloudSpace = new Matrix4x4();
+
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, mapper.server, endpoint), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    locResult = JsonUtility.FromJson<SDKLocalizeResult>(request.downloadHandler.text);
+
+                    if (locResult.success)
+                    {
+                        cloudSpace = Matrix4x4.identity;
+                        cloudSpace.m00 = locResult.r00; cloudSpace.m01 = locResult.r01; cloudSpace.m02 = locResult.r02; cloudSpace.m03 = locResult.px;
+                        cloudSpace.m10 = locResult.r10; cloudSpace.m11 = locResult.r11; cloudSpace.m12 = locResult.r12; cloudSpace.m13 = locResult.py;
+                        cloudSpace.m20 = locResult.r20; cloudSpace.m21 = locResult.r21; cloudSpace.m22 = locResult.r22; cloudSpace.m23 = locResult.pz;
                         Matrix4x4 trackerSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
-                        stats.locSucc++;
+                        mapper.stats.locSucc++;
 
                         Debug.Log("*************************** On-Server Localization Succeeded ***************************");
                         Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
                                   "ft 4x4\n" + trackerSpace);
 
-                        Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+                        m = trackerSpace * (cloudSpace.inverse);
 
-
-                        foreach (KeyValuePair<int, PointCloudRenderer> p in pcr)
+                        foreach (KeyValuePair<int, PointCloudRenderer> p in mapper.pcr)
                         {
-                            if (p.Key == result.map)
+                            if (p.Key == locResult.map)
                             {
                                 p.Value.go.transform.position = m.GetColumn(3);
                                 p.Value.go.transform.rotation = m.rotation;
@@ -462,12 +460,50 @@ namespace Immersal.Samples.Mapping
                             }
                         }
 
-                        Debug.Log(result.error);
+                        Debug.Log(locResult.error);
                     }
                     else
                     {
-                        stats.locFail++;
+                        mapper.stats.locFail++;
                         Debug.Log("*************************** On-Server Localization Failed ***************************");
+                    }
+                }
+            }
+
+            if (locResult.success)
+            {
+                SDKEcefRequest ecefRequest = new SDKEcefRequest();
+                ecefRequest.token = mapper.token;
+                ecefRequest.id = locResult.map;
+
+                using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, mapper.server, Endpoint.SERVER_ECEF), JsonUtility.ToJson(ecefRequest)))
+                {
+                    request.method = UnityWebRequest.kHttpVerbPOST;
+                    request.useHttpContinue = false;
+                    request.SetRequestHeader("Content-Type", "application/json");
+                    request.SetRequestHeader("Accept", "application/json");
+                    yield return request.SendWebRequest();
+
+                    if (request.isNetworkError || request.isHttpError)
+                    {
+                        Debug.LogError(request.error);
+                    }
+                    else if (request.responseCode == (long)HttpStatusCode.OK)
+                    {
+                        SDKEcefResult result = JsonUtility.FromJson<SDKEcefResult>(request.downloadHandler.text);
+
+                        Debug.Log(request.downloadHandler.text);
+                                                
+                        double[] wgs84 = new double[3];
+                        Vector3 pos = cloudSpace.GetColumn(3);
+                        Quaternion rot = cloudSpace.rotation;
+                        int r = Immersal.Core.PosMapToWgs84(wgs84, pos, result.ecef);
+                        mapper.vlatitude = wgs84[0];
+                        mapper.vlongitude = wgs84[1];
+                        mapper.valtitude = wgs84[2];
+
+                        if (r == 0)
+                            mapper.lastLocalizedPose = (true, result.ecef, m.inverse, new Pose(pos, rot));
                     }
                 }
             }
@@ -475,85 +511,96 @@ namespace Immersal.Samples.Mapping
     }
 
     public class CoroutineJobListJobs : CoroutineJob
-	{
-		public int bank;
-		public VisualizeManager visualizeManager;
-		public List<int> activeMaps;
+    {
+        public double latitude = 0.0;
+        public double longitude = 0.0;
+        public double radius = 0.0;
+        public bool useGPS = false;
+        public List<int> activeMaps;
 
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobListJobs ***************************");
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobListJobs ***************************");
 
-			SDKJobsRequest r = new SDKJobsRequest();
-			r.token = this.token;
-			r.bank = this.bank;
-			string jsonString = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LIST_JOBS), jsonString))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
+            Mapper mapper = host as Mapper;
+            SDKJobsRequest r = this.useGPS ? new SDKGeoJobsRequest() : new SDKJobsRequest();
+            r.token = mapper.token;
+            r.bank = mapper.currentBank;
 
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					SDKJobsResult result = JsonUtility.FromJson<SDKJobsResult>(request.downloadHandler.text);
+            if (this.useGPS)
+            {
+                SDKGeoJobsRequest gr = r as SDKGeoJobsRequest;
+                gr.latitude = this.latitude;
+                gr.longitude = this.longitude;
+                gr.radius = this.radius;
+            }
 
-					if (result.error == "none" && result.count > 0)
-					{
-						this.visualizeManager.SetSelectSlotData(result.jobs, activeMaps);
-					}
-				}
-			}
-		}
-	}
+            string jsonString = JsonUtility.ToJson(r);
+            string endpoint = this.useGPS ? Endpoint.LIST_GEOJOBS : Endpoint.LIST_JOBS;
 
-	public class CoroutineJobLoadMap : CoroutineJob
-	{
-		public int bank;
-		public int id;
-		public MapperStats stats;
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, mapper.server, endpoint), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    SDKJobsResult result = JsonUtility.FromJson<SDKJobsResult>(request.downloadHandler.text);
+                    if (result.error == "none")
+                    {
+                        mapper.visualizeManager.SetSelectSlotData(result.jobs, activeMaps);
+                    }
+                }
+            }
+        }
+    }
+
+    public class CoroutineJobLoadMap : CoroutineJob
+    {
+        public int id;
         public GameObject go;
-        public Dictionary<int, PointCloudRenderer> pcr;
 
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineJobLoadMap ***************************");
-			SDKMapRequest r = new SDKMapRequest();
-			r.token = this.token;
-			r.id = this.id;
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobLoadMap ***************************");
 
-			string jsonString2 = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LOAD_MAP), jsonString2))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
+            Mapper mapper = host as Mapper;
+            SDKMapRequest r = new SDKMapRequest();
+            r.token = mapper.token;
+            r.id = this.id;
 
-				//Debug.Log("Response code: " + request.responseCode);
+            string jsonString2 = JsonUtility.ToJson(r);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, mapper.server, Endpoint.LOAD_MAP), jsonString2))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                yield return request.SendWebRequest();
 
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.LogError(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					SDKMapResult result = JsonUtility.FromJson<SDKMapResult>(request.downloadHandler.text);
-					if (result.error == "none")
-					{
+                //Debug.Log("Response code: " + request.responseCode);
 
-						byte[] mapData = Convert.FromBase64String(result.b64);
-						Debug.Log("Load map " + this.id + " (" + mapData.Length + " bytes)");
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    SDKMapResult result = JsonUtility.FromJson<SDKMapResult>(request.downloadHandler.text);
+                    if (result.error == "none")
+                    {
+                        byte[] mapData = Convert.FromBase64String(result.b64);
+                        Debug.Log("Load map " + this.id + " (" + mapData.Length + " bytes)");
 
-						uint countMax = 16*1024;
-						Vector3[] vector3Array = new Vector3[countMax];
+                        uint countMax = 16*1024;
+                        Vector3[] vector3Array = new Vector3[countMax];
 
                         Task<int> t0 = Task.Run(() =>
                         {
@@ -565,13 +612,13 @@ namespace Immersal.Samples.Mapping
                             yield return null;
                         }
 
-                        int handle = t0.Result;
+                        int mapId = t0.Result;
 
-                        Debug.Log("handle " + handle);
+                        Debug.Log("mapId " + mapId);
 
                         Task<int> t1 = Task.Run(() =>
                         {
-                            return Immersal.Core.GetPointCloud(handle, vector3Array);
+                            return Immersal.Core.GetPointCloud(mapId, vector3Array);
                         });
 
                         while (!t1.IsCompleted)
@@ -581,40 +628,40 @@ namespace Immersal.Samples.Mapping
 
                         int num = t1.Result;
 
-						Debug.Log("map points: " + num);
+                        Debug.Log("map points: " + num);
 
-						PointCloudRenderer renderer = go.AddComponent<PointCloudRenderer>();
-						renderer.CreateCloud(vector3Array, num);
-						renderer.handle = handle;
-						if (!pcr.ContainsKey(id)) {
-							pcr.Add(id, renderer);
-						}
+                        PointCloudRenderer renderer = go.AddComponent<PointCloudRenderer>();
+                        renderer.CreateCloud(vector3Array, num);
+                        renderer.mapId = mapId;
+                        if (!mapper.pcr.ContainsKey(id)) {
+                            mapper.pcr.Add(id, renderer);
+                        }
 
-                        stats.locFail = 0;
-						stats.locSucc = 0;
-					}
-				}
-			}
-
-		}
-	}
+                        mapper.stats.locFail = 0;
+                        mapper.stats.locSucc = 0;
+                    }
+                }
+            }
+        }
+    }
 
     public class CoroutineJobFreeMap : CoroutineJob
     {
         public int id;
-        public Dictionary<int, PointCloudRenderer> pcr;
 
         public override IEnumerator RunJob()
         {
             Debug.Log("*************************** CoroutineJobFreeMap ***************************");
 
-            if (pcr.ContainsKey(id))
+            Mapper mapper = host as Mapper;
+
+            if (mapper.pcr.ContainsKey(id))
             {
-                int handle = pcr[id].handle;
+                int mapId = mapper.pcr[id].mapId;
 
                 Task<int> t0 = Task.Run(() =>
                 {
-                    return Immersal.Core.FreeMap(handle);
+                    return Immersal.Core.FreeMap(mapId);
                 });
 
                 while (!t0.IsCompleted)
@@ -622,380 +669,637 @@ namespace Immersal.Samples.Mapping
                     yield return null;
                 }
 
-                PointCloudRenderer p = pcr[id];
+                PointCloudRenderer p = mapper.pcr[id];
                 p.ClearCloud();
-                pcr.Remove(id);
+                mapper.pcr.Remove(id);
             }
         }
     }
 
-	public class MapperStats
-	{
-		public int queueLen;
-		public int imageCount;
-		public int locFail;
-		public int locSucc;
-	}
+    public class MapperStats
+    {
+        public int queueLen;
+        public int imageCount;
+        public int locFail;
+        public int locSucc;
+    }
 
-	public class Mapper : MonoBehaviour
-	{
-        public UnityEvent onConnect;
-        public UnityEvent onFailedToConnect;
-		public MapperStats stats = new MapperStats();
-		private bool rgbCapture = false;
-		private int bank = 0;
-		private int imageIndex = 0;
-		private uint imageRun = 0;
-		private string token = "";
-		private string server = "";
-		private List<CoroutineJob> jobs = new List<CoroutineJob>();
-		private int jobLock = 0;
-		private ImmersalARCloudSDK sdk;
-		private WorkspaceManager m_workspaceManager;
-        private VisualizeManager m_visualizeManager;
-        private AudioSource m_cameraShutterClick;
-        private Dictionary<int, PointCloudRenderer> pcr = new Dictionary<int, PointCloudRenderer>();
-        private bool sessionFirstImage = true;
+    public class Mapper : MonoBehaviour, IJobHost
+    {
+        private const double DefaultRadius = 200.0;
 
-        private IEnumerator m_updateJobList;
+        public event LoggedOut OnLogOut = null;
+        public delegate void LoggedOut();
+        public UnityEvent onConnect = null;
+        public UnityEvent onFailedToConnect = null;
 
-		public event LoggedOut OnLogOut;
-		public delegate void LoggedOut();
+        [SerializeField]
+        private TextMeshProUGUI m_LocationText = null;
+        [SerializeField]
+        private TextMeshProUGUI m_VLocationText = null;
+        [SerializeField]
+        private Toggle m_GpsToggle = null;
+        [SerializeField]
+        private GameObject m_LocationPanel = null;
 
-		private void ImageRunUpdate()
+        [HideInInspector]
+        public MapperStats stats = new MapperStats();
+        [HideInInspector]
+        public double vlatitude = 0.0;
+        [HideInInspector]
+        public double vlongitude = 0.0;
+        [HideInInspector]
+        public double valtitude = 0.0;
+        [HideInInspector]
+        public Dictionary<int, PointCloudRenderer> pcr = new Dictionary<int, PointCloudRenderer>();
+        [HideInInspector]
+        public WorkspaceManager workspaceManager;
+        [HideInInspector]
+        public VisualizeManager visualizeManager;
+        [HideInInspector]
+        public (bool valid, double[] mapToEcef, Matrix4x4 Matrix, Pose LastUpdatedPose) lastLocalizedPose = (false, new double[13], Matrix4x4.identity, Pose.identity);
+
+        private string m_Server = null;
+        private string m_Token = null;
+        private int m_Bank = 0;
+        private bool m_RgbCapture = false;
+        private int m_ImageIndex = 0;
+        private uint m_ImageRun = 0;
+        private bool m_SessionFirstImage = true;
+        private List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
+        private int m_JobLock = 0;
+        private ImmersalSDK m_Sdk;
+        private AudioSource m_CameraShutterClick;
+        private IEnumerator m_UpdateJobList;
+        private Camera m_MainCamera = null;
+        private double m_Latitude = 0.0;
+        private double m_Longitude = 0.0;
+        private double m_Altitude = 0.0;
+        private double m_Haccuracy = 0.0;
+        private double m_Vaccuracy = 0.0;
+        private bool m_bCaptureRunning = false;
+        
+		private static IDispatch Dispatch;
+
+        public string token
+        {
+            get
+            {
+                if (m_Token == null)
+                {
+                    m_Token = PlayerPrefs.GetString("token");
+                    if (m_Token == null)
+                        Debug.LogError("No valid developer token. Contact sdk@immersal.com.");
+                }
+
+                return m_Token;
+            }
+            set { m_Token = value; }
+        }
+
+        public string server
+        {
+            get
+            {
+                if (m_Server == null)
+                {
+                    m_Server = sdk.localizationServer;
+                }
+
+                return m_Server;
+            }
+            set { m_Server = value; }
+        }
+
+        public Camera mainCamera
+        {
+            get
+            {
+                if (m_MainCamera == null)
+                {
+                    m_MainCamera = Camera.main;
+                    if (m_MainCamera == null)
+                        Debug.LogError("No Camera found");
+                }
+
+                return m_MainCamera;
+            }
+        }
+
+        public bool useGPS
+        {
+            get { return Input.location.status == LocationServiceStatus.Running; }
+        }
+
+        public int currentBank
+        {
+            get { return m_Bank; }
+        }
+
+        public ImmersalSDK sdk
+        {
+            get { return m_Sdk; }
+        }
+
+		public void OnGPSToggleChanged(bool value)
 		{
-			long bin = System.DateTime.Now.ToBinary();
-			uint data = (uint)bin ^ (uint)(bin >> 32);
-			imageRun = (imageRun ^ data) * 16777619;
+            if (value)
+            {
+                Invoke("StartGPS", 0.1f);
+            }
+            else
+            {
+                Invoke("StopGPS", 0.1f);
+            }
 		}
 
-		private void SessionStateChanged(ARSessionStateChangedEventArgs args)
-		{
-			if (sdk.arSession == null)
-				return;
-			
-			ImageRunUpdate();
+        private void ImageRunUpdate()
+        {
+            long bin = System.DateTime.Now.ToBinary();
+            uint data = (uint)bin ^ (uint)(bin >> 32);
+            m_ImageRun = (m_ImageRun ^ data) * 16777619;
+        }
 
-			bool isTracking = (args.state == ARSessionState.SessionTracking && sdk.arSession.subsystem.trackingState != TrackingState.None);
-
-			var captureButton = m_workspaceManager.captureButton.GetComponent<Button>();
-			var localizeButton = m_visualizeManager.localizeButton.GetComponent<Button>();
-			captureButton.interactable = isTracking;
-			localizeButton.interactable = isTracking;
-		}
-
-		void Awake()
-		{
-			sdk = ImmersalARCloudSDK.Instance;
-            m_cameraShutterClick = GetComponent<AudioSource>();
-			m_workspaceManager = GetComponentInChildren<WorkspaceManager>();
-            m_visualizeManager = GetComponentInChildren<VisualizeManager>();
-            m_visualizeManager.OnItemSelected += OnItemSelected;
-			m_visualizeManager.OnItemDeleted += OnItemDeleted;
-			m_visualizeManager.OnItemRestored += OnItemRestored;
-            m_visualizeManager.OnSelectorOpened += OnSelectorOpened;
-            m_visualizeManager.OnSelectorClosed += OnSelectorClosed;
+        private void SessionStateChanged(ARSessionStateChangedEventArgs args)
+        {
+            if (sdk.arSession == null)
+                return;
+            
             ImageRunUpdate();
-		}
 
-		void Start()
-		{
+            bool isTracking = (args.state == ARSessionState.SessionTracking && sdk.arSession.subsystem.trackingState != TrackingState.None);
 
-		}
+            var captureButton = workspaceManager.captureButton.GetComponent<Button>();
+            var localizeButton = visualizeManager.localizeButton.GetComponent<Button>();
+            captureButton.interactable = isTracking;
+            localizeButton.interactable = isTracking;
+        }
+
+        void Awake()
+        {
+            m_Sdk = ImmersalSDK.Instance;
+            Dispatch = new MainThreadDispatch();
+            m_CameraShutterClick = GetComponent<AudioSource>();
+            workspaceManager = GetComponentInChildren<WorkspaceManager>();
+            visualizeManager = GetComponentInChildren<VisualizeManager>();
+            visualizeManager.OnItemSelected += OnItemSelected;
+            visualizeManager.OnItemDeleted += OnItemDeleted;
+            visualizeManager.OnItemRestored += OnItemRestored;
+            visualizeManager.OnSelectorOpened += OnSelectorOpened;
+            visualizeManager.OnSelectorClosed += OnSelectorClosed;
+
+            ImageRunUpdate();
+        }
+
+        void Start()
+        {
+            if ((PlayerPrefs.GetInt("use_gps", 0) == 1))
+            {
+                m_GpsToggle.isOn = true;
+            }
+        }
+
+        public void StartGPS()
+        {
+            StartCoroutine(EnableLocationServices());
+        }
+
+        public void StopGPS()
+        {
+            Input.location.Stop();
+            PlayerPrefs.SetInt("use_gps", 0);
+            NotificationManager.Instance.GenerateNotification("Geolocation tracking stopped");
+            m_LocationText.text = "";
+            m_LocationPanel.SetActive(false);
+        }
+
+        private IEnumerator EnableLocationServices()
+        {
+            // First, check if user has location service enabled
+            if (!Input.location.isEnabledByUser)
+            {
+                m_GpsToggle.SetIsOnWithoutNotify(false);
+                NotificationManager.Instance.GenerateNotification("Location services not enabled");
+                Debug.Log("Location services not enabled");
+                yield break;
+            }
+
+            // Start service before querying location
+            Input.location.Start(0.001f, 0.001f);
+
+            // Wait until service initializes
+            int maxWait = 20;
+            while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+            {
+                yield return new WaitForSeconds(1);
+                maxWait--;
+            }
+
+            // Service didn't initialize in 20 seconds
+            if (maxWait < 1)
+            {
+                m_GpsToggle.SetIsOnWithoutNotify(false);
+                NotificationManager.Instance.GenerateNotification("Location services timed out");
+                Debug.Log("Timed out");
+                yield break;
+            }
+
+            // Connection has failed
+            if (Input.location.status == LocationServiceStatus.Failed)
+            {
+                m_GpsToggle.SetIsOnWithoutNotify(false);
+                NotificationManager.Instance.GenerateNotification("Unable to determine device location");
+                Debug.Log("Unable to determine device location");
+                yield break;
+            }
+
+            if (Input.location.status == LocationServiceStatus.Running)
+            {
+                PlayerPrefs.SetInt("use_gps", 1);
+                m_LocationPanel.SetActive(true);
+                NotificationManager.Instance.GenerateNotification("Tracking geolocation");
+            }
+        }
 
         public int SwitchBank(int max_banks)
         {
-            bank = (bank + 1) % max_banks;
-            sessionFirstImage = true;
+            m_Bank = (m_Bank + 1) % max_banks;
+            m_SessionFirstImage = true;
 
-            return bank;
+            return m_Bank;
         }
 
-        public int GetCurrentBank()
+        void OnEnable()
         {
-            return bank;
+#if !UNITY_EDITOR
+            ARSession.stateChanged += SessionStateChanged;
+#endif
+
+            stats.queueLen = 0;
+            stats.imageCount = 0;
+            stats.locFail = 0;
+            stats.locSucc = 0;
+
+            StartCoroutine(StatusPoll());
+            Jobs();
         }
 
-		void OnEnable()
-		{
+        void OnDisable()
+        {
 #if !UNITY_EDITOR
-			ARSession.stateChanged += SessionStateChanged;
+            ARSession.stateChanged -= SessionStateChanged;
 #endif
 
-			SetServer();
-			SetToken();
-
-			stats.queueLen = 0;
-			stats.imageCount = 0;
-			stats.locFail = 0;
-			stats.locSucc = 0;
-
-			StartCoroutine(StatusPoll());
-			Jobs();
-}
-
-		void OnDisable()
-		{
-#if !UNITY_EDITOR
-			ARSession.stateChanged -= SessionStateChanged;
-#endif
-
-			PlayerPrefs.DeleteKey("token");
-			sdk.developerToken = null;
-		}
+            PlayerPrefs.DeleteKey("token");
+            sdk.developerToken = null;
+        }
 
         public void ToggleRGBCapture(Toggle toggle)
         {
-            rgbCapture = toggle.isOn;
+            m_RgbCapture = toggle.isOn;
         }
 
         public void ToggleVisualization(Toggle toggle)
-		{
-			PointCloudRenderer.visible = toggle.isOn;
-		}
+        {
+            PointCloudRenderer.visible = toggle.isOn;
+        }
 
         public void ToggleVisualization(bool active)
         {
             PointCloudRenderer.visible = active;
         }
 
-        public void SetToken(string aToken = null)
-		{
-			this.token = (aToken != null) ? aToken: PlayerPrefs.GetString("token");
-
-			if (this.token == null)
-			{
-				Debug.LogError("No valid developer token. Contact sdk@immersal.com.");
-			}
-		}
-
-		public void SetServer(string aServer = null)
-		{
-            this.server = (aServer != null) ? aServer : sdk.localizationServer;
+        private void OnItemSelected(SDKJob job)
+        {
+            LoadMap(job.id);
         }
 
-		private void OnItemSelected(SDKJob job)
-		{
-			LoadMap(job.id);
-		}
-
-		private void OnItemDeleted(SDKJob job)
-		{
-			DeleteMap(job.id);
-		}
-
-		private void OnItemRestored(SDKJob job)
-		{
-			RestoreMapImages(job.id);
-		}
-
-		private void OnSelectorOpened()
-		{
-			if (m_updateJobList != null)
-			{
-				StopCoroutine(m_updateJobList);
-			}
-
-			m_updateJobList = UpdateJobList();
-			StartCoroutine(m_updateJobList);
-		}
-
-		private void OnSelectorClosed()
-		{
-			if (m_updateJobList != null)
-			{
-				StopCoroutine(m_updateJobList);
-			}
-		}
-
-		IEnumerator UpdateJobList()
-		{
-			while (true)
-			{
-				Jobs();
-				yield return new WaitForSeconds(3f);
-			}
-		}
-
-		IEnumerator StatusPoll()
-		{
-			CoroutineJobStatus j = new CoroutineJobStatus();
-			j.server = this.server;
-			j.token = this.token;
-			j.bank = this.bank;
-			j.stats = this.stats;
-
-			yield return StartCoroutine(j.RunJob());
-			yield return new WaitForSeconds(3);
-			StartCoroutine(StatusPoll());
-		}
-
-		private IEnumerator RunJob(CoroutineJob j)
-		{
-			yield return StartCoroutine(j.RunJob());
-			jobs.RemoveAt(0);
-			jobLock = 0;
-		}
-
-		public MapperStats Stats()
-		{
-			return stats;
-		}
-
-		void Update()
-		{
-			stats.queueLen = jobs.Count;
-
-			if (jobLock == 1)
-				return;
-			if (jobs.Count > 0) {
-				jobLock = 1;
-				StartCoroutine(RunJob(jobs[0]));
-			}
-		}
-
-		public void DeleteMap(int mapId)
-		{
-			CoroutineJobDeleteMap j = new CoroutineJobDeleteMap();
-			j.server = this.server;
-			j.token = this.token;
-			j.mapId = mapId;
-			jobs.Add(j);
-		}
-
-		public void RestoreMapImages(int mapId)
-		{
-			CoroutineJobRestoreMapImages j = new CoroutineJobRestoreMapImages();
-			j.server = this.server;
-			j.token = this.token;
-			j.mapId = mapId;
-			jobs.Add(j);
-			sessionFirstImage = true;
-		}
-
-		public void ResetMapperPictures()
-		{
-			CoroutineJobClear j = new CoroutineJobClear();
-			j.server = this.server;
-			j.token = this.token;
-			j.bank = this.bank;
-			j.anchor = false;
-			jobs.Add(j);
-
-            sessionFirstImage = true;
+        private void OnItemDeleted(SDKJob job)
+        {
+            DeleteMap(job.id);
         }
 
-		public void ResetMapperAll()
-		{
-			CoroutineJobClear j = new CoroutineJobClear();
-			j.server = this.server;
-			j.token = this.token;
-			j.bank = this.bank;
-			j.anchor = true;
-			jobs.Add(j);
-
-            sessionFirstImage = true;
+        private void OnItemRestored(SDKJob job)
+        {
+            RestoreMapImages(job.id);
         }
 
-		public void Construct()
-		{
-			CoroutineJobConstruct j = new CoroutineJobConstruct();
-			j.server = this.server;
-			j.token = this.token;
-			j.bank = this.bank;
-			j.name = m_workspaceManager.newMapName.text;
-			jobs.Add(j);
-		}
+        private void OnSelectorOpened()
+        {
+            if (m_UpdateJobList != null)
+            {
+                StopCoroutine(m_UpdateJobList);
+            }
 
-		private IEnumerator Capture(bool anchor)
-		{
-			yield return new WaitForSeconds(0.25f);
+            m_UpdateJobList = UpdateJobList();
+            StartCoroutine(m_UpdateJobList);
+        }
 
-			XRCameraImage image;
-			ARCameraManager cameraManager = sdk.cameraManager;
-			var cameraSubsystem = cameraManager.subsystem;
+        private void OnSelectorClosed()
+        {
+            if (m_UpdateJobList != null)
+            {
+                StopCoroutine(m_UpdateJobList);
+            }
+        }
 
-			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
-			{
-				CoroutineJobCapture j = new CoroutineJobCapture();
-                j.onConnect = onConnect;
-                j.onFailedToConnect = onFailedToConnect;
-                j.server = this.server;
-				j.token = this.token;
-				j.bank = this.bank;
-				j.run = (int)(this.imageRun & 0xEFFFFFFF);
-				j.index = this.imageIndex++;
-				j.anchor = anchor;
+        IEnumerator UpdateJobList()
+        {
+            while (true)
+            {
+                Jobs();
+                yield return new WaitForSeconds(3f);
+            }
+        }
 
-				Camera cam = Camera.main;
-				Quaternion _q = cam.transform.rotation;
-				Matrix4x4 r = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
-				Vector3 _p = cam.transform.position;
-				Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
-				j.rotation = r;
-				j.position = p;
-				j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
-				j.width = image.width;
-				j.height = image.height;
+        IEnumerator StatusPoll()
+        {
+            CoroutineJobStatus j = new CoroutineJobStatus();
+            j.host = this;
 
-				if (rgbCapture)
-				{
-					ARHelper.GetPlaneDataRGB(out j.pixels, image);
-					j.channels = 3;
-				}
-				else
-				{
-					ARHelper.GetPlaneData(out j.pixels, image);
-					j.channels = 1;
-				}
+            yield return StartCoroutine(j.RunJob());
+            yield return new WaitForSeconds(3);
+            StartCoroutine(StatusPoll());
+        }
 
-                j.sessionFirstImage = sessionFirstImage;
-                if (sessionFirstImage)
-                    sessionFirstImage = false;
+        private IEnumerator RunJob(CoroutineJob j)
+        {
+            yield return StartCoroutine(j.RunJob());
+            m_Jobs.RemoveAt(0);
+            m_JobLock = 0;
+        }
 
-                jobs.Add(j);
-				image.Dispose();
+        public MapperStats Stats()
+        {
+            return stats;
+        }
 
-				m_cameraShutterClick.Play();
-			}
-		}
+        void UpdateLocation()
+        {
+            if (Input.location.status == LocationServiceStatus.Running)
+            {
+                m_Latitude = Input.location.lastData.latitude;
+                m_Longitude = Input.location.lastData.longitude;
+                m_Altitude = Input.location.lastData.altitude;
+                m_Haccuracy = Input.location.lastData.horizontalAccuracy;
+                m_Vaccuracy = Input.location.lastData.verticalAccuracy;
 
-		public void Capture()
-		{
-			StartCoroutine(Capture(false));
-		}
+                string txt = string.Format("lat: {0}, lon: {1}, alt: {2}\nhacc: {3}, vacc: {4}", 
+                                m_Latitude.ToString("0.00000"), 
+                                m_Longitude.ToString("0.00000"), 
+                                m_Altitude.ToString("0.00"), 
+                                m_Haccuracy.ToString("0.00"), 
+                                m_Vaccuracy.ToString("0.00"));
+                m_LocationText.text = txt;
+            }
 
-		public void Anchor()
-		{
-			StartCoroutine(Capture(true));
-		}
+            string txt2 = string.Format("VLat: {0}, VLon: {1}, VAlt: {2}", 
+                            vlatitude.ToString("0.00000"),
+                            vlongitude.ToString("0.00000"),
+                            valtitude.ToString("0.00"));
+            m_VLocationText.text = txt2;
 
-		public void Localize()
-		{
+            if (lastLocalizedPose.valid)
+            {
+                Camera cam = this.mainCamera;
+                Matrix4x4 trackerSpace = Matrix4x4.TRS(cam.transform.position, cam.transform.rotation, Vector3.one);
+                Matrix4x4 m = lastLocalizedPose.Matrix * trackerSpace;
+                Vector3 pos = m.GetColumn(3);
+
+                double[] wgs84 = new double[3];
+                int r = Immersal.Core.PosMapToWgs84(wgs84, pos, lastLocalizedPose.mapToEcef);
+                vlatitude = wgs84[0];
+                vlongitude = wgs84[1];
+                valtitude = wgs84[2];
+
+                lastLocalizedPose.LastUpdatedPose.position = pos;
+                lastLocalizedPose.LastUpdatedPose.rotation = m.rotation;
+            }
+        }
+
+        public string GetVGPSData()
+        {
+            string data = null;
+
+            if (this.useGPS && lastLocalizedPose.valid)
+            {
+                Vector3 vgpsCloudPos = lastLocalizedPose.LastUpdatedPose.position;
+                double[] ecef = new double[13];
+                double[] wgs84 = new double[3] { m_Latitude, m_Longitude, m_Altitude };
+                int r = Immersal.Core.PosWgs84ToEcef(ecef, wgs84);
+                Vector3 gpsCloudPos = Vector3.zero;
+                int r2 = Immersal.Core.PosEcefToMap(out gpsCloudPos, ecef, lastLocalizedPose.mapToEcef);
+                data = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}", vgpsCloudPos.x.ToString("0.00000"), vgpsCloudPos.y.ToString("0.00000"), vgpsCloudPos.z.ToString("0.00000"),
+                    gpsCloudPos.x.ToString("0.00000"), gpsCloudPos.y.ToString("0.00000"), gpsCloudPos.z.ToString("0.00000"), wgs84[0].ToString("0.00000"), wgs84[1].ToString("0.00000"), wgs84[2].ToString("0.00000"));
+            }
+
+            return data;
+        }
+
+        void Update()
+        {
+            UpdateLocation();
+
+            stats.queueLen = m_Jobs.Count;
+
+            if (m_JobLock == 1)
+                return;
+            if (m_Jobs.Count > 0)
+            {
+                m_JobLock = 1;
+                StartCoroutine(RunJob(m_Jobs[0]));
+            }
+        }
+
+        public void DeleteMap(int mapId)
+        {
+            CoroutineJobDeleteMap j = new CoroutineJobDeleteMap();
+            j.host = this;
+            j.mapId = mapId;
+            m_Jobs.Add(j);
+        }
+
+        public void RestoreMapImages(int mapId)
+        {
+            CoroutineJobRestoreMapImages j = new CoroutineJobRestoreMapImages();
+            j.host = this;
+            j.mapId = mapId;
+            m_Jobs.Add(j);
+
+            m_SessionFirstImage = true;
+        }
+
+        public void ResetMapperPictures()
+        {
+            CoroutineJobClear j = new CoroutineJobClear();
+            j.host = this;
+            j.anchor = false;
+            m_Jobs.Add(j);
+
+            m_SessionFirstImage = true;
+        }
+
+        public void ResetMapperAll()
+        {
+            CoroutineJobClear j = new CoroutineJobClear();
+            j.host = this;
+            j.anchor = true;
+            m_Jobs.Add(j);
+
+            m_SessionFirstImage = true;
+        }
+
+        public void Construct()
+        {
+            CoroutineJobConstruct j = new CoroutineJobConstruct();
+            j.host = this;
+            j.name = workspaceManager.newMapName.text;
+            m_Jobs.Add(j);
+        }
+
+        public void NotifyIfConnected(icvCaptureInfo info)
+        {
+            Dispatch.Dispatch(() => {
+                if (!m_SessionFirstImage)
+                {
+                    if (info.connected == 0)
+                    {
+                        this.onFailedToConnect?.Invoke();
+                    }
+                    else
+                    {
+                        this.onConnect?.Invoke();
+                    }
+                }
+            });
+        }
+
+        private IEnumerator Capture(bool anchor)
+        {
+            m_bCaptureRunning = true;
+//            yield return new WaitForSeconds(0.25f);
+
             XRCameraImage image;
-			ARCameraManager cameraManager = sdk.cameraManager;
-			var cameraSubsystem = cameraManager.subsystem;
+            ARCameraManager cameraManager = sdk.cameraManager;
+            var cameraSubsystem = cameraManager.subsystem;
 
-			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
-			{
-				CoroutineJobLocalize j = new CoroutineJobLocalize();
-                Camera cam = Camera.main;
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+            {
+                CoroutineJobCapture j = new CoroutineJobCapture();
+                j.host = this;
+                j.run = (int)(m_ImageRun & 0xEFFFFFFF);
+                j.index = m_ImageIndex++;
+                j.anchor = anchor;
+
+                Camera cam = this.mainCamera;
+                Quaternion _q = cam.transform.rotation;
+                Matrix4x4 r = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
+                Vector3 _p = cam.transform.position;
+                Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
+                j.rotation = r;
+                j.position = p;
+                j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
+
+                byte[] pixels;
+                int channels = 0;
+
+                if (m_RgbCapture)
+                {
+                    ARHelper.GetPlaneDataRGB(out pixels, image);
+                    channels = 3;
+                }
+                else
+                {
+                    ARHelper.GetPlaneData(out pixels, image);
+                    channels = 1;
+                }
+
+                byte[] capture = new byte[channels * image.width * image.height + 1024];
+
+                Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+                {
+                    icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, image.width, image.height, channels);
+                    return (Convert.ToBase64String(capture, 0, info.captureSize), info);
+                });
+
+                while (!t.IsCompleted)
+                {
+                    yield return null;
+                }
+
+                j.encodedImage = t.Result.Item1;
+                NotifyIfConnected(t.Result.Item2);
+
+                if (m_SessionFirstImage)
+                    m_SessionFirstImage = false;
+
+                if (useGPS)
+                {
+                    j.latitude = m_Latitude;
+                    j.longitude = m_Longitude;
+                    j.altitude = m_Altitude;
+                }
+                else
+                {
+                    j.latitude = j.longitude = j.altitude = 0.0;
+                }
+
+                m_Jobs.Add(j);
+                image.Dispose();
+            }
+
+            m_bCaptureRunning = false;
+            var captureButton = workspaceManager.captureButton.GetComponent<Button>();
+            captureButton.interactable = true;
+        }
+
+        public void Capture()
+        {
+            if (!m_bCaptureRunning)
+            {
+                var captureButton = workspaceManager.captureButton.GetComponent<Button>();
+                captureButton.interactable = false;
+                m_CameraShutterClick.Play();
+                StartCoroutine(Capture(false));
+            }
+        }
+
+        public void Anchor()
+        {
+            if (!m_bCaptureRunning)
+            {
+                m_CameraShutterClick.Play();
+                StartCoroutine(Capture(true));
+            }
+        }
+
+        public void Localize()
+        {
+            XRCameraImage image;
+            ARCameraManager cameraManager = sdk.cameraManager;
+            var cameraSubsystem = cameraManager.subsystem;
+
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+            {
+                CoroutineJobLocalize j = new CoroutineJobLocalize();
+                Camera cam = this.mainCamera;
                 j.rotation = cam.transform.rotation;
-				j.position = cam.transform.position;
-				j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
-				j.width = image.width;
-				j.height = image.height;
-				j.stats = this.stats;
-                j.pcr = this.pcr;
+                j.position = cam.transform.position;
+                j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
+                j.width = image.width;
+                j.height = image.height;
+                j.host = this;
 
-				ARHelper.GetPlaneData(out j.pixels, image);
-				jobs.Add(j);
-				image.Dispose();
-			}
-		}
+                ARHelper.GetPlaneData(out j.pixels, image);
+                m_Jobs.Add(j);
+                image.Dispose();
+            }
+        }
 
         public void LocalizeServer()
         {
+            bool rgb = false;   // enable for localization with RGB24 images
+
             ARCameraManager cameraManager = sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
@@ -1003,67 +1307,82 @@ namespace Immersal.Samples.Mapping
             if (cameraSubsystem.TryGetLatestImage(out image))
             {
                 CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
-                j.server = this.server;
-                j.token = this.token;
+                j.host = this;
 
-                Camera cam = Camera.main;
+                if (this.useGPS)
+                {
+                    j.useGPS = true;
+                    j.latitude = m_Latitude;
+                    j.longitude = m_Longitude;
+                    j.radius = DefaultRadius;
+                }
+
+                Camera cam = this.mainCamera;
                 j.rotation = cam.transform.rotation;
                 j.position = cam.transform.position;
                 j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
                 j.width = image.width;
                 j.height = image.height;
-                j.stats = this.stats;
-                j.pcr = this.pcr;
 
-				ARHelper.GetPlaneData(out j.pixels, image);
-                jobs.Add(j);
+                if (rgb)
+                {
+                    ARHelper.GetPlaneDataRGB(out j.pixels, image);
+                    j.channels = 3;
+                }
+                else
+                {
+                    ARHelper.GetPlaneData(out j.pixels, image);
+                    j.channels = 1;
+                }
+
+                m_Jobs.Add(j);
                 image.Dispose();
             }
         }
 
         public void LoadMap(int mapId)
-		{
+        {
             if (pcr.ContainsKey(mapId))
             {
                 CoroutineJobFreeMap jf = new CoroutineJobFreeMap();
+                jf.host = this;
                 jf.id = mapId;
-                jf.pcr = pcr;
-                jobs.Add(jf);
+                m_Jobs.Add(jf);
                 return;
             }
 
             CoroutineJobLoadMap j = new CoroutineJobLoadMap();
-			j.server = this.server;
-			j.token = this.token;
-			j.id = mapId;
-			j.bank = this.bank;
-			j.stats = this.stats;
+            j.host = this;
+            j.id = mapId;
             j.go = gameObject;
-            j.pcr = pcr;
-            jobs.Add(j);
-		}
+            m_Jobs.Add(j);
+        }
 
-		public void Jobs()
-		{
-			CoroutineJobListJobs j = new CoroutineJobListJobs();
-			j.server = this.server;
-			j.token = this.token;
-			j.bank = this.bank;
-			j.visualizeManager = this.m_visualizeManager;
-			j.activeMaps = new List<int>();
-			foreach (int id in pcr.Keys)
-			{
-				j.activeMaps.Add(id);
-			}
-			jobs.Add(j);
-		}
+        public void Jobs()
+        {
+            CoroutineJobListJobs j = new CoroutineJobListJobs();
+            j.host = this;
+            j.activeMaps = new List<int>();
 
-		public void Logout()
-		{
-			if (OnLogOut != null)
-			{
-				OnLogOut();
-			}
-		}
-	}
+            if (this.useGPS)
+            {
+                j.useGPS = true;
+                j.latitude = m_Latitude;
+                j.longitude = m_Longitude;
+                j.radius = DefaultRadius;
+            }
+
+            foreach (int id in pcr.Keys)
+            {
+                j.activeMaps.Add(id);
+            }
+
+            m_Jobs.Add(j);
+        }
+
+        public void Logout()
+        {
+            OnLogOut?.Invoke();
+        }
+    }
 }

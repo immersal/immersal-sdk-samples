@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -53,7 +53,7 @@ namespace Immersal.Samples.Mapping
             m_TextMeshProUGUI.text = text;
 
             Sprite icon = m_InfoIcon;
-            int iconSize = 96;
+            int iconSize = 64;
 
             switch (notificationType)
             {
@@ -79,7 +79,7 @@ namespace Immersal.Samples.Mapping
             Vector2 size = m_TextMeshProUGUI.GetPreferredValues(m_TextMeshProUGUI.text);
 
             float lines = Mathf.Ceil(size.x / m_MaxWidth);
-            int width = Mathf.Max(Mathf.Min((int)size.x, m_MaxWidth), m_MinWidth) + iconSize;
+            int width = Mathf.Max(Mathf.Min((int)size.x, m_MaxWidth), m_MinWidth) + 3 * iconSize;
             int height = Mathf.Max(Mathf.Min((int)(size.y * lines), m_MaxHeight), m_MinHeight) + m_Padding;
 
             m_RectTransform.sizeDelta = new Vector2(width, height);

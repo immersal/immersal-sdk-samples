@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -42,13 +42,13 @@ namespace Immersal.AR
 		[SerializeField]
 		private bool m_Downsample = false;
 		[SerializeField]
-		private TextMeshProUGUI m_debugText = null;
-		private ImmersalARCloudSDK m_Sdk;
+		private TextMeshProUGUI m_DebugText = null;
+		private ImmersalSDK m_Sdk;
 		private bool m_bIsTracking = false;
 		private bool m_bIsLocalizing = false;
 		private bool m_bHighFrequencyMode = true;
 		private float m_LastLocalizeTime = 0.0f;
-		private LocalizerStats m_stats = new LocalizerStats();
+		private LocalizerStats m_Stats = new LocalizerStats();
 		private float m_WarpThresholdDistSq = 5.0f * 5.0f;
 		private float m_WarpThresholdCosAngle = Mathf.Cos(20.0f * Mathf.PI / 180.0f);
         static private Dictionary<Transform, SpaceContainer> m_TransformToSpace = new Dictionary<Transform, SpaceContainer>();
@@ -66,7 +66,7 @@ namespace Immersal.AR
 
 		public LocalizerStats stats
 		{
-			get { return m_stats; }
+			get { return m_Stats; }
 		}
 
 		private void ARSessionStateChanged(ARSessionStateChangedEventArgs args)
@@ -84,7 +84,7 @@ namespace Immersal.AR
 
 		void Start()
 		{
-			m_Sdk = ImmersalARCloudSDK.Instance;
+			m_Sdk = ImmersalSDK.Instance;
 #if !UNITY_EDITOR
 			SetDownsample();
 #endif
@@ -108,7 +108,7 @@ namespace Immersal.AR
 		{
 			if (downsample)
 			{
-				Native.icvSetInteger("LocalizationMaxPixels", 1280*720);
+				Immersal.Core.SetInteger("LocalizationMaxPixels", 1280*720);
 			}
 		}
 
@@ -156,7 +156,7 @@ namespace Immersal.AR
 					float elapsedTime = Time.realtimeSinceStartup - m_LastLocalizeTime;
 					m_bIsLocalizing = true;
 					StartCoroutine(Localize());
-					if (m_stats.localizationSuccessCount == 10 || elapsedTime >= 15f)
+					if (m_Stats.localizationSuccessCount == 10 || elapsedTime >= 15f)
 					{
 						m_bHighFrequencyMode = false;
 					}
@@ -180,7 +180,7 @@ namespace Immersal.AR
 			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
 			{
 				Camera cam = Camera.main;
-				m_stats.localizationAttemptCount++;
+				m_Stats.localizationAttemptCount++;
 				Vector3 camPos = cam.transform.position;
 				Quaternion camRot = cam.transform.rotation;
 				Vector4 intrinsics = ARHelper.GetIntrinsics(cameraManager);
@@ -207,28 +207,28 @@ namespace Immersal.AR
 					yield return null;
 				}
 
-                int mapHandle = t.Result;
+                int mapId = t.Result;
 
-                if (mapHandle >= 0 && m_MapIdToOffset.ContainsKey(mapHandle))
+                if (mapId >= 0 && m_MapIdToOffset.ContainsKey(mapId))
                 {
 					ARHelper.GetRotation(ref rot);
-                    MapOffset mo = m_MapIdToOffset[mapHandle];
+                    MapOffset mo = m_MapIdToOffset[mapId];
                     float elapsedTime = Time.realtimeSinceStartup - startTime;
                     Debug.Log(string.Format("Relocalised in {0} seconds", elapsedTime));
-                    m_stats.localizationSuccessCount++;
+                    m_Stats.localizationSuccessCount++;
                     Matrix4x4 cloudSpace = mo.offset*Matrix4x4.TRS(pos, rot, Vector3.one);
                     Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
                     Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
                     mo.space.filter.RefinePose(m);
                 }
 
-                if (m_debugText != null)
+                if (m_DebugText != null)
 				{
-					m_debugText.text = string.Format("Successful localizations: {0}/{1}", m_stats.localizationSuccessCount, m_stats.localizationAttemptCount);
+					m_DebugText.text = string.Format("Successful localizations: {0}/{1}", m_Stats.localizationSuccessCount, m_Stats.localizationAttemptCount);
 				}
 				else
 				{
-					Debug.Log(string.Format("Successful localizations: {0}/{1}", m_stats.localizationSuccessCount, m_stats.localizationAttemptCount));
+					Debug.Log(string.Format("Successful localizations: {0}/{1}", m_Stats.localizationSuccessCount, m_Stats.localizationAttemptCount));
 				}
 			}
 			m_bIsLocalizing = false;

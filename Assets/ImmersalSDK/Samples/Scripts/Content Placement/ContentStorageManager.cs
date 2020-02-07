@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -30,7 +30,8 @@ namespace Immersal.Samples.ContentPlacement
         private List<Vector3> m_Positions = new List<Vector3>();
 
         [System.Serializable]
-        public struct Savefile {
+        public struct Savefile
+        {
             public List<Vector3> positions;
         }
 
@@ -46,7 +47,7 @@ namespace Immersal.Samples.ContentPlacement
 #endif
                 if (instance == null)
                 {
-                    Debug.LogError("No NavigationManager instance found. Ensure one exists in the scene.");
+                    Debug.LogError("No ContentStorageManager instance found. Ensure one exists in the scene.");
                 }
                 return instance;
             }
@@ -62,12 +63,12 @@ namespace Immersal.Samples.ContentPlacement
             }
             if (instance != this)
             {
-                Debug.LogError("There must be only one NavigationManager object in a scene.");
+                Debug.LogError("There must be only one ContentStorageManager object in a scene.");
                 UnityEngine.Object.DestroyImmediate(this);
                 return;
             }
 
-            if(m_ARSpace == null)
+            if (m_ARSpace == null)
             {
                 m_ARSpace = GameObject.FindObjectOfType<Immersal.AR.ARSpace>();
             }

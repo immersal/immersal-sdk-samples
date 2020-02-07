@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -24,7 +24,7 @@ namespace Immersal.Samples.Mapping
 		[SerializeField]
 		public MappingUIComponent statsBox = null;
 		[SerializeField]
-		private GameObject tollsScrollList = null;
+		private GameObject toolsScrollList = null;
 		[SerializeField]
 		private GameObject promptDeleteData = null;
 		[SerializeField]
@@ -32,7 +32,7 @@ namespace Immersal.Samples.Mapping
 		[SerializeField]
 		public TMP_InputField newMapName = null;
 
-		private IEnumerator m_ClosePanel = null;
+//		private IEnumerator m_ClosePanel = null;
 
 		private enum UIState { Default, Tools, DeleteData, SubmitNewMap };
 		private UIState uiState = UIState.Default;
@@ -66,20 +66,24 @@ namespace Immersal.Samples.Mapping
 
 		public void HandleToggle()
 		{
+			/*
 			if (m_ClosePanel != null)
 			{
 				StopCoroutine(m_ClosePanel);
 			}
 			m_ClosePanel = ClosePanel();
 			StartCoroutine(m_ClosePanel);
+			*/
 		}
 
+		/*
 		IEnumerator ClosePanel()
 		{
 			yield return new WaitForSeconds(1.5f);
 			DefaultView();
 			yield return null;
 		}
+		*/
 
 		public void DefaultView() {
 			uiState = UIState.Default;
@@ -92,7 +96,7 @@ namespace Immersal.Samples.Mapping
 					toolsButton.Activate();
 					captureButton.Activate();
 					statsBox.Activate();
-					tollsScrollList.SetActive(false);
+					toolsScrollList.SetActive(false);
 					promptDeleteData.SetActive(false);
 					promptSubmitMap.SetActive(false);
 					statsBox.gameObject.SetActive(true);
@@ -101,7 +105,7 @@ namespace Immersal.Samples.Mapping
 					toolsButton.Activate();
 					captureButton.Disable();
 					statsBox.Disable();
-					tollsScrollList.SetActive(true);
+					toolsScrollList.SetActive(true);
 					promptDeleteData.SetActive(false);
 					promptSubmitMap.SetActive(false);
 					statsBox.gameObject.SetActive(true);
@@ -110,7 +114,7 @@ namespace Immersal.Samples.Mapping
 					toolsButton.Disable();
 					captureButton.Disable();
 					statsBox.Disable();
-					tollsScrollList.SetActive(false);
+					toolsScrollList.SetActive(false);
 					promptDeleteData.SetActive(true);
 					promptSubmitMap.SetActive(false);
 					statsBox.gameObject.SetActive(true);
@@ -119,7 +123,7 @@ namespace Immersal.Samples.Mapping
 					toolsButton.Disable();
 					captureButton.Disable();
 					statsBox.Disable();
-					tollsScrollList.SetActive(false);
+					toolsScrollList.SetActive(false);
 					promptDeleteData.SetActive(false);
 					promptSubmitMap.SetActive(true);
 					statsBox.gameObject.SetActive(true);

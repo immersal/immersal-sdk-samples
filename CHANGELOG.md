@@ -4,6 +4,26 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.3] - 2020-02-07
+### Added
+- Plugin, Server, Mapper sample: GPS support. When the GPS toggle is on, the list of maps will be populated only by maps generated within a 200 meter radius. When mapping (taking pictures), the latitude/longitude/altitude is saved with the image and used to create a geopose for the constructed map. Also, the on-server localizer accepts lat/lon as parameters for faster retrieval of the map to relocalize against to.
+- Plugin, Server, Mapper sample: Visual GPS (VGPS) / geopose support. If geopose data is saved with the map, the localize functions will return the device's geolocation (GPS latitude/longitude/altitude coordinates). This is approximately 10.000 times faster than satellite-based GPS, more accurate, and works indoors! As an added benefit, there is no need to have Location Services enabled. Geopose (geolocation with orientation) can also be calculated.
+- On-server localizer now accepts RGB24 images, too. Might be useful with Web AR / headsets, if an 8-bit grayscale PNG is not available or is too costly to generate.
+- Developer Portal and Mapper sample: Added support for a 'sparse' processing state. Generated maps are downloadable as `.bytes` and `sparse.ply` files at this point and relocalization is possible. The `dense.ply` will be generated in the background and will be available on the Developer Portal when the processing state is "done". This will speed up the map generation a lot!
+- Increased the accuracy of dense map point cloud files.
+
+### Fixed
+- `ARLocalizer.cs`: "Burst mode" is now also run when the app enters foreground.
+- `ARLocalizer.cs` and `ARHelper.cs`: Fixed rotation for different screen orientations, so you can publish in portrait/landscape/auto.
+- Plugin: Localizer returns -1 handle if no maps are loaded.
+
+### Changed
+- Renamed Immersal AR Cloud SDK to just Immersal SDK.
+- Samples: Updated project to Unity 2019.2.20f1.
+- Samples: Added dependency to AR Foundation 3.0.1.
+- Changed `mapHandle` in the core and samples scripts to `mapId`, as the localizer now returns the real database ID for the map (if available).
+- Map format: Maps generated with the SDK v1.3 are not compatible with earlier versions of the SDK. However, maps generated with older versions continue to work with v1.3.
+
 ## [1.2] - 2019-10-16
 ### Added
 - Developer Portal: Map stitching; you can select multiple maps and combine them into one new map (assuming the maps have overlapping features).

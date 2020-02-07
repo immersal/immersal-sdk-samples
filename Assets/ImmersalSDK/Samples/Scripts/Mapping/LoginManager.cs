@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -25,21 +25,20 @@ namespace Immersal.Samples.Mapping
         public TMP_InputField passwordField;
         public TextMeshProUGUI loginErrorText;
         public float fadeOutTime = 1f;
-        private IEnumerator m_fadeAlpha;
-        private CanvasGroup m_canvasGroup;
-        private string m_server;
-        private ImmersalARCloudSDK m_sdkSettings;
-        private ToggleMappingMode m_toggleMappingMode;
+
+        private IEnumerator m_FadeAlpha;
+        private CanvasGroup m_CanvasGroup;
+        private ImmersalSDK m_Sdk;
+        private ToggleMappingMode m_ToggleMappingMode;
 
         void Start()
         {
-            m_sdkSettings = ImmersalARCloudSDK.Instance;
-            m_server = m_sdkSettings.localizationServer;
+            m_Sdk = ImmersalSDK.Instance;
 
-            m_canvasGroup = loginPanel.GetComponent<CanvasGroup>();
-            m_toggleMappingMode = loginPanel.GetComponent<ToggleMappingMode>();
+            m_CanvasGroup = loginPanel.GetComponent<CanvasGroup>();
+            m_ToggleMappingMode = loginPanel.GetComponent<ToggleMappingMode>();
 
-            Invoke("FillFields", 0.5f);
+            Invoke("FillFields", 0.1f);
         }
 
         void FillFields()
@@ -65,9 +64,8 @@ namespace Immersal.Samples.Mapping
             loginErrorText.gameObject.SetActive(false);
 
             string jsonString = JsonUtility.ToJson(loginRequest);
-            //Debug.Log("jsonString: " + jsonString);
             byte[] myData = System.Text.Encoding.UTF8.GetBytes(jsonString);
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, m_server, Endpoint.LOGIN), jsonString))
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, m_Sdk.localizationServer, Endpoint.LOGIN), jsonString))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -96,13 +94,13 @@ namespace Immersal.Samples.Mapping
                     if (loginResult.error == "none")
                     {
                         PlayerPrefs.SetString("token", loginResult.token);
-                        m_sdkSettings.developerToken = loginResult.token;
+                        m_Sdk.developerToken = loginResult.token;
 
-                        m_toggleMappingMode.EnableMappingMode();
+                        m_ToggleMappingMode.EnableMappingMode();
 
-                        if (m_toggleMappingMode.MappingUI != null)
+                        if (m_ToggleMappingMode.MappingUI != null)
                         {
-                            m_toggleMappingMode.MappingUI.GetComponent<Mapper>().OnLogOut += OnLogOut;
+                            m_ToggleMappingMode.MappingUI.GetComponent<Mapper>().OnLogOut += OnLogOut;
                         }
 
                         loginErrorText.gameObject.SetActive(false);
@@ -120,29 +118,29 @@ namespace Immersal.Samples.Mapping
 
         private void OnLogOut()
         {
-            m_toggleMappingMode.MappingUI.GetComponent<Mapper>().OnLogOut -= OnLogOut;
-            m_toggleMappingMode.DisableMappingMode();
-            m_canvasGroup.alpha = 1;
+            m_ToggleMappingMode.MappingUI.GetComponent<Mapper>().OnLogOut -= OnLogOut;
+            m_ToggleMappingMode.DisableMappingMode();
+            m_CanvasGroup.alpha = 1;
             loginPanel.SetActive(true);
         }
 
 		private void FadeOut()
 		{
-			if (m_fadeAlpha != null)
+			if (m_FadeAlpha != null)
 			{
-				StopCoroutine(m_fadeAlpha);
+				StopCoroutine(m_FadeAlpha);
 			}
-			m_fadeAlpha = FadeAlpha();
-			StartCoroutine(m_fadeAlpha);
+			m_FadeAlpha = FadeAlpha();
+			StartCoroutine(m_FadeAlpha);
 		}
 
 		IEnumerator FadeAlpha()
 		{
-			m_canvasGroup.alpha = 1f;
+			m_CanvasGroup.alpha = 1f;
 			yield return new WaitForSeconds(0.1f);
-			while (m_canvasGroup.alpha > 0)
+			while (m_CanvasGroup.alpha > 0)
 			{
-				m_canvasGroup.alpha -= Time.deltaTime / fadeOutTime;
+				m_CanvasGroup.alpha -= Time.deltaTime / fadeOutTime;
 				yield return null;
 			}
             loginPanel.SetActive(false);

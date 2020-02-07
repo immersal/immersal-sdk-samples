@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using UnityEngine.AI;
 using Immersal.AR;
 using TMPro;
 
@@ -23,16 +24,20 @@ namespace Immersal.Samples.Navigation
     {
     }
 
+    [RequireComponent(typeof(NavigationGraph))]
     public class NavigationManager : MonoBehaviour
     {
+        // Navigation Visualization references
+        [Header("Visualization")]
         [SerializeField]
-        private NavigationEvent onTargetFound = new NavigationEvent();
+        private GameObject m_navigationPathPrefab = null;
+        /*
         [SerializeField]
-        private NavigationEvent onTargetNotFound = new NavigationEvent();
-        [SerializeField]
-        private ARSpace m_ARSpace;
-        [SerializeField]
-        private GameObject m_NavigationPath = null;
+        private GameObject m_navigationArrowPrefab = null;
+        */
+
+        // UI Object references
+        [Header("UI Objects")]
         [SerializeField]
         private GameObject m_TargetsList = null;
         [SerializeField]
@@ -45,14 +50,44 @@ namespace Immersal.Samples.Navigation
         private TextMeshProUGUI m_TargetsListText = null;
         [SerializeField]
         private GameObject m_StopNavigationButton = null;
+
+        // Navigation Settings
+        private enum NavigationMode { NavMesh, Graph};
+        [Header("Settings")]
+        [SerializeField]
+        private NavigationMode m_navigationMode = NavigationMode.NavMesh;
+        public bool inEditMode = true;
+        /*
+        [SerializeField]
+        private bool m_showArrow = true;
+        */
         [SerializeField]
         private float m_ArrivedDistanceThreshold = 1.0f;
+        [SerializeField]
+        private float m_pathWidth = 0.3f;
+        [SerializeField]
+        private float m_heightOffset = 0.5f;
 
-        private GameObject m_Path = null;
-        private Transform m_TargetTransform = null;
+        // Navigation State Events
+        [Header("Events")]
+        [SerializeField]
+        private NavigationEvent onTargetFound = new NavigationEvent();
+        [SerializeField]
+        private NavigationEvent onTargetNotFound = new NavigationEvent();
+
+        private ARSpace m_arSpace = null;
+        private bool m_managerInitialized = false;
+        private bool m_navigationActive = false;
+        private Transform m_targetTransform = null;
+        private Transform m_playerTransform = null;
+        private GameObject m_navigationPathObject = null;
+        private NavigationPath m_navigationPath = null;
+        private NavigationGraph m_navigationGraph = null;
+
+        private enum NavigationState { NotNavigating, Navigating};
+        private NavigationState m_navigationState = NavigationState.NotNavigating;
 
         private static NavigationManager instance = null;
-
         public static NavigationManager Instance
         {
             get
@@ -60,7 +95,7 @@ namespace Immersal.Samples.Navigation
 #if UNITY_EDITOR
                 if (instance == null && !Application.isPlaying)
                 {
-                    instance = UnityEngine.Object.FindObjectOfType<NavigationManager>();
+                    instance = FindObjectOfType<NavigationManager>();
                 }
 #endif
                 if (instance == null)
@@ -71,25 +106,9 @@ namespace Immersal.Samples.Navigation
             }
         }
 
-        public float arrivedDistanceThreshold
+        public bool navigationActive
         {
-            get { return m_ArrivedDistanceThreshold; }
-        }
-
-        private ARSpace arSpace
-        {
-            get
-            {
-                if (m_ARSpace == null)
-                    m_ARSpace = GameObject.FindObjectOfType<ARSpace>();
-                
-                if (m_ARSpace == null)
-                {
-                    Debug.Log("No AR Space found");
-                }
-                return m_ARSpace;
-            }
-            set { m_ARSpace = value; }
+            get { return m_navigationActive; }
         }
 
         void Awake()
@@ -100,7 +119,7 @@ namespace Immersal.Samples.Navigation
             }
             if (instance != this)
             {
-                Debug.LogError("There must be only one NavigationManager object in a scene.");
+                Debug.LogError("NavigationManager: There must be only one NavigationManager in a scene.");
                 UnityEngine.Object.DestroyImmediate(this);
                 return;
             }
@@ -108,67 +127,176 @@ namespace Immersal.Samples.Navigation
 
         private void Start()
         {
-            if (m_TargetsList != null)
-                m_TargetsList.SetActive(false);
+            InitializeNavigationManager();
 
-            if (m_StopNavigationButton != null)
-                m_StopNavigationButton.SetActive(false);
-
-            if (m_TargetsListIcon != null && m_SelectTargetIcon != null)
+            if (m_managerInitialized)
+            {
                 m_TargetsListIcon.sprite = m_ShowListIcon;
-
-            if (m_TargetsListText != null)
                 m_TargetsListText.text = "Show Navigation Targets";
+            }
+        }
 
-            DeletePath();
+        private void Update()
+        {
+            if(m_managerInitialized && m_navigationState == NavigationState.Navigating)
+            {
+                TryToFindPath(m_targetTransform);
+            }
+        }
+
+        public void InitializeNavigation(NavigationTargetListButton button)
+        {
+            if (!m_managerInitialized)
+            {
+                Debug.LogWarning("NavigationManager: Navigation Manager not properly initialized.");
+                return;
+            }
+
+            m_targetTransform = button.targetObject.transform;
+            TryToFindPath(m_targetTransform);
+        }
+
+        public void TryToFindPath(Transform targetTransform)
+        {
+            List<Vector3> corners;
+
+            // Convert to Unity's world space coordinates to use NavMesh
+            Vector3 startPosition = m_playerTransform.position;
+            Vector3 targetPosition = targetTransform.position;
+
+            Vector3 delta = targetPosition - startPosition;
+            float distanceToTarget = new Vector3(delta.x, delta.y, delta.z).magnitude;
+
+            if (distanceToTarget < m_ArrivedDistanceThreshold)
+            {
+                m_navigationActive = false;
+
+                m_navigationState = NavigationState.NotNavigating;
+                UpdateNavigationUI(m_navigationState);
+
+                DisplayArrivedNotification();
+                return;
+            }
+
+            switch (m_navigationMode)
+            {
+                case NavigationMode.NavMesh:
+
+                    startPosition = ARSpaceToUnity(m_arSpace.transform, m_arSpace.initialOffset, startPosition);
+                    targetPosition = ARSpaceToUnity(m_arSpace.transform, m_arSpace.initialOffset, targetPosition);
+
+                    corners = FindPathNavMesh(startPosition, targetPosition);
+                    if (corners.Count >= 2)
+                    {
+                        m_navigationActive = true;
+
+                        m_navigationState = NavigationState.Navigating;
+                        UpdateNavigationUI(m_navigationState);
+
+                        m_navigationPath.GeneratePath(corners, m_arSpace.transform.up);
+                        m_navigationPath.pathWidth = m_pathWidth;
+                    }
+                    else
+                    {
+                        Mapping.NotificationManager.Instance.GenerateNotification("Path to target not found.");
+                        UpdateNavigationUI(m_navigationState);
+                    }
+                    break;
+
+                case NavigationMode.Graph:
+
+                    corners = m_navigationGraph.FindPath(startPosition, targetPosition);
+
+                    if (corners.Count >= 2)
+                    {
+                        m_navigationActive = true;
+
+                        m_navigationState = NavigationState.Navigating;
+                        UpdateNavigationUI(m_navigationState);
+
+                        m_navigationPath.GeneratePath(corners, m_arSpace.transform.up);
+                        m_navigationPath.pathWidth = m_pathWidth;
+                    }
+                    else
+                    {
+                        Mapping.NotificationManager.Instance.GenerateNotification("Path to target not found.");
+                        UpdateNavigationUI(m_navigationState);
+                    }
+                    break;
+            }
+        }
+
+        private List<Vector3> FindPathNavMesh(Vector3 startPosition, Vector3 targetPosition)
+        {
+            NavMeshPath path = new NavMeshPath();
+            List<Vector3> collapsedCorners = new List<Vector3>();
+
+            if (NavMesh.CalculatePath(startPosition, targetPosition, NavMesh.AllAreas, path))
+            {
+                List<Vector3> corners = new List<Vector3>(path.corners);
+
+                for (int i = 0; i < corners.Count; i++)
+                {
+                    corners[i] = corners[i] + new Vector3(0f, m_heightOffset, 0f);
+                    corners[i] = UnityToARSpace(m_arSpace.transform, m_arSpace.initialOffset, corners[i]);
+                }
+
+                for (int i = 0; i < corners.Count - 1; i++)
+                {
+                    Vector3 currentPoint = corners[i];
+                    Vector3 nextPoint = corners[i + 1];
+                    float threshold = 0.75f;
+
+                    if (Vector3.Distance(currentPoint, nextPoint) > threshold)
+                    {
+                        collapsedCorners.Add(currentPoint);
+                    }
+                }
+
+                collapsedCorners.Add(corners[corners.Count - 1]);
+            }
+
+            return collapsedCorners;
         }
 
         public void ToggleTargetsList()
         {
-            if (m_TargetsList != null)
+            if (!m_managerInitialized)
             {
-                if (m_TargetsList.activeInHierarchy)
+                Debug.LogWarning("NavigationManager: Navigation Manager not properly initialized.");
+                return;
+            }
+
+            if (m_TargetsList.activeInHierarchy)
+            {
+                m_TargetsList.SetActive(false);
+                if (m_ShowListIcon != null && m_TargetsListIcon != null)
                 {
-                    m_TargetsList.SetActive(false);
-                    if (m_ShowListIcon != null && m_TargetsListIcon != null)
-                    {
-                        m_TargetsListIcon.sprite = m_ShowListIcon;
-                    }
-                    if (m_TargetsListText != null)
-                    {
-                        m_TargetsListText.text = "Show Navigation Targets";
-                    }
+                    m_TargetsListIcon.sprite = m_ShowListIcon;
                 }
-                else
+                if (m_TargetsListText != null)
                 {
-                    m_TargetsList.SetActive(true);
-                    m_TargetsList.GetComponent<NavigationTargetListControl>().GenerateButtons();
-                    if (m_SelectTargetIcon != null && m_TargetsListIcon != null)
-                    {
-                        m_TargetsListIcon.sprite = m_SelectTargetIcon;
-                    }
-                    if (m_TargetsListText != null)
-                    {
-                        m_TargetsListText.text = "Select Navigation Target";
-                    }
+                    m_TargetsListText.text = "Show Navigation Targets";
+                }
+            }
+            else
+            {
+                m_TargetsList.SetActive(true);
+                m_TargetsList.GetComponent<NavigationTargetListControl>().GenerateButtons();
+                if (m_SelectTargetIcon != null && m_TargetsListIcon != null)
+                {
+                    m_TargetsListIcon.sprite = m_SelectTargetIcon;
+                }
+                if (m_TargetsListText != null)
+                {
+                    m_TargetsListText.text = "Select Navigation Target";
                 }
             }
         }
 
-        public void TryToFindPath(NavigationTargetListButton button)
+        public void ToggleEditMode()
         {
-            if (m_StopNavigationButton != null)
-                m_StopNavigationButton.SetActive(false);
-
-            if (m_NavigationPath != null)
-            {
-                DeletePath();
-                m_Path = Instantiate(m_NavigationPath);
-                NavigationPath navpath = m_Path.GetComponent<NavigationPath>();
-
-                navpath.arSpace = arSpace;
-                m_TargetTransform = navpath.BuildPath(button);
-            }
+            inEditMode = !inEditMode;
         }
 
         public void DisplayPathNotFoundNotification()
@@ -177,16 +305,7 @@ namespace Immersal.Samples.Navigation
             Handheld.Vibrate();
 #endif
             Mapping.NotificationManager.Instance.GenerateNotification("Path to target could not be found.");
-
-            onTargetNotFound.Invoke(m_TargetTransform);
-        }
-
-        public void DisplayNavigation()
-        {
-            if (m_StopNavigationButton != null)
-                m_StopNavigationButton.SetActive(true);
-            
-            ToggleTargetsList();
+            onTargetNotFound.Invoke(m_targetTransform);
         }
 
         public void DisplayArrivedNotification()
@@ -195,30 +314,149 @@ namespace Immersal.Samples.Navigation
             Handheld.Vibrate();
 #endif
             Mapping.NotificationManager.Instance.GenerateNotification("You have arrived!");
-
-            if (m_StopNavigationButton != null)
-                m_StopNavigationButton.SetActive(false);
-
-            onTargetFound.Invoke(m_TargetTransform);
-
-            DeletePath();
+            onTargetFound.Invoke(m_targetTransform);
         }
 
-        public void CloseNavigation()
+        public void StopNavigation()
         {
-            if (m_StopNavigationButton != null)
-                m_StopNavigationButton.SetActive(false);
+            m_navigationActive = false;
 
-            if (m_TargetsList != null)
-                m_TargetsList.SetActive(false);
+            m_navigationState = NavigationState.NotNavigating;
+            UpdateNavigationUI(m_navigationState);
 
-            DeletePath();
+            Mapping.NotificationManager.Instance.GenerateNotification("Navigation stopped.");
         }
 
-        public void DeletePath()
+        private void UpdateNavigationUI(NavigationState navigationState)
         {
-            if (m_Path != null)
-                Destroy(m_Path);
+            switch(navigationState)
+            {
+                case NavigationState.NotNavigating:
+                    m_StopNavigationButton.SetActive(false);
+                    m_navigationPathObject.SetActive(false);
+                    break;
+                case NavigationState.Navigating:
+                    m_StopNavigationButton.SetActive(true);
+                    m_navigationPathObject.SetActive(true);
+                    break;
+            }
         }
+
+        private void InitializeNavigationManager()
+        {
+            if (m_arSpace == null)
+            {
+                m_arSpace = FindObjectOfType<ARSpace>();
+
+                if (m_arSpace == null)
+                {
+                    Debug.LogWarning("NavigationManager: No AR Space found in scene, ensure one exists.");
+                    return;
+                }
+            }
+
+            m_navigationGraph = GetComponent<NavigationGraph>();
+            if (m_navigationGraph == null)
+            {
+                Debug.LogWarning("NavigationManager: Missing Navigation Graph component.");
+                return;
+            }
+
+            m_playerTransform = Camera.main.transform;
+            if (m_playerTransform == null)
+            {
+                Debug.LogWarning("NavigationManager: Could not find the main camera. Do you have the MainCamera tag applied?");
+                return;
+            }
+
+            if (m_navigationPathPrefab == null)
+            {
+                Debug.LogWarning("NavigationManager: Missing navigation path object reference.");
+                return;
+            }
+
+            if(m_navigationPathPrefab != null)
+            {
+                if (m_navigationPathObject == null)
+                {
+                    m_navigationPathObject = Instantiate(m_navigationPathPrefab);
+                    m_navigationPathObject.SetActive(false);
+                    m_navigationPath = m_navigationPathObject.GetComponent<NavigationPath>();
+                }
+
+                if(m_navigationPath == null)
+                {
+                    Debug.LogWarning("NavigationManager: NavigationPath component in Navigation path is missing.");
+                    return;
+                }
+            }
+
+            if (m_TargetsList == null)
+            {
+                Debug.LogWarning("NavigationManager: Navigation Targets List reference is missing.");
+                return;
+            }
+
+            if (m_ShowListIcon == null)
+            {
+                Debug.LogWarning("NavigationManager: \"Show List\" icon is missing.");
+                return;
+            }
+
+            if (m_SelectTargetIcon == null)
+            {
+                Debug.LogWarning("NavigationManager: \"Select Target\" icon is missing.");
+                return;
+            }
+
+            if (m_TargetsListIcon == null)
+            {
+                Debug.LogWarning("NavigationManager: \"Targets List\" icon reference is missing.");
+                return;
+            }
+
+            if (m_TargetsListText == null)
+            {
+                Debug.LogWarning("NavigationManager: \"Targets List\" text reference is missing.");
+                return;
+            }
+
+            if (m_StopNavigationButton == null)
+            {
+                Debug.LogWarning("NavigationManager: Stop Navigation Button reference is missing.");
+                return;
+            }
+
+            m_managerInitialized = true;
+        }
+
+        private Vector3 ARSpaceToUnity(Transform arspace, Matrix4x4 arspaceoffset, Vector3 pos)
+        {
+            Matrix4x4 m = arspace.worldToLocalMatrix;
+            pos = m.MultiplyPoint(pos);
+            pos = arspaceoffset.MultiplyPoint(pos);
+            return pos;
+        }
+
+        private Vector3 ARSpaceToUnity(Transform arspace, Vector3 pos)
+        {
+            pos = ARSpaceToUnity(arspace, Matrix4x4.identity, pos);
+            return pos;
+        }
+
+        private Vector3 UnityToARSpace(Transform arspace, Matrix4x4 arspaceOffset, Vector3 pos)
+        {
+            pos = arspaceOffset.inverse.MultiplyPoint(pos);
+            Matrix4x4 m = arspace.localToWorldMatrix;
+            pos = m.MultiplyPoint(pos);
+            return pos;
+        }
+
+        private Vector3 UnityToARSpace(Transform arspace, Vector3 pos)
+        {
+            pos = UnityToARSpace(arspace, Matrix4x4.identity, pos);
+            return pos;
+        }
+
     }
 }

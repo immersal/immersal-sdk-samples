@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -23,10 +23,11 @@ using Immersal.REST;
 namespace Immersal.Samples
 {
     [RequireComponent(typeof(TMP_Dropdown))]
-    public class MapListController : MonoBehaviour
+    public class MapListController : MonoBehaviour, IJobHost
     {
         [SerializeField]
         private ARMap m_ARMap = null;
+
         private List<SDKJob> m_Maps;
         private TMP_Dropdown m_Dropdown;
         private int m_Bank = 0;
@@ -34,8 +35,18 @@ namespace Immersal.Samples
         private string m_Server;
         private List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
         private int m_JobLock = 0;
-        private ImmersalARCloudSDK m_Sdk;
+        private ImmersalSDK m_Sdk;
         private TextAsset m_EmbeddedMap;
+
+        public string server
+        {
+            get { return m_Server; }
+        }
+
+        public string token
+        {
+            get { return m_Token; }
+        }
 
         void Awake()
         {
@@ -55,7 +66,7 @@ namespace Immersal.Samples
 
         void Start()
         {
-            m_Sdk = ImmersalARCloudSDK.Instance;
+            m_Sdk = ImmersalSDK.Instance;
             m_Token = m_Sdk.developerToken;
             m_Server = m_Sdk.localizationServer;
 
@@ -66,6 +77,7 @@ namespace Immersal.Samples
         {
             if (m_JobLock == 1)
                 return;
+            
             if (m_Jobs.Count > 0)
             {
                 m_JobLock = 1;
@@ -98,8 +110,7 @@ namespace Immersal.Samples
         public void GetMaps()
         {
             CoroutineListMaps j = new CoroutineListMaps();
-            j.server = m_Server;
-            j.token = m_Token;
+            j.host = this;
             j.bank = m_Bank;
             j.dropdown = m_Dropdown;
             j.maps = m_Maps;
@@ -109,10 +120,8 @@ namespace Immersal.Samples
         public void LoadMap(int id)
         {
             CoroutineLoadMap j = new CoroutineLoadMap();
-            j.server = m_Server;
-            j.token = m_Token;
+            j.host = this;
             j.id = id;
-            j.bank = m_Bank;
             j.arMap = m_ARMap;
             m_Jobs.Add(j);
         }
@@ -134,11 +143,11 @@ namespace Immersal.Samples
         public override IEnumerator RunJob()
         {
             SDKJobsRequest r = new SDKJobsRequest();
-            r.token = this.token;
+            r.token = host.token;
             r.bank = this.bank;
             string jsonString = JsonUtility.ToJson(r);
 
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LIST_JOBS), jsonString))
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.LIST_JOBS), jsonString))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;
@@ -160,7 +169,7 @@ namespace Immersal.Samples
 
                         foreach (SDKJob job in result.jobs)
                         {
-                            if (job.status == "done")
+                            if (job.status == "sparse" || job.status == "done")
                             {
                                 maps.Add(job);
                                 names.Add(job.name);
@@ -176,7 +185,6 @@ namespace Immersal.Samples
 
 	public class CoroutineLoadMap : CoroutineJob
 	{
-		public int bank;
 		public int id;
         public ARMap arMap;
 
@@ -184,11 +192,11 @@ namespace Immersal.Samples
 		{
 			Debug.Log("*************************** CoroutineLoadMap ***************************");
 			SDKMapRequest r = new SDKMapRequest();
-			r.token = this.token;
+			r.token = host.token;
 			r.id = this.id;
 
 			string jsonString2 = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, this.server, Endpoint.LOAD_MAP), jsonString2))
+			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.LOAD_MAP), jsonString2))
 			{
 				request.method = UnityWebRequest.kHttpVerbPOST;
 				request.useHttpContinue = false;

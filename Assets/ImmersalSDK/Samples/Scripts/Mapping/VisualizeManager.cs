@@ -1,9 +1,9 @@
 ﻿/*===============================================================================
-Copyright (C) 2019 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal AR Cloud SDK v1.2.
+This file is part of Immersal SDK v1.3.
 
-The Immersal AR Cloud SDK cannot be copied, distributed, or made available to
+The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
 Contact sdk@immersal.com for licensing requests.
@@ -43,7 +43,7 @@ namespace Immersal.Samples.Mapping
 
         private SDKJob m_ActiveFunctionJob = null;
 
-        private IEnumerator m_ClosePanel = null;
+//        private IEnumerator m_ClosePanel = null;
 
         private enum UIState { Default, SlotSelect};
         private UIState uiState = UIState.Default;
@@ -61,10 +61,7 @@ namespace Immersal.Samples.Mapping
 
         public void OnListItemSelect(SDKJob job)
         {
-            if (OnItemSelected != null)
-            {
-                OnItemSelected(job);
-            }
+            OnItemSelected?.Invoke(job);
         }
 
         public void ToggleDeletePrompt(bool on)
@@ -79,17 +76,17 @@ namespace Immersal.Samples.Mapping
 
         public void OnListItemDelete()
         {
-            if (OnItemDeleted != null && m_ActiveFunctionJob != null)
+            if (m_ActiveFunctionJob != null)
             {
-                OnItemDeleted(m_ActiveFunctionJob);
+                OnItemDeleted?.Invoke(m_ActiveFunctionJob);
             }
         }
 
         public void OnListItemRestore()
         {
-            if (OnItemRestored != null && m_ActiveFunctionJob != null)
+            if (m_ActiveFunctionJob != null)
             {
-                OnItemRestored(m_ActiveFunctionJob);
+                OnItemRestored?.Invoke(m_ActiveFunctionJob);
             }
         }
 
@@ -98,38 +95,36 @@ namespace Immersal.Samples.Mapping
             if (uiState == UIState.SlotSelect)
             {
                 uiState = UIState.Default;
-                if (OnSelectorClosed != null)
-                {
-                    OnSelectorClosed();
-                }
+                OnSelectorClosed?.Invoke();
             }
             else
             {
                 uiState = UIState.SlotSelect;
-                if (OnSelectorOpened != null)
-                {
-                    OnSelectorOpened();
-                }
+                OnSelectorOpened?.Invoke();
             }
             ChangeState(uiState);
         }
 
         public void HandleToggle()
         {
+            /*
             if (m_ClosePanel != null)
             {
                 StopCoroutine(m_ClosePanel);
             }
             m_ClosePanel = ClosePanel();
             StartCoroutine(m_ClosePanel);
+            */
         }
 
+        /*
         IEnumerator ClosePanel()
         {
             yield return new WaitForSeconds(1.5f);
             DefaultView();
             yield return null;
         }
+        */
 
         public void DefaultView()
         {
