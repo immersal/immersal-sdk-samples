@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -267,35 +267,35 @@ namespace Immersal.Samples.Navigation
             return points;
         }
 
-        private void GenerateMesh(List<Vector3> points, Vector3 up)
+        private void GenerateMesh(List<Vector3> points, Vector3 y)
         {
             List<Matrix4x4> matrices = new List<Matrix4x4>();
 
             for (int i = 0; i < points.Count; i++)
             {
-                Vector3 normal, binormal = new Vector3();
+                Vector3 z, x = new Vector3();
 
                 // last point
                 if (i == points.Count - 1)
                 {
-                    normal = (points[i] - points[i - 1]).normalized;
+                    z = (points[i] - points[i - 1]).normalized;
                 }
                 else
                 {
-                    normal = (points[i + 1] - points[i]).normalized;
+                    z = (points[i + 1] - points[i]).normalized;
                 }
 
-                binormal = Vector3.Cross(up, normal);
-                up = Vector3.Cross(normal, binormal);
+                x = Vector3.Cross(y, z);
+                //y = Vector3.Cross(z, x);
 
-                Quaternion q = Quaternion.LookRotation(normal, -up);
+                Quaternion q = Quaternion.LookRotation(z, -y);
                 Matrix4x4 m = Matrix4x4.TRS(points[i], q, new Vector3(1f, 1f, 1f));
 
                 matrices.Add(m);
 
-                //Debug.DrawRay(points[i], binormal, Color.red);
-                //Debug.DrawRay(points[i], up, Color.green);
-                //Debug.DrawRay(points[i], normal, Color.blue);
+                //Debug.DrawRay(points[i], x * 0.4f, Color.red);
+                //Debug.DrawRay(points[i], y * 0.4f, Color.green);
+                //Debug.DrawRay(points[i], z * 0.4f, Color.blue);
             }
 
             Vector3[] shape = new Vector3[] { new Vector3(-0.5f, 0f, 0f), new Vector3(0.5f, 0f, 0f) };

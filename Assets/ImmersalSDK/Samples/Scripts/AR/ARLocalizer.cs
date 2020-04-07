@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -12,8 +12,12 @@ Contact sdk@immersal.com for licensing requests.
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+#if HWAR
+using HuaweiARUnitySDK;
+#else
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+#endif
 using System.Threading.Tasks;
 using TMPro;
 
@@ -41,18 +45,24 @@ namespace Immersal.AR
 		[Tooltip("Downsample image to HD resolution")]
 		[SerializeField]
 		private bool m_Downsample = false;
+		[Tooltip("Reset localizer filtering when relocalized against a different map than the previous time")]
+		[SerializeField]
+		private bool m_ResetOnMapChange = false;
 		[SerializeField]
 		private TextMeshProUGUI m_DebugText = null;
-		private ImmersalSDK m_Sdk;
+		private ImmersalSDK m_Sdk = null;
 		private bool m_bIsTracking = false;
 		private bool m_bIsLocalizing = false;
 		private bool m_bHighFrequencyMode = true;
 		private float m_LastLocalizeTime = 0.0f;
 		private LocalizerStats m_Stats = new LocalizerStats();
+		private Camera m_Cam = null;
 		private float m_WarpThresholdDistSq = 5.0f * 5.0f;
 		private float m_WarpThresholdCosAngle = Mathf.Cos(20.0f * Mathf.PI / 180.0f);
         static private Dictionary<Transform, SpaceContainer> m_TransformToSpace = new Dictionary<Transform, SpaceContainer>();
         static private Dictionary<int, MapOffset> m_MapIdToOffset= new Dictionary<int, MapOffset>();
+
+		public int lastLocalizedMapId { get; private set; }
 
         public bool downsample
 		{
@@ -69,22 +79,30 @@ namespace Immersal.AR
 			get { return m_Stats; }
 		}
 
+#if !HWAR
 		private void ARSessionStateChanged(ARSessionStateChangedEventArgs args)
+		{
+			CheckTrackingState(args.state);
+		}
+
+		private void CheckTrackingState(ARSessionState newState)
 		{
 			if (m_Sdk == null || m_Sdk.arSession == null)
 				return;
 			
-			m_bIsTracking = (args.state == ARSessionState.SessionTracking && m_Sdk.arSession.subsystem.trackingState != TrackingState.None);
+			m_bIsTracking = (newState == ARSessionState.SessionTracking && m_Sdk.arSession.subsystem.trackingState != TrackingState.None);
 			if (!m_bIsTracking)
 			{
 				foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
 					item.Value.filter.InvalidateHistory();
 			}
 		}
+#endif
 
 		void Start()
 		{
 			m_Sdk = ImmersalSDK.Instance;
+			lastLocalizedMapId = -1;
 #if !UNITY_EDITOR
 			SetDownsample();
 #endif
@@ -92,16 +110,24 @@ namespace Immersal.AR
 
 		void OnEnable()
 		{
+			m_Cam = Camera.main;
+			m_bHighFrequencyMode = true;
 #if !UNITY_EDITOR
+			#if !HWAR
+			CheckTrackingState(ARSession.state);
 			ARSession.stateChanged += ARSessionStateChanged;
+			#endif
 #endif
 		}
 
 		void OnDisable()
 		{
 #if !UNITY_EDITOR
+			#if !HWAR
 			ARSession.stateChanged -= ARSessionStateChanged;
+			#endif
 #endif
+			m_bIsTracking = false;
 		}
 
 		void SetDownsample()
@@ -123,6 +149,10 @@ namespace Immersal.AR
 
 		void Update()
 		{
+			#if HWAR
+			m_bIsTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+			#endif
+
 			foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
 			{
 				float distSq = (item.Value.filter.position - item.Value.targetPosition).sqrMagnitude;
@@ -173,23 +203,35 @@ namespace Immersal.AR
 
         private IEnumerator Localize()
 		{
+			#if HWAR
+			ARCameraImageBytes image = null;
+			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
+			{
+				image = ARFrame.AcquirPreviewImageBytes();
+			}
+			else
+			{
+				image = ARFrame.AcquireCameraImageBytes();
+			}
+
+			if (image != null && image.IsAvailable)
+			#else
 			XRCameraImage image;
 			ARCameraManager cameraManager = m_Sdk.cameraManager;
 			var cameraSubsystem = cameraManager.subsystem;
 
 			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+			#endif
 			{
-				Camera cam = Camera.main;
 				m_Stats.localizationAttemptCount++;
-				Vector3 camPos = cam.transform.position;
-				Quaternion camRot = cam.transform.rotation;
-				Vector4 intrinsics = ARHelper.GetIntrinsics(cameraManager);
-
-				int width = image.width;
-				int height = image.height;
-
+				Vector3 camPos = m_Cam.transform.position;
+				Quaternion camRot = m_Cam.transform.rotation;
 				byte[] pixels;
+				Vector4 intrinsics = ARHelper.GetIntrinsics();
+				int width, height;
+				ARHelper.GetDimensions(out width, out height, image);
 				ARHelper.GetPlaneData(out pixels, image);
+
 				image.Dispose();
 
 				Vector3 pos = Vector3.zero;
@@ -211,6 +253,17 @@ namespace Immersal.AR
 
                 if (mapId >= 0 && m_MapIdToOffset.ContainsKey(mapId))
                 {
+					if (mapId != lastLocalizedMapId)
+					{
+						if (m_ResetOnMapChange)
+						{
+							foreach (KeyValuePair<Transform, SpaceContainer> item in m_TransformToSpace)
+								item.Value.filter.ResetFiltering();
+						}
+						
+						lastLocalizedMapId = mapId;
+					}
+
 					ARHelper.GetRotation(ref rot);
                     MapOffset mo = m_MapIdToOffset[mapId];
                     float elapsedTime = Time.realtimeSinceStartup - startTime;
@@ -231,6 +284,7 @@ namespace Immersal.AR
 					Debug.Log(string.Format("Successful localizations: {0}/{1}", m_Stats.localizationSuccessCount, m_Stats.localizationAttemptCount));
 				}
 			}
+
 			m_bIsLocalizing = false;
 		}
 

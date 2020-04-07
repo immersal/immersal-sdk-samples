@@ -4,6 +4,21 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2020-04-07
+### Added
+- SDK and samples now support Huawei AR Engine SDK as an alternative to AR Foundation (not included, can be downloaded [here](https://developer.huawei.com/consumer/en/ar).
+- `ARLocalizer.cs`: Toggle to reset localizer filtering when the last localized map ID changes -- might be useful in a multimap scenario, where maps are not aligned to each other on purpose.
+- `ARLocalizer.cs`: Made `lastLocalizedMapId` public.
+- Graph-based navigation example, initial version.
+
+### Fixed
+- Android now properly requests for location (GPS) permissions.
+
+### Changed
+- Generated maps are now 80% smaller.
+- The native plugins are now 75% smaller.
+- Both the localization accuracy and speed have been improved.
+
 ## [1.3] - 2020-02-07
 ### Added
 - Plugin, Server, Mapper sample: GPS support. When the GPS toggle is on, the list of maps will be populated only by maps generated within a 200 meter radius. When mapping (taking pictures), the latitude/longitude/altitude is saved with the image and used to create a geopose for the constructed map. Also, the on-server localizer accepts lat/lon as parameters for faster retrieval of the map to relocalize against to.

@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -16,23 +16,25 @@ namespace Immersal.AR
     [ExecuteAlways]
     public class ARMap : MonoBehaviour
     {
-        [HideInInspector]
-        public Transform m_Root;
-        [HideInInspector]
-        public TextAsset m_MapFile;
-        [HideInInspector]
-        public Color m_Color = new Color(0.2f, 0.7f, 0.9f);
-        [HideInInspector]
         public enum RenderMode { DoNotRender, EditorOnly, EditorAndRuntime }
-        [HideInInspector]
-        public RenderMode m_RenderMode = RenderMode.DoNotRender;
 
+        [HideInInspector]
+        public RenderMode renderMode = RenderMode.DoNotRender;
+        [HideInInspector]
+        public TextAsset mapFile;
+        [HideInInspector]
+        public Color color = new Color(0.2f, 0.7f, 0.9f);
+        private Transform m_Root;
         private int m_MapId = -1;
         private Mesh m_Mesh = null;
-
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
         private ARSpace m_ARSpace = null;
+
+        public Transform root
+        {
+            get { return m_Root; }
+        }
 
         public void InitMesh()
         {
@@ -63,7 +65,7 @@ namespace Immersal.AR
                 m_MeshRenderer.sharedMaterial.EnableKeyword("IN_EDITOR");
             }
 
-            switch (m_RenderMode)
+            switch (renderMode)
             {
                 case RenderMode.DoNotRender:
                     FreeMap();
@@ -105,7 +107,7 @@ namespace Immersal.AR
                 Immersal.Core.FreeMap(m_MapId);
                 if (!Application.isEditor)
                 {
-                    ARLocalizer.UnregisterSpace(m_Root, m_MapId);
+                    ARLocalizer.UnregisterSpace(root, m_MapId);
                 }
             }
         }
@@ -114,7 +116,7 @@ namespace Immersal.AR
         {
             if (mapBytes == null)
             {
-                mapBytes = (m_MapFile != null) ? m_MapFile.bytes : null;
+                mapBytes = (mapFile != null) ? mapFile.bytes : null;
             }
 
             if (mapBytes == null)
@@ -144,7 +146,7 @@ namespace Immersal.AR
         {
             const int max_vertices = 65536;
             int numPoints = totalPoints >= max_vertices ? max_vertices : totalPoints;
-            Color32 fix_col = m_Color;
+            Color32 fix_col = color;
             int[] indices = new int[numPoints];
             Vector3[] pts = new Vector3[numPoints];
             Color32[] col = new Color32[numPoints];

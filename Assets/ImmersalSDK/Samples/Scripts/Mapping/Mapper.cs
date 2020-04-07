@@ -1,7 +1,7 @@
 /*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -20,11 +20,18 @@ using UnityEngine.UI;
 using Immersal.AR;
 using Immersal.REST;
 using Immersal.Samples.Util;
+#if HWAR
+using HuaweiARUnitySDK;
+#else
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+#endif
 using System.Runtime.InteropServices;
 using UnityEngine.Events;
 using TMPro;
+#if PLATFORM_ANDROID
+using UnityEngine.Android;
+#endif
 
 namespace Immersal.Samples.Mapping
 {
@@ -85,6 +92,8 @@ namespace Immersal.Samples.Mapping
             r.token = host.token;
             r.bank = (host as Mapper).currentBank;
             r.name = this.name;
+            r.window = 32;
+
             string jsonString = JsonUtility.ToJson(r);
             using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CONSTRUCT_MAP), jsonString))
             {
@@ -726,6 +735,9 @@ namespace Immersal.Samples.Mapping
         private int m_ImageIndex = 0;
         private uint m_ImageRun = 0;
         private bool m_SessionFirstImage = true;
+#if HWAR
+        private bool m_IsTracking = false;
+#endif
         private List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
         private int m_JobLock = 0;
         private ImmersalSDK m_Sdk;
@@ -820,6 +832,23 @@ namespace Immersal.Samples.Mapping
             m_ImageRun = (m_ImageRun ^ data) * 16777619;
         }
 
+        #if HWAR
+        private void SetSessionState()
+        {
+            bool isTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+
+            if (isTracking != m_IsTracking)
+            {
+                ImageRunUpdate();
+            }
+
+            var captureButton = workspaceManager.captureButton.GetComponent<Button>();
+            var localizeButton = visualizeManager.localizeButton.GetComponent<Button>();
+            captureButton.interactable = isTracking;
+            localizeButton.interactable = isTracking;
+            m_IsTracking = isTracking;
+        }
+        #else
         private void SessionStateChanged(ARSessionStateChangedEventArgs args)
         {
             if (sdk.arSession == null)
@@ -834,6 +863,7 @@ namespace Immersal.Samples.Mapping
             captureButton.interactable = isTracking;
             localizeButton.interactable = isTracking;
         }
+        #endif
 
         void Awake()
         {
@@ -859,9 +889,36 @@ namespace Immersal.Samples.Mapping
             }
         }
 
+#if PLATFORM_ANDROID
+		private IEnumerator WaitForLocationPermission()
+		{
+			while (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
+			{
+				yield return null;
+			}
+
+			Debug.Log("Location permission OK");
+			StartCoroutine(EnableLocationServices());
+			yield return null;
+		}
+#endif
+
         public void StartGPS()
         {
+            #if UNITY_IOS
             StartCoroutine(EnableLocationServices());
+			#elif PLATFORM_ANDROID
+			if (Permission.HasUserAuthorizedPermission(Permission.FineLocation))
+			{
+				Debug.Log("Location permission OK");
+				StartCoroutine(EnableLocationServices());
+			}
+			else
+			{
+				Permission.RequestUserPermission(Permission.FineLocation);
+				StartCoroutine(WaitForLocationPermission());
+			}
+			#endif
         }
 
         public void StopGPS()
@@ -932,7 +989,9 @@ namespace Immersal.Samples.Mapping
         void OnEnable()
         {
 #if !UNITY_EDITOR
+            #if !HWAR
             ARSession.stateChanged += SessionStateChanged;
+            #endif
 #endif
 
             stats.queueLen = 0;
@@ -947,7 +1006,9 @@ namespace Immersal.Samples.Mapping
         void OnDisable()
         {
 #if !UNITY_EDITOR
+            #if !HWAR
             ARSession.stateChanged -= SessionStateChanged;
+            #endif
 #endif
 
             PlayerPrefs.DeleteKey("token");
@@ -1077,27 +1138,11 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        public string GetVGPSData()
-        {
-            string data = null;
-
-            if (this.useGPS && lastLocalizedPose.valid)
-            {
-                Vector3 vgpsCloudPos = lastLocalizedPose.LastUpdatedPose.position;
-                double[] ecef = new double[13];
-                double[] wgs84 = new double[3] { m_Latitude, m_Longitude, m_Altitude };
-                int r = Immersal.Core.PosWgs84ToEcef(ecef, wgs84);
-                Vector3 gpsCloudPos = Vector3.zero;
-                int r2 = Immersal.Core.PosEcefToMap(out gpsCloudPos, ecef, lastLocalizedPose.mapToEcef);
-                data = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}", vgpsCloudPos.x.ToString("0.00000"), vgpsCloudPos.y.ToString("0.00000"), vgpsCloudPos.z.ToString("0.00000"),
-                    gpsCloudPos.x.ToString("0.00000"), gpsCloudPos.y.ToString("0.00000"), gpsCloudPos.z.ToString("0.00000"), wgs84[0].ToString("0.00000"), wgs84[1].ToString("0.00000"), wgs84[2].ToString("0.00000"));
-            }
-
-            return data;
-        }
-
         void Update()
         {
+            #if HWAR
+            SetSessionState();
+            #endif
             UpdateLocation();
 
             stats.queueLen = m_Jobs.Count;
@@ -1177,19 +1222,43 @@ namespace Immersal.Samples.Mapping
         private IEnumerator Capture(bool anchor)
         {
             m_bCaptureRunning = true;
-//            yield return new WaitForSeconds(0.25f);
 
+            #if HWAR
+			ARCameraImageBytes image = null;
+			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
+			{
+				image = ARFrame.AcquirPreviewImageBytes();
+			}
+			else
+			{
+				image = ARFrame.AcquireCameraImageBytes();
+			}
+
+			if (image != null && image.IsAvailable)
+            #else
             XRCameraImage image;
             ARCameraManager cameraManager = sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
             if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+            #endif
             {
                 CoroutineJobCapture j = new CoroutineJobCapture();
                 j.host = this;
                 j.run = (int)(m_ImageRun & 0xEFFFFFFF);
                 j.index = m_ImageIndex++;
                 j.anchor = anchor;
+
+                if (useGPS)
+                {
+                    j.latitude = m_Latitude;
+                    j.longitude = m_Longitude;
+                    j.altitude = m_Altitude;
+                }
+                else
+                {
+                    j.latitude = j.longitude = j.altitude = 0.0;
+                }
 
                 Camera cam = this.mainCamera;
                 Quaternion _q = cam.transform.rotation;
@@ -1198,11 +1267,14 @@ namespace Immersal.Samples.Mapping
                 Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
                 j.rotation = r;
                 j.position = p;
-                j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
+				j.intrinsics = ARHelper.GetIntrinsics();
+                int width, height;
+                ARHelper.GetDimensions(out width, out height, image);
 
                 byte[] pixels;
                 int channels = 0;
 
+                #if !HWAR
                 if (m_RgbCapture)
                 {
                     ARHelper.GetPlaneDataRGB(out pixels, image);
@@ -1210,15 +1282,18 @@ namespace Immersal.Samples.Mapping
                 }
                 else
                 {
+                #endif
                     ARHelper.GetPlaneData(out pixels, image);
                     channels = 1;
+                #if !HWAR
                 }
+                #endif
 
-                byte[] capture = new byte[channels * image.width * image.height + 1024];
+                byte[] capture = new byte[channels * width * height + 1024];
 
                 Task<(string, icvCaptureInfo)> t = Task.Run(() =>
                 {
-                    icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, image.width, image.height, channels);
+                    icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                     return (Convert.ToBase64String(capture, 0, info.captureSize), info);
                 });
 
@@ -1232,17 +1307,6 @@ namespace Immersal.Samples.Mapping
 
                 if (m_SessionFirstImage)
                     m_SessionFirstImage = false;
-
-                if (useGPS)
-                {
-                    j.latitude = m_Latitude;
-                    j.longitude = m_Longitude;
-                    j.altitude = m_Altitude;
-                }
-                else
-                {
-                    j.latitude = j.longitude = j.altitude = 0.0;
-                }
 
                 m_Jobs.Add(j);
                 image.Dispose();
@@ -1275,19 +1339,32 @@ namespace Immersal.Samples.Mapping
 
         public void Localize()
         {
+            #if HWAR
+			ARCameraImageBytes image = null;
+			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
+			{
+				image = ARFrame.AcquirPreviewImageBytes();
+			}
+			else
+			{
+				image = ARFrame.AcquireCameraImageBytes();
+			}
+
+			if (image != null && image.IsAvailable)
+            #else
             XRCameraImage image;
             ARCameraManager cameraManager = sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
             if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+            #endif
             {
                 CoroutineJobLocalize j = new CoroutineJobLocalize();
                 Camera cam = this.mainCamera;
+                j.intrinsics = ARHelper.GetIntrinsics();
+                ARHelper.GetDimensions(out j.width, out j.height, image);
                 j.rotation = cam.transform.rotation;
                 j.position = cam.transform.position;
-                j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
-                j.width = image.width;
-                j.height = image.height;
                 j.host = this;
 
                 ARHelper.GetPlaneData(out j.pixels, image);
@@ -1300,11 +1377,25 @@ namespace Immersal.Samples.Mapping
         {
             bool rgb = false;   // enable for localization with RGB24 images
 
+            #if HWAR
+			ARCameraImageBytes image = null;
+			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
+			{
+				image = ARFrame.AcquirPreviewImageBytes();
+			}
+			else
+			{
+				image = ARFrame.AcquireCameraImageBytes();
+			}
+
+			if (image != null && image.IsAvailable)
+            #else
             ARCameraManager cameraManager = sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
             XRCameraImage image;
             if (cameraSubsystem.TryGetLatestImage(out image))
+            #endif
             {
                 CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
                 j.host = this;
@@ -1320,10 +1411,10 @@ namespace Immersal.Samples.Mapping
                 Camera cam = this.mainCamera;
                 j.rotation = cam.transform.rotation;
                 j.position = cam.transform.position;
-                j.intrinsics = ARHelper.GetIntrinsics(cameraManager);
-                j.width = image.width;
-                j.height = image.height;
+                j.intrinsics = ARHelper.GetIntrinsics();
+                ARHelper.GetDimensions(out j.width, out j.height, image);
 
+                #if !HWAR
                 if (rgb)
                 {
                     ARHelper.GetPlaneDataRGB(out j.pixels, image);
@@ -1331,9 +1422,12 @@ namespace Immersal.Samples.Mapping
                 }
                 else
                 {
+                #endif
                     ARHelper.GetPlaneData(out j.pixels, image);
                     j.channels = 1;
+                #if !HWAR
                 }
+                #endif
 
                 m_Jobs.Add(j);
                 image.Dispose();

@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -52,10 +52,10 @@ namespace Immersal.Samples
         {
             m_Dropdown = GetComponent<TMP_Dropdown>();
             m_Dropdown.ClearOptions();
-            if (m_ARMap.m_MapFile != null)
+            if (m_ARMap.mapFile != null)
             {
-                m_Dropdown.AddOptions( new List<string>() { string.Format("<{0}>", m_ARMap.m_MapFile.name) });
-                m_EmbeddedMap = m_ARMap.m_MapFile;
+                m_Dropdown.AddOptions( new List<string>() { string.Format("<{0}>", m_ARMap.mapFile.name) });
+                m_EmbeddedMap = m_ARMap.mapFile;
             }
             else
             {
@@ -94,7 +94,7 @@ namespace Immersal.Samples
             // use embedded map
             if (m_EmbeddedMap != null && value == -1)
             {
-                m_ARMap.m_MapFile = m_EmbeddedMap;
+                m_ARMap.mapFile = m_EmbeddedMap;
                 m_ARMap.LoadMap();
             }
             else

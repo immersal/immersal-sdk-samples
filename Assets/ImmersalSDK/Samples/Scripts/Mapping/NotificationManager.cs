@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -45,19 +45,16 @@ namespace Immersal.Samples.Mapping
             if (instance == null)
             {
                 instance = this;
-            }
+
+                m_Notification.SetActive(false);
+                m_CreateNotification = m_Notification.GetComponent<CreateNotification>();
+                }
             if (instance != this)
             {
                 Debug.LogError("There must be only one NotificationManager object in a scene.");
                 UnityEngine.Object.DestroyImmediate(this);
                 return;
             }
-        }
-
-        private void Start()
-        {
-            m_Notification.SetActive(false);
-            m_CreateNotification = m_Notification.GetComponent<CreateNotification>();
         }
 
         private void InitNotification(CreateNotification.NotificationType type, string text)

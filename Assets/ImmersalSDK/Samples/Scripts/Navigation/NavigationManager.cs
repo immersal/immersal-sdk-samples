@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -24,7 +24,6 @@ namespace Immersal.Samples.Navigation
     {
     }
 
-    [RequireComponent(typeof(NavigationGraph))]
     public class NavigationManager : MonoBehaviour
     {
         // Navigation Visualization references
@@ -56,7 +55,7 @@ namespace Immersal.Samples.Navigation
         [Header("Settings")]
         [SerializeField]
         private NavigationMode m_navigationMode = NavigationMode.NavMesh;
-        public bool inEditMode = true;
+        public bool inEditMode = false;
         /*
         [SerializeField]
         private bool m_showArrow = true;
@@ -79,10 +78,13 @@ namespace Immersal.Samples.Navigation
         private bool m_managerInitialized = false;
         private bool m_navigationActive = false;
         private Transform m_targetTransform = null;
+        private IsNavigationTarget m_NavigationTarget = null;
         private Transform m_playerTransform = null;
         private GameObject m_navigationPathObject = null;
         private NavigationPath m_navigationPath = null;
-        private NavigationGraph m_navigationGraph = null;
+
+        [SerializeField]
+        private NavigationGraphManager m_NavigationGraphManager = null;
 
         private enum NavigationState { NotNavigating, Navigating};
         private NavigationState m_navigationState = NavigationState.NotNavigating;
@@ -140,7 +142,7 @@ namespace Immersal.Samples.Navigation
         {
             if(m_managerInitialized && m_navigationState == NavigationState.Navigating)
             {
-                TryToFindPath(m_targetTransform);
+                TryToFindPath(m_NavigationTarget);
             }
         }
 
@@ -153,16 +155,17 @@ namespace Immersal.Samples.Navigation
             }
 
             m_targetTransform = button.targetObject.transform;
-            TryToFindPath(m_targetTransform);
+            m_NavigationTarget = button.targetObject.GetComponent<IsNavigationTarget>();
+            TryToFindPath(m_NavigationTarget);
         }
 
-        public void TryToFindPath(Transform targetTransform)
+        public void TryToFindPath(IsNavigationTarget navigationTarget)
         {
             List<Vector3> corners;
 
             // Convert to Unity's world space coordinates to use NavMesh
             Vector3 startPosition = m_playerTransform.position;
-            Vector3 targetPosition = targetTransform.position;
+            Vector3 targetPosition = navigationTarget.position;
 
             Vector3 delta = targetPosition - startPosition;
             float distanceToTarget = new Vector3(delta.x, delta.y, delta.z).magnitude;
@@ -205,7 +208,7 @@ namespace Immersal.Samples.Navigation
 
                 case NavigationMode.Graph:
 
-                    corners = m_navigationGraph.FindPath(startPosition, targetPosition);
+                    corners = m_NavigationGraphManager.FindPath(startPosition, targetPosition);
 
                     if (corners.Count >= 2)
                     {
@@ -355,10 +358,10 @@ namespace Immersal.Samples.Navigation
                 }
             }
 
-            m_navigationGraph = GetComponent<NavigationGraph>();
-            if (m_navigationGraph == null)
+            m_NavigationGraphManager = GetComponent<NavigationGraphManager>();
+            if (m_NavigationGraphManager == null)
             {
-                Debug.LogWarning("NavigationManager: Missing Navigation Graph component.");
+                Debug.LogWarning("NavigationManager: Missing Navigation Graph Manager component.");
                 return;
             }
 

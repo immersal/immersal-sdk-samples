@@ -9,12 +9,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3840175146554866646}
-  - component: {fileID: 2395647565364873682}
-  - component: {fileID: 7158299622223907419}
+  - component: {fileID: 1947746355176201650}
   - component: {fileID: 4841525252935132494}
   - component: {fileID: 5277650881150488587}
   m_Layer: 0
-  m_Name: Navigation Path
+  m_Name: NEW Navigation Path
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -34,7 +33,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2395647565364873682
+--- !u!114 &1947746355176201650
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,30 +42,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 8334439697003780456}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63767f1bc22bea64fa3377da66858d58, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b867d0470ae2a7439bfe12b09cc6fe9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ArrowPrefab: {fileID: 5710806455456612459, guid: 5a297c6822cc79747b598b01ee25c258,
-    type: 3}
-  m_ArrivedDistanceThreshold: 1
-  m_yOffset: 0.1
---- !u!114 &7158299622223907419
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8334439697003780456}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6d50d91178da0445ab81a0d94dff446, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Transforms: []
-  m_StepSize: 0.25
-  m_ResampledStepSize: 0.25
-  m_Resample: 1
-  m_GenerateMesh: 1
   m_PathWidth: 0.4
 --- !u!33 &4841525252935132494
 MeshFilter:

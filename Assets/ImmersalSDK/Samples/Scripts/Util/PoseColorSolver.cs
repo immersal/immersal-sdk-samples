@@ -1,7 +1,7 @@
 ﻿/*===============================================================================
 Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
 
-This file is part of Immersal SDK v1.3.
+This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
@@ -12,7 +12,6 @@ Contact sdk@immersal.com for licensing requests.
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityEngine.XR.ARSubsystems;
 using Immersal.AR;
 
 namespace Immersal.Samples.Util
@@ -63,84 +62,67 @@ namespace Immersal.Samples.Util
 			onPoseLost?.Invoke();
         }
 
-		void Update () {
-			if (m_Sdk.arSession == null)
-				return;
-			
-			var arSubsystem = m_Sdk.arSession.subsystem;
-			
-			if (arSubsystem != null && arSubsystem.running)
+		void Update ()
+		{
+			if (ARHelper.TryGetTrackingQuality(out m_TrackingQuality))
 			{
-				switch (arSubsystem.trackingState)
+				LocalizerStats stats = m_Localizer.stats;
+				if (stats.localizationAttemptCount > 0)
 				{
-					case TrackingState.Tracking:
-						m_TrackingQuality = 4;
-						break;
-					case TrackingState.Limited:
-						m_TrackingQuality = 1;
-						break;
-					case TrackingState.None:
-						m_TrackingQuality = 0;
-						break;
+					int q = CurrentResults(stats.localizationSuccessCount);
+					if (q > m_TrackingQuality)
+						q = m_TrackingQuality;
+					
+					if (!m_HasPose && q > 1)
+					{
+						m_HasPose = true;
+						onPoseFound?.Invoke();
+					}
+
+					if (m_HasPose && q < 1 && m_TrackingQuality == 0)
+					{
+						m_HasPose = false;
+						onPoseLost?.Invoke();
+					}
+
+					if (indicatorMode == IndicatorMode.multiplyColor)
+					{
+						switch (q)
+						{
+							case 0:
+								m_Image.color = noPose;
+								break;
+							case 1:
+								m_Image.color = weakPose;
+								break;
+							case 2:
+								m_Image.color = goodPose;
+								break;
+							default:
+								m_Image.color = excellentPose;
+								break;
+						}
+					}
+					else if (indicatorMode == IndicatorMode.changeSprite)
+					{
+						switch (q)
+						{
+							case 0:
+								m_Image.sprite = noPoseSprite;
+								break;
+							case 1:
+								m_Image.sprite = weakPoseSprite;
+								break;
+							case 2:
+								m_Image.sprite = goodPoseSprite;
+								break;
+							default:
+								m_Image.sprite = excellentPoseSprite;
+								break;
+						}
+					}
 				}
 			}
-
-			LocalizerStats stats = m_Localizer.stats;
-			if (stats.localizationAttemptCount > 0)
-			{
-				int q = CurrentResults(stats.localizationSuccessCount);
-				if (q > m_TrackingQuality)
-					q = m_TrackingQuality;
-				
-				if (!m_HasPose && q > 1)
-				{
-					m_HasPose = true;
-					onPoseFound?.Invoke();
-				}
-
-				if (m_HasPose && q < 1 && m_TrackingQuality == 0)
-				{
-					m_HasPose = false;
-					onPoseLost?.Invoke();
-				}
-
-                if (indicatorMode == IndicatorMode.multiplyColor)
-                {
-                    switch (q)
-                    {
-                        case 0:
-                            m_Image.color = noPose;
-                            break;
-                        case 1:
-                            m_Image.color = weakPose;
-                            break;
-                        case 2:
-                            m_Image.color = goodPose;
-                            break;
-                        default:
-                            m_Image.color = excellentPose;
-                            break;
-                    }
-                }
-                else if (indicatorMode == IndicatorMode.changeSprite)
-                {
-                    switch (q)
-                    {
-                        case 0:
-                            m_Image.sprite = noPoseSprite;
-                            break;
-                        case 1:
-                            m_Image.sprite = weakPoseSprite;
-                            break;
-                        case 2:
-                            m_Image.sprite = goodPoseSprite;
-                            break;
-                        default:
-                            m_Image.sprite = excellentPoseSprite;
-                            break;
-                    }
-                }
-            }
 		}
 
 		int CurrentResults(int localizationResults) {
