@@ -92,7 +92,6 @@ namespace Immersal.Samples.Mapping
             r.token = host.token;
             r.bank = (host as Mapper).currentBank;
             r.name = this.name;
-            r.window = 32;
 
             string jsonString = JsonUtility.ToJson(r);
             using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CONSTRUCT_MAP), jsonString))
