@@ -25,12 +25,12 @@ namespace Immersal.Samples.Mapping
 
         [SerializeField]
         private string textAppend = "";
-        private Mapper mapper;
+        private BaseMapper mapper;
 
         void Start ()
         {
             textMeshProUGUI = GetComponent<TextMeshProUGUI>();
-            this.mapper = UnityEngine.Object.FindObjectOfType<Mapper>();
+            this.mapper = UnityEngine.Object.FindObjectOfType<BaseMapper>();
         }
         
         void Update ()

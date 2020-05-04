@@ -693,6 +693,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1052738339827480078, guid: 981dede10de6142fc9565be4695e2871,
+        type: 3}
+      propertyPath: mappingUIPrefab
+      value: 
+      objectReference: {fileID: 4200690996756743215, guid: 0ff8773650a34445d9caf17728df7b19,
+        type: 3}
     - target: {fileID: 1052738340117326020, guid: 981dede10de6142fc9565be4695e2871,
         type: 3}
       propertyPath: m_AnchorMin.y

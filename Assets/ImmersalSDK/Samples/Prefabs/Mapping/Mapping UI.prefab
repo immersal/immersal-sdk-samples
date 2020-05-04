@@ -2763,6 +2763,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 457ed0bf568dce648a504457e281106c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  characterSet: 0
 --- !u!1 &1336858321872882313
 GameObject:
   m_ObjectHideFlags: 0
@@ -4807,17 +4808,6 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 3058059008252687576}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.UI.Toggle, UnityEngine.UI
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 3871545348609160638}
-        m_MethodName: HandleToggle
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -9065,17 +9055,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1772014768321223812}
-        m_MethodName: HandleToggle
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   m_IsOn: 1
 --- !u!114 &7718921847944684274
 MonoBehaviour:
@@ -11507,15 +11486,15 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 6941892059482480309}
-        m_MethodName: ResetMapperAll
-        m_Mode: 1
+        m_MethodName: ResetMapperPictures
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 0
+          m_BoolArgument: 1
         m_CallState: 2
       - m_Target: {fileID: 8456451145582239255}
         m_MethodName: GenerateNotification
@@ -13593,7 +13572,7 @@ MonoBehaviour:
         m_CallState: 2
       - m_Target: {fileID: 6941892059482480309}
         m_MethodName: ResetMapperPictures
-        m_Mode: 1
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -16650,6 +16629,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3a95d7ccd50d29145b5ce3d84753e46f, type: 3}
+--- !u!4 &4475216607627485276 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6151096775510117209, guid: 3a95d7ccd50d29145b5ce3d84753e46f,
+    type: 3}
+  m_PrefabInstance: {fileID: 7729931945773394693}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &8456451145582239255 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2170002355160593682, guid: 3a95d7ccd50d29145b5ce3d84753e46f,
@@ -16662,9 +16647,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 875e4d785cd63ed42a0201a43ce01e08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &4475216607627485276 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6151096775510117209, guid: 3a95d7ccd50d29145b5ce3d84753e46f,
-    type: 3}
-  m_PrefabInstance: {fileID: 7729931945773394693}
-  m_PrefabAsset: {fileID: 0}

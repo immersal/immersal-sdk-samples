@@ -32,8 +32,6 @@ namespace Immersal.Samples.Mapping
 		[SerializeField]
 		public TMP_InputField newMapName = null;
 
-//		private IEnumerator m_ClosePanel = null;
-
 		private enum UIState { Default, Tools, DeleteData, SubmitNewMap };
 		private UIState uiState = UIState.Default;
 
@@ -63,27 +61,6 @@ namespace Immersal.Samples.Mapping
 			}
 			ChangeState(uiState);
 		}
-
-		public void HandleToggle()
-		{
-			/*
-			if (m_ClosePanel != null)
-			{
-				StopCoroutine(m_ClosePanel);
-			}
-			m_ClosePanel = ClosePanel();
-			StartCoroutine(m_ClosePanel);
-			*/
-		}
-
-		/*
-		IEnumerator ClosePanel()
-		{
-			yield return new WaitForSeconds(1.5f);
-			DefaultView();
-			yield return null;
-		}
-		*/
 
 		public void DefaultView() {
 			uiState = UIState.Default;

@@ -30,10 +30,12 @@ namespace Immersal.Samples.Mapping
         private CanvasGroup m_CanvasGroup;
         private ImmersalSDK m_Sdk;
         private ToggleMappingMode m_ToggleMappingMode;
+        private BaseMapper m_Mapper = null;
 
         void Start()
         {
             m_Sdk = ImmersalSDK.Instance;
+            m_Mapper = UnityEngine.Object.FindObjectOfType<BaseMapper>();
 
             m_CanvasGroup = loginPanel.GetComponent<CanvasGroup>();
             m_ToggleMappingMode = loginPanel.GetComponent<ToggleMappingMode>();
@@ -100,7 +102,7 @@ namespace Immersal.Samples.Mapping
 
                         if (m_ToggleMappingMode.MappingUI != null)
                         {
-                            m_ToggleMappingMode.MappingUI.GetComponent<Mapper>().OnLogOut += OnLogOut;
+                            m_ToggleMappingMode.MappingUI.GetComponent<BaseMapper>().OnLogOut += OnLogOut;
                         }
 
                         loginErrorText.gameObject.SetActive(false);
@@ -118,7 +120,7 @@ namespace Immersal.Samples.Mapping
 
         private void OnLogOut()
         {
-            m_ToggleMappingMode.MappingUI.GetComponent<Mapper>().OnLogOut -= OnLogOut;
+            m_Mapper.OnLogOut -= OnLogOut;
             m_ToggleMappingMode.DisableMappingMode();
             m_CanvasGroup.alpha = 1;
             loginPanel.SetActive(true);

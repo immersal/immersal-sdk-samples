@@ -4,7 +4,22 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [1.4.0] - 2020-04-07
+## [1.5.0] - 2020-04-30
+### Added
+- Server / Developer Portal: Support for private/public maps, copying maps to other accounts, searching for public maps by user and/or GPS location, and resetting the private user token.
+
+### Changed
+- Map file format is not compatible with v1.3 anymore. v1.5.0 plugin can still load maps done with v1.3.
+- MD5 hashing of map files changed to SHA256
+
+## [1.4.1] - 2020-04-17 (INTERNAL)
+### Added
+- MD5 hashing of map files
+
+### Changed
+- Huawei AR Engine selection can be done at runtime.
+
+## [1.4.0] - 2020-04-07 (INTERNAL)
 ### Added
 - SDK and samples now support Huawei AR Engine SDK as an alternative to AR Foundation (not included, can be downloaded [here](https://developer.huawei.com/consumer/en/ar).
 - `ARLocalizer.cs`: Toggle to reset localizer filtering when the last localized map ID changes -- might be useful in a multimap scenario, where maps are not aligned to each other on purpose.

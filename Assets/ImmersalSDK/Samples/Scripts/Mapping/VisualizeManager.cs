@@ -30,6 +30,8 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private GameObject restoreMapImagesPrompt = null;
 
+        public static List<int> loadJobs = new List<int>();
+
         public event ItemSelected OnItemSelected = null;
         public event ItemDeleted OnItemDeleted = null;
         public event ItemRestored OnItemRestored = null;
@@ -42,8 +44,6 @@ namespace Immersal.Samples.Mapping
         public delegate void SelectorClosed();
 
         private SDKJob m_ActiveFunctionJob = null;
-
-//        private IEnumerator m_ClosePanel = null;
 
         private enum UIState { Default, SlotSelect};
         private UIState uiState = UIState.Default;
@@ -104,27 +104,6 @@ namespace Immersal.Samples.Mapping
             }
             ChangeState(uiState);
         }
-
-        public void HandleToggle()
-        {
-            /*
-            if (m_ClosePanel != null)
-            {
-                StopCoroutine(m_ClosePanel);
-            }
-            m_ClosePanel = ClosePanel();
-            StartCoroutine(m_ClosePanel);
-            */
-        }
-
-        /*
-        IEnumerator ClosePanel()
-        {
-            yield return new WaitForSeconds(1.5f);
-            DefaultView();
-            yield return null;
-        }
-        */
 
         public void DefaultView()
         {

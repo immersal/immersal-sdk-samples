@@ -10,11 +10,29 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Immersal.AR
 {
+	public class SpaceContainer
+	{
+        public int mapCount = 0;
+		public Vector3 targetPosition = Vector3.zero;
+		public Quaternion targetRotation = Quaternion.identity;
+		public PoseFilter filter = new PoseFilter();
+	}
+
+    public class MapOffset
+    {
+        public Matrix4x4 offset;
+        public SpaceContainer space;
+    }
+
     public class ARSpace : MonoBehaviour
     {
+        public static Dictionary<Transform, SpaceContainer> transformToSpace = new Dictionary<Transform, SpaceContainer>();
+        public static Dictionary<int, MapOffset> mapIdToOffset= new Dictionary<int, MapOffset>();
+
         private Matrix4x4 m_InitialOffset = Matrix4x4.identity;
 
         public Matrix4x4 initialOffset
@@ -49,5 +67,45 @@ namespace Immersal.AR
 
             m_InitialOffset = offset;
         }
+
+        public static void RegisterSpace(Transform tr, int mapId, Matrix4x4 offset)
+		{
+            SpaceContainer sc;
+
+            if (!transformToSpace.ContainsKey(tr))
+            {
+                sc = new SpaceContainer();
+                transformToSpace[tr] = sc;
+            }
+            else
+            {
+                sc = transformToSpace[tr];
+            }
+
+            sc.mapCount++;
+
+            MapOffset mo = new MapOffset();
+            mo.offset = offset;
+            mo.space = sc;
+
+            mapIdToOffset[mapId] = mo;
+		}
+
+        public static void RegisterSpace(Transform tr, int mapId)
+        {
+            RegisterSpace(tr, mapId, Matrix4x4.identity);
+        }
+
+        public static void UnregisterSpace(Transform tr, int spaceId)
+		{
+			if (transformToSpace.ContainsKey(tr))
+			{
+				SpaceContainer sc = transformToSpace[tr];
+				if (--sc.mapCount == 0)
+					transformToSpace.Remove(tr);
+				if (mapIdToOffset.ContainsKey(spaceId))
+					mapIdToOffset.Remove(spaceId);
+			}
+		}
     }
 }

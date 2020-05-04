@@ -84,7 +84,19 @@ namespace Immersal.Samples.Mapping.ScrollList
 		{
 			if (visualizeManager != null && (mapState == MapState.Sparse || mapState == MapState.Done))
 			{
-                visualizeManager.OnListItemSelect(data);
+				if (VisualizeManager.loadJobs.Contains(data.id))
+				{
+					toggle.SetIsOnWithoutNotify(true);
+				}
+				else
+				{
+					if (toggle.isOn)
+					{
+						VisualizeManager.loadJobs.Add(data.id);
+					}
+					
+	                visualizeManager.OnListItemSelect(data);
+				}
 			}
 			else
 			{

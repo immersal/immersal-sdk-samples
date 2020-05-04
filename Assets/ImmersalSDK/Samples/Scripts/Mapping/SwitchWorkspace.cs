@@ -19,7 +19,7 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private TextMeshProUGUI m_TextMeshProUGUI = null;
         [SerializeField]
-        private Mapper m_Mapper = null;
+        private BaseMapper m_Mapper = null;
 
         private void Start()
         {

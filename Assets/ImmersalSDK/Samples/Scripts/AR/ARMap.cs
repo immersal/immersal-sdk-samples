@@ -107,7 +107,7 @@ namespace Immersal.AR
                 Immersal.Core.FreeMap(m_MapId);
                 if (!Application.isEditor)
                 {
-                    ARLocalizer.UnregisterSpace(root, m_MapId);
+                    ARSpace.UnregisterSpace(root, m_MapId);
                 }
             }
         }
@@ -135,7 +135,7 @@ namespace Immersal.AR
                 {
                     m_Root = m_ARSpace.transform;
                     Matrix4x4 offset = Matrix4x4.TRS(transform.localPosition, transform.localRotation, Vector3.one);
-                    ARLocalizer.RegisterSpace(m_Root, m_MapId, offset);
+                    ARSpace.RegisterSpace(m_Root, m_MapId, offset);
                 }
             }
 
