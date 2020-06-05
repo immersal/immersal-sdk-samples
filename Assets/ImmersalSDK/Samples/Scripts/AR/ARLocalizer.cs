@@ -20,6 +20,11 @@ namespace Immersal.AR
 {
     public class ARLocalizer : BaseLocalizer
 	{
+		public event MapChanged OnMapChanged = null;
+		public event PoseFound OnPoseFound = null;
+		public delegate void MapChanged(int newMapId);
+		public delegate void PoseFound(LocalizerPose newPose);
+
 		private void ARSessionStateChanged(ARSessionStateChangedEventArgs args)
 		{
 			CheckTrackingState(args.state);
@@ -98,6 +103,8 @@ namespace Immersal.AR
 						}
 						
 						lastLocalizedMapId = mapId;
+
+						OnMapChanged?.Invoke(mapId);
 					}
 
 					ARHelper.GetRotation(ref rot);
@@ -105,10 +112,22 @@ namespace Immersal.AR
                     float elapsedTime = Time.realtimeSinceStartup - startTime;
                     Debug.Log(string.Format("Relocalised in {0} seconds", elapsedTime));
                     stats.localizationSuccessCount++;
-                    Matrix4x4 cloudSpace = mo.offset*Matrix4x4.TRS(pos, rot, Vector3.one);
-                    Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                    Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-                    mo.space.filter.RefinePose(m);
+
+					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+					Vector3 scaledPos = new Vector3
+						(
+							pos.x * mo.scale.x,
+							pos.y * mo.scale.y,
+							pos.z * mo.scale.z
+						);
+					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
+					Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+					Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+					mo.space.filter.RefinePose(m);
+
+					LocalizerPose localizerPose;
+					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
+					OnPoseFound?.Invoke(localizerPose);
                 }
 			}
 

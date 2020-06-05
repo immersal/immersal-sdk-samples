@@ -4,6 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2020-06-05
+### Added
+- Server / Developer Portal: Support for textured meshes (both grayscale and RGB).
+- Samples: `ARLocalizer.cs`, `ARSpace.cs` & `ARMap.cs`: support for uniform scaling of maps.
+- Samples: `ARLocalizer.cs` now has `MapChanged` and `PoseFound` events.
+
+### Fixed
+- Plugin: image capturing is now a lot faster.
+
 ## [1.5.0] - 2020-04-30
 ### Added
 - Server / Developer Portal: Support for private/public maps, copying maps to other accounts, searching for public maps by user and/or GPS location, and resetting the private user token.

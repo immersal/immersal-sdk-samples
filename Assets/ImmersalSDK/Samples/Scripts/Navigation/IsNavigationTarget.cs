@@ -36,12 +36,12 @@ namespace Immersal.Samples.Navigation
 
         private void Start()
         {
-            NavigationGraphManager.Instance.AddTarget(this);
+            NavigationGraphManager.Instance?.AddTarget(this);
         }
 
         private void OnDestroy()
         {
-            NavigationGraphManager.Instance.RemoveTarget(this);
+            NavigationGraphManager.Instance?.RemoveTarget(this);
         }
 
         private void OnEnable()

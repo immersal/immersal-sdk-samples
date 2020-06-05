@@ -97,11 +97,30 @@ namespace Immersal.Samples.Mapping.HWAR
                 j.rotation = r;
                 j.position = p;
 				j.intrinsics = HWARHelper.GetIntrinsics();
-                j.width = image.Width;
-                j.height = image.Height;
+                int width = image.Width;
+                int height = image.Height;
 
-                HWARHelper.GetPlaneData(out j.pixels, image);
-                j.channels = 1;
+                byte[] pixels;
+                int channels = 0;
+
+                HWARHelper.GetPlaneData(out pixels, image);
+                channels = 1;
+
+                byte[] capture = new byte[channels * width * height + 1024];
+
+                Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+                {
+                    icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    return (Convert.ToBase64String(capture, 0, info.captureSize), info);
+                });
+
+                while (!t.IsCompleted)
+                {
+                    yield return null;
+                }
+
+                j.encodedImage = t.Result.Item1;
+                NotifyIfConnected(t.Result.Item2);
 
                 if (m_SessionFirstImage)
                     m_SessionFirstImage = false;

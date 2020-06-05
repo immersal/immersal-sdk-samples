@@ -34,7 +34,6 @@ namespace Immersal.Samples.Mapping
             localizeButton.interactable = m_IsTracking;
         }
 
-
         protected override void OnEnable()
         {
 #if !UNITY_EDITOR
@@ -51,12 +50,12 @@ namespace Immersal.Samples.Mapping
             base.OnDisable();
         }
 
-
         protected override IEnumerator Capture(bool anchor)
         {
             yield return new WaitForSeconds(0.25f);
 
             m_bCaptureRunning = true;
+            float startTime = Time.realtimeSinceStartup;
 
             XRCameraImage image;
             ARCameraManager cameraManager = m_Sdk.cameraManager;
@@ -89,33 +88,73 @@ namespace Immersal.Samples.Mapping
                 j.rotation = r;
                 j.position = p;
 				j.intrinsics = ARHelper.GetIntrinsics();
-                j.width = image.width;
-                j.height = image.height;
-                
+                int width = image.width;
+                int height = image.height;
+
+                byte[] pixels;
+                int channels = 0;
+
                 if (m_RgbCapture)
                 {
-                    ARHelper.GetPlaneDataRGB(out j.pixels, image);
-                    j.channels = 3;
+                    ARHelper.GetPlaneDataRGB(out pixels, image);
+                    channels = 3;
                 }
                 else
                 {
-                    ARHelper.GetPlaneData(out j.pixels, image);
-                    j.channels = 1;
+                    ARHelper.GetPlaneData(out pixels, image);
+                    channels = 1;
                 }
+
+                byte[] capture = new byte[channels * width * height + 1024];
+
+                Task<icvCaptureInfo> captureTask = Task.Run(() =>
+                {
+                    return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                });
+
+                Task<string> convertTask = captureTask.ContinueWith<string>((antecedent) =>
+                {
+                    return Convert.ToBase64String(capture, 0, antecedent.Result.captureSize);
+                });
+
+                while (!convertTask.IsCompleted)
+                {
+                    yield return null;
+                }
+
+                /*
+                Task<(string, icvCaptureInfo)> t = Task.Run(() =>
+                {
+                    icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    return (Convert.ToBase64String(capture, 0, info.captureSize), info);
+                });
+
+                while (!t.IsCompleted)
+                {
+                    yield return null;
+                }
+
+                j.encodedImage = t.Result.Item1;
+                NotifyIfConnected(t.Result.Item2);
+                */
+
+                j.encodedImage = convertTask.Result;
+                NotifyIfConnected(captureTask.Result);
 
                 if (m_SessionFirstImage)
                     m_SessionFirstImage = false;
 
                 m_Jobs.Add(j);
                 image.Dispose();
+
+                float elapsedTime = Time.realtimeSinceStartup - startTime;
+                Debug.Log(string.Format("Capture in {0} seconds", elapsedTime));
             }
 
             m_bCaptureRunning = false;
             var captureButton = workspaceManager.captureButton.GetComponent<Button>();
             captureButton.interactable = true;
         }
-
-
 
         public override void Localize()
         {

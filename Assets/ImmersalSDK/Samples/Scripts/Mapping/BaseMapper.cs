@@ -13,6 +13,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Immersal.AR;
 using Immersal.REST;
 using Immersal.Samples.Util;
 using UnityEngine.Events;
@@ -44,19 +45,13 @@ namespace Immersal.Samples.Mapping
         [HideInInspector]
         public MapperStats stats = new MapperStats();
         [HideInInspector]
-        public double vlatitude = 0.0;
-        [HideInInspector]
-        public double vlongitude = 0.0;
-        [HideInInspector]
-        public double valtitude = 0.0;
-        [HideInInspector]
         public Dictionary<int, PointCloudRenderer> pcr = new Dictionary<int, PointCloudRenderer>();
         [HideInInspector]
         public WorkspaceManager workspaceManager;
         [HideInInspector]
         public VisualizeManager visualizeManager;
         [HideInInspector]
-        public (bool valid, double[] mapToEcef, Matrix4x4 Matrix, Pose LastUpdatedPose) lastLocalizedPose = (false, new double[13], Matrix4x4.identity, Pose.identity);
+        public LocalizerPose lastLocalizedPose = default;
 
         protected bool m_RgbCapture = false;
         protected int m_ImageIndex = 0;
@@ -71,6 +66,9 @@ namespace Immersal.Samples.Mapping
         protected double m_Altitude = 0.0;
         protected double m_Haccuracy = 0.0;
         protected double m_Vaccuracy = 0.0;
+        protected double m_VLatitude = 0.0;
+        protected double m_VLongitude = 0.0;
+        protected double m_VAltitude = 0.0;
         protected bool m_bCaptureRunning = false;
 
         private string m_Server = null;
@@ -421,28 +419,27 @@ namespace Immersal.Samples.Mapping
                 m_LocationText.text = txt;
             }
 
-            string txt2 = string.Format("VLat: {0}, VLon: {1}, VAlt: {2}", 
-                            vlatitude.ToString("0.00000"),
-                            vlongitude.ToString("0.00000"),
-                            valtitude.ToString("0.00"));
-            m_VLocationText.text = txt2;
-
             if (lastLocalizedPose.valid)
             {
-                Camera cam = this.mainCamera;
-                Matrix4x4 trackerSpace = Matrix4x4.TRS(cam.transform.position, cam.transform.rotation, Vector3.one);
-                Matrix4x4 m = lastLocalizedPose.Matrix * trackerSpace;
+                Matrix4x4 trackerSpace = Matrix4x4.TRS(mainCamera.transform.position, mainCamera.transform.rotation, Vector3.one);
+                Matrix4x4 m = lastLocalizedPose.matrix * trackerSpace;
                 Vector3 pos = m.GetColumn(3);
 
                 double[] wgs84 = new double[3];
                 int r = Immersal.Core.PosMapToWgs84(wgs84, pos, lastLocalizedPose.mapToEcef);
-                vlatitude = wgs84[0];
-                vlongitude = wgs84[1];
-                valtitude = wgs84[2];
+                m_VLatitude = wgs84[0];
+                m_VLongitude = wgs84[1];
+                m_VAltitude = wgs84[2];
 
-                lastLocalizedPose.LastUpdatedPose.position = pos;
-                lastLocalizedPose.LastUpdatedPose.rotation = m.rotation;
+                lastLocalizedPose.lastUpdatedPose.position = pos;
+                lastLocalizedPose.lastUpdatedPose.rotation = m.rotation;
             }
+
+            string txt2 = string.Format("VLat: {0}, VLon: {1}, VAlt: {2}", 
+                            m_VLatitude.ToString("0.00000"),
+                            m_VLongitude.ToString("0.00000"),
+                            m_VAltitude.ToString("0.00"));
+            m_VLocationText.text = txt2;
         }
 
         public void DeleteMap(int mapId)

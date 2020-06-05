@@ -134,8 +134,7 @@ namespace Immersal.AR
                 if (!Application.isEditor)
                 {
                     m_Root = m_ARSpace.transform;
-                    Matrix4x4 offset = Matrix4x4.TRS(transform.localPosition, transform.localRotation, Vector3.one);
-                    ARSpace.RegisterSpace(m_Root, m_MapId, offset);
+                    ARSpace.RegisterSpace(m_Root, m_MapId, transform.localPosition, transform.localRotation, transform.localScale);
                 }
             }
 

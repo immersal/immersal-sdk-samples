@@ -21,6 +21,11 @@ namespace Immersal.AR.HWAR
 {
     public class HWARLocalizer : BaseLocalizer
 	{
+		public event MapChanged OnMapChanged = null;
+		public event PoseFound OnPoseFound = null;
+		public delegate void MapChanged(int newMapId);
+		public delegate void PoseFound(LocalizerPose newPose);
+
 		public override void Update()
 		{
             isTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
@@ -88,6 +93,8 @@ namespace Immersal.AR.HWAR
 						}
 						
 						lastLocalizedMapId = mapId;
+
+						OnMapChanged?.Invoke(mapId);
 					}
 
 					HWARHelper.GetRotation(ref rot);
@@ -99,6 +106,10 @@ namespace Immersal.AR.HWAR
                     Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
                     Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
                     mo.space.filter.RefinePose(m);
+					
+					LocalizerPose localizerPose;
+					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
+					OnPoseFound?.Invoke(localizerPose);
                 }
 			}
 

@@ -25,6 +25,8 @@ namespace Immersal.Samples.Mapping
         public TMP_InputField passwordField;
         public TextMeshProUGUI loginErrorText;
         public float fadeOutTime = 1f;
+        public event LoginEvent OnLogin = null;
+        public delegate void LoginEvent();
 
         private IEnumerator m_FadeAlpha;
         private CanvasGroup m_CanvasGroup;
@@ -98,9 +100,9 @@ namespace Immersal.Samples.Mapping
                         PlayerPrefs.SetString("token", loginResult.token);
                         m_Sdk.developerToken = loginResult.token;
 
-                        m_ToggleMappingMode.EnableMappingMode();
+                        m_ToggleMappingMode?.EnableMappingMode();
 
-                        if (m_ToggleMappingMode.MappingUI != null)
+                        if (m_ToggleMappingMode?.MappingUI != null)
                         {
                             m_ToggleMappingMode.MappingUI.GetComponent<BaseMapper>().OnLogOut += OnLogOut;
                         }
@@ -108,6 +110,8 @@ namespace Immersal.Samples.Mapping
                         loginErrorText.gameObject.SetActive(false);
                         
                         FadeOut();
+
+                        OnLogin?.Invoke();
                     }
                     else if (loginResult.error == "auth")
                     {

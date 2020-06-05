@@ -659,6 +659,21 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 320428771132573975, guid: 981dede10de6142fc9565be4695e2871,
+        type: 3}
+      propertyPath: m_text
+      value: MappingApp sample v1.6.0
+      objectReference: {fileID: 0}
+    - target: {fileID: 320428771132573975, guid: 981dede10de6142fc9565be4695e2871,
+        type: 3}
+      propertyPath: m_textInfo.characterCount
+      value: 23
+      objectReference: {fileID: 0}
+    - target: {fileID: 320428771132573975, guid: 981dede10de6142fc9565be4695e2871,
+        type: 3}
+      propertyPath: m_textInfo.wordCount
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 366120731678858719, guid: 981dede10de6142fc9565be4695e2871,
         type: 3}
       propertyPath: m_Name

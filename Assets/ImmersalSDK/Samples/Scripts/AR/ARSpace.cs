@@ -24,7 +24,9 @@ namespace Immersal.AR
 
     public class MapOffset
     {
-        public Matrix4x4 offset;
+        public Vector3 position;
+        public Quaternion rotation;
+        public Vector3 scale;
         public SpaceContainer space;
     }
 
@@ -68,7 +70,7 @@ namespace Immersal.AR
             m_InitialOffset = offset;
         }
 
-        public static void RegisterSpace(Transform tr, int mapId, Matrix4x4 offset)
+        public static void RegisterSpace(Transform tr, int mapId, Vector3 offsetPosition, Quaternion offsetRotation, Vector3 offsetScale)
 		{
             SpaceContainer sc;
 
@@ -85,7 +87,9 @@ namespace Immersal.AR
             sc.mapCount++;
 
             MapOffset mo = new MapOffset();
-            mo.offset = offset;
+            mo.position = offsetPosition;
+            mo.rotation = offsetRotation;
+            mo.scale = offsetScale;
             mo.space = sc;
 
             mapIdToOffset[mapId] = mo;
@@ -93,7 +97,7 @@ namespace Immersal.AR
 
         public static void RegisterSpace(Transform tr, int mapId)
         {
-            RegisterSpace(tr, mapId, Matrix4x4.identity);
+            RegisterSpace(tr, mapId, Vector3.zero, Quaternion.identity, Vector3.one);
         }
 
         public static void UnregisterSpace(Transform tr, int spaceId)

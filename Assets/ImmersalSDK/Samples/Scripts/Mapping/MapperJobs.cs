@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using Immersal.AR;
 using Immersal.REST;
 using Immersal.Samples.Util;
 
@@ -210,34 +211,17 @@ namespace Immersal.Samples.Mapping
         public Vector4 intrinsics;
         public Matrix4x4 rotation;
         public Vector3 position;
-        public byte[] pixels;
-        public int width;
-        public int height;
-        public int channels;
         public double latitude;
         public double longitude;
         public double altitude;
+        public string encodedImage;
 
         public override IEnumerator RunJob()
         {
             Debug.Log("*************************** CoroutineJobCapture ***************************");
+            float startTime = Time.realtimeSinceStartup;
+
             BaseMapper mapper = host as BaseMapper;
-            byte[] capture = new byte[channels * width * height + 1024];
-
-            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
-            {
-                icvCaptureInfo info = Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
-            });
-
-            while (!t.IsCompleted)
-            {
-                yield return null;
-            }
-
-            string encodedImage = t.Result.Item1;
-            icvCaptureInfo captureInfo = t.Result.Item2;
-            mapper.NotifyIfConnected(captureInfo);
 
             SDKImageRequest imageRequest = new SDKImageRequest();
             imageRequest.token = mapper.token;
@@ -287,7 +271,8 @@ namespace Immersal.Samples.Mapping
                     SDKImageResult result = JsonUtility.FromJson<SDKImageResult>(request.downloadHandler.text);
                     if (result.error == "none")
                     {
-                        Debug.Log("Image uploaded successfully");
+                        float elapsedTime = Time.realtimeSinceStartup - startTime;
+                        Debug.Log(string.Format("Image uploaded successfully in {0} seconds", elapsedTime));
                     }
                 }
             }
@@ -336,16 +321,9 @@ namespace Immersal.Samples.Mapping
 
                 Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
 
-                double[] mapToecef = new double[13];
-                double[] wgs84 = new double[3];
-                Immersal.Core.MapToEcefGet(mapToecef, mapId);
-                int r = Immersal.Core.PosMapToWgs84(wgs84, pos, mapToecef);
-                mapper.vlatitude = wgs84[0];
-                mapper.vlongitude = wgs84[1];
-                mapper.valtitude = wgs84[2];
-
-                if (r == 0)
-                    mapper.lastLocalizedPose = (true, mapToecef, m.inverse, new Pose(pos, rot));
+                LocalizerPose lastLocalizedPose;
+                BaseLocalizer.GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
+                mapper.lastLocalizedPose = lastLocalizedPose;
 
                 foreach (PointCloudRenderer p in mapper.pcr.Values)
                 {
@@ -510,17 +488,10 @@ namespace Immersal.Samples.Mapping
                         SDKEcefResult result = JsonUtility.FromJson<SDKEcefResult>(request.downloadHandler.text);
 
                         Debug.Log(request.downloadHandler.text);
-                                                
-                        double[] wgs84 = new double[3];
-                        Vector3 pos = cloudSpace.GetColumn(3);
-                        Quaternion rot = cloudSpace.rotation;
-                        int r = Immersal.Core.PosMapToWgs84(wgs84, pos, result.ecef);
-                        mapper.vlatitude = wgs84[0];
-                        mapper.vlongitude = wgs84[1];
-                        mapper.valtitude = wgs84[2];
 
-                        if (r == 0)
-                            mapper.lastLocalizedPose = (true, result.ecef, m.inverse, new Pose(pos, rot));
+                        LocalizerPose lastLocalizedPose;
+                        BaseLocalizer.GetLocalizerPose(out lastLocalizedPose, locResult.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result.ecef);
+                        mapper.lastLocalizedPose = lastLocalizedPose;
                     }
                 }
             }

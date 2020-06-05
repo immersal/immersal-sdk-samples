@@ -22,6 +22,17 @@ namespace Immersal.AR
 		public int localizationSuccessCount = 0;
 	}
 
+	public struct LocalizerPose
+	{
+		public bool valid;
+		public double[] mapToEcef;
+		public Matrix4x4 matrix;
+		public Pose lastUpdatedPose;
+		public double vLatitude;
+		public double vLongitude;
+		public double vAltitude;
+	}
+
     public abstract class BaseLocalizer : MonoBehaviour
 	{
 		[Tooltip("Time between localization requests in seconds")]
@@ -175,6 +186,31 @@ namespace Immersal.AR
 			if (downsample)
 			{
 				Immersal.Core.SetInteger("LocalizationMaxPixels", 1280*720);
+			}
+		}
+
+		public static void GetLocalizerPose(out LocalizerPose localizerPose, int mapId, Vector3 pos, Quaternion rot, Matrix4x4 m, double[] mapToEcef = null)
+		{
+			localizerPose = default;
+
+			if (mapToEcef == null)
+			{
+				mapToEcef = new double[13];
+				Immersal.Core.MapToEcefGet(mapToEcef, mapId);
+			}
+
+			double[] wgs84 = new double[3];
+			int r = Immersal.Core.PosMapToWgs84(wgs84, pos, mapToEcef);
+
+			if (r == 0)
+			{
+				localizerPose.valid = true;
+				localizerPose.mapToEcef = mapToEcef;
+				localizerPose.matrix = m;
+				localizerPose.lastUpdatedPose = new Pose(pos, rot);
+				localizerPose.vLatitude = wgs84[0];
+				localizerPose.vLongitude = wgs84[1];
+				localizerPose.vAltitude = wgs84[2];
 			}
 		}
 
