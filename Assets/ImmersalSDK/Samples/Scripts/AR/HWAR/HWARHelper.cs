@@ -103,6 +103,32 @@ namespace Immersal.AR.HWAR
 			}
 		}
 
+		public static bool TryGetCameraImageBytes(out ARCameraImageBytes image)
+		{
+			bool isHD = false;
+
+			if (ImmersalSDK.Instance.androidResolution == ImmersalSDK.CameraResolution.Max)
+			{
+				try
+				{
+					image = ARFrame.AcquirPreviewImageBytes();
+					isHD = true;
+				}
+				catch (SystemException e)
+				{
+					Debug.LogError("Cannot acquire FullHD image: " + e.Message);
+
+					image = ARFrame.AcquireCameraImageBytes();
+				}
+			}
+			else
+			{
+				image = ARFrame.AcquireCameraImageBytes();
+			}
+
+			return isHD;
+		}
+
 		public static bool TryGetTrackingQuality(out int quality)
 		{
 			quality = default;

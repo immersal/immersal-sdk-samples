@@ -36,23 +36,7 @@ namespace Immersal.AR.HWAR
         public override IEnumerator Localize()
 		{
 			ARCameraImageBytes image = null;
-			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
-			{
-				try
-				{
-					image = ARFrame.AcquirPreviewImageBytes();
-				}
-				catch (NullReferenceException e)
-				{
-					Debug.LogError("Cannot acquire FullHD image: " + e.Message);
-
-					image = ARFrame.AcquireCameraImageBytes();
-				}
-			}
-			else
-			{
-				image = ARFrame.AcquireCameraImageBytes();
-			}
+			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
 			if (image != null && image.IsAvailable)
 			{
@@ -60,7 +44,7 @@ namespace Immersal.AR.HWAR
 				Vector3 camPos = m_Cam.transform.position;
 				Quaternion camRot = m_Cam.transform.rotation;
 				byte[] pixels;
-				Vector4 intrinsics = HWARHelper.GetIntrinsics();
+				Vector4 intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
 				HWARHelper.GetPlaneData(out pixels, image);
 
 				image.Dispose();
@@ -102,10 +86,18 @@ namespace Immersal.AR.HWAR
                     float elapsedTime = Time.realtimeSinceStartup - startTime;
                     Debug.Log(string.Format("Relocalised in {0} seconds", elapsedTime));
                     stats.localizationSuccessCount++;
-                    Matrix4x4 cloudSpace = mo.offset*Matrix4x4.TRS(pos, rot, Vector3.one);
-                    Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                    Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-                    mo.space.filter.RefinePose(m);
+
+					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+					Vector3 scaledPos = new Vector3
+						(
+							pos.x * mo.scale.x,
+							pos.y * mo.scale.y,
+							pos.z * mo.scale.z
+						);
+					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
+					Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+					Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+					mo.space.filter.RefinePose(m);
 					
 					LocalizerPose localizerPose;
 					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);

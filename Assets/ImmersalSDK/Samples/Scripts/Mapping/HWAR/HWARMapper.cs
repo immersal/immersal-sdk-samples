@@ -52,23 +52,7 @@ namespace Immersal.Samples.Mapping.HWAR
             m_bCaptureRunning = true;
 
 			ARCameraImageBytes image = null;
-			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
-			{
-				try
-				{
-					image = ARFrame.AcquirPreviewImageBytes();
-				}
-				catch (NullReferenceException e)
-				{
-					Debug.LogError("Cannot acquire FullHD image: " + e.Message);
-
-					image = ARFrame.AcquireCameraImageBytes();
-				}
-			}
-			else
-			{
-				image = ARFrame.AcquireCameraImageBytes();
-			}
+			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
 			if (image != null && image.IsAvailable)
             {
@@ -96,7 +80,7 @@ namespace Immersal.Samples.Mapping.HWAR
                 Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
                 j.rotation = r;
                 j.position = p;
-				j.intrinsics = HWARHelper.GetIntrinsics();
+				j.intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
                 int width = image.Width;
                 int height = image.Height;
 
@@ -137,29 +121,13 @@ namespace Immersal.Samples.Mapping.HWAR
         public override void Localize()
         {
 			ARCameraImageBytes image = null;
-			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
-			{
-				try
-				{
-					image = ARFrame.AcquirPreviewImageBytes();
-				}
-				catch (NullReferenceException e)
-				{
-					Debug.LogError("Cannot acquire FullHD image: " + e.Message);
-
-					image = ARFrame.AcquireCameraImageBytes();
-				}
-			}
-			else
-			{
-				image = ARFrame.AcquireCameraImageBytes();
-			}
+            bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
 			if (image != null && image.IsAvailable)
             {
                 CoroutineJobLocalize j = new CoroutineJobLocalize();
                 Camera cam = this.mainCamera;
-                j.intrinsics = HWARHelper.GetIntrinsics();
+                j.intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
                 j.width = image.Width;
                 j.height = image.Height;
                 j.rotation = cam.transform.rotation;
@@ -175,23 +143,7 @@ namespace Immersal.Samples.Mapping.HWAR
         public override void LocalizeServer()
         {
 			ARCameraImageBytes image = null;
-			if (m_Sdk.androidResolution == ImmersalSDK.CameraResolution.Max)
-			{
-				try
-				{
-					image = ARFrame.AcquirPreviewImageBytes();
-				}
-				catch (NullReferenceException e)
-				{
-					Debug.LogError("Cannot acquire FullHD image: " + e.Message);
-
-					image = ARFrame.AcquireCameraImageBytes();
-				}
-			}
-			else
-			{
-				image = ARFrame.AcquireCameraImageBytes();
-			}
+            bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
 			if (image != null && image.IsAvailable)
             {
@@ -209,7 +161,7 @@ namespace Immersal.Samples.Mapping.HWAR
                 Camera cam = this.mainCamera;
                 j.rotation = cam.transform.rotation;
                 j.position = cam.transform.position;
-                j.intrinsics = HWARHelper.GetIntrinsics();
+                j.intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
                 j.width = image.Width;
                 j.height = image.Height;
 

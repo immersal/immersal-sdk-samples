@@ -13,6 +13,9 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using Immersal.AR;
+#if HWAR
+using Immersal.AR.HWAR;
+#endif
 
 namespace Immersal.Samples.Util
 {
@@ -47,11 +50,20 @@ namespace Immersal.Samples.Util
 		private int m_TrackingQuality = 0;
 		private bool m_HasPose = false;
 		private ImmersalSDK m_Sdk;
-		private ARLocalizer m_Localizer;
+		private BaseLocalizer m_Localizer;
 
 		void Start () {
 			m_Sdk = ImmersalSDK.Instance;
-			m_Localizer = m_Sdk.gameObject.GetComponent<ARLocalizer>();
+			if (ImmersalSDK.isHWAR)
+			{
+				#if HWAR
+				m_Localizer = m_Sdk.gameObject.GetComponent<HWARLocalizer>();
+				#endif
+			}
+			else
+			{
+				m_Localizer = m_Sdk.gameObject.GetComponent<ARLocalizer>();
+			}
 			m_Image = GetComponent<Image> ();
 
             if (indicatorMode == IndicatorMode.multiplyColor)
@@ -64,7 +76,20 @@ namespace Immersal.Samples.Util
 
 		void Update ()
 		{
-			if (ARHelper.TryGetTrackingQuality(out m_TrackingQuality))
+			bool ok = false;
+
+			if (ImmersalSDK.isHWAR)
+			{
+				#if HWAR
+				ok = HWARHelper.TryGetTrackingQuality(out m_TrackingQuality);
+				#endif
+			}
+			else
+			{
+				ok = ARHelper.TryGetTrackingQuality(out m_TrackingQuality);
+			}
+
+			if (ok)
 			{
 				LocalizerStats stats = m_Localizer.stats;
 				if (stats.localizationAttemptCount > 0)
