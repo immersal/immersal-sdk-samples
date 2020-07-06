@@ -4,6 +4,25 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2020-07-02
+### Added
+- Core: Improved localization robustness
+- Core: REST API clean-up; error, start, progress and complete callbacks
+- Core: REST API; Map construct detail level
+- Samples: Native double precision GPS coordinates for iOS and Android
+- Samples: Image upload progress bar to Mapper UI
+- Samples: Map construct detail level in Mapper
+- Samples: Visual compass bearing in Mapper
+
+### Changed
+- Core: Smaller plug-in size
+- Core: Changed map hashes from MD5 to SHA256
+- Samples: Updated to Unity 2019.4 LTS and AR Foundation 4
+
+### Fixed
+- Samples: `ARMap.cs` crash problems in Unity Editor
+- Samples: Bug fixes to Huawei AR sample scripts
+
 ## [1.6.0] - 2020-06-05
 ### Added
 - Server / Developer Portal: Support for textured meshes (both grayscale and RGB).
