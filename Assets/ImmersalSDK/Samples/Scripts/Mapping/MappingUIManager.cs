@@ -10,15 +10,23 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using UnityEngine;
+using UnityEngine.UI;
+using Immersal.Samples.Util;
+using TMPro;
 
 namespace Immersal.Samples.Mapping
 {
 	public class MappingUIManager : MonoBehaviour
     {
+        public WorkspaceManager workspaceManager;
+        public VisualizeManager visualizeManager;
+        public TextMeshProUGUI locationText = null;
+        public TextMeshProUGUI vLocationText = null;
+        public Toggle gpsToggle = null;
+        public GameObject locationPanel = null;
+
         [SerializeField]
-        private WorkspaceManager m_WorkspaceManager;
-        [SerializeField]
-        private VisualizeManager m_VisualizeManager;
+        private HorizontalProgressBar m_ProgressBar = null;
 
 		private enum UIState {Workspace, Visualize};
 		private UIState uiState = UIState.Workspace;
@@ -32,33 +40,43 @@ namespace Immersal.Samples.Mapping
 			ChangeState(uiState);
 		}
 
+        public void ShowProgressBar()
+        {
+            m_ProgressBar.transform.GetComponent<Fader>().FadeIn();
+        }
+
+        public void HideProgressBar()
+        {
+            m_ProgressBar.transform.GetComponent<Fader>().FadeOut();
+        }
+
+        public void SetProgress(int value)
+        {
+            m_ProgressBar.currentValue = value;
+        }
+
 		private void ChangeState(UIState state) {
 			switch (state) {
 				case UIState.Workspace:
-                    m_WorkspaceManager.gameObject.SetActive(true);
-                    m_VisualizeManager.gameObject.SetActive(false);
+                    workspaceManager.gameObject.SetActive(true);
+                    visualizeManager.gameObject.SetActive(false);
                     break;
 				case UIState.Visualize:
-                    m_WorkspaceManager.gameObject.SetActive(false);
-                    m_VisualizeManager.gameObject.SetActive(true);
+                    workspaceManager.gameObject.SetActive(false);
+                    visualizeManager.gameObject.SetActive(true);
                     break;
 				default:
 					break;
 			}
 		}
 
-		private void Start() {
-
-            if(m_WorkspaceManager == null)
-            {
-                m_WorkspaceManager = GetComponentInChildren<WorkspaceManager>();
-            }
-            if (m_VisualizeManager == null)
-            {
-                m_VisualizeManager = GetComponentInChildren<VisualizeManager>();
-            }
-
+		private void Start()
+        {
             ChangeState(uiState);
+
+            m_ProgressBar.minValue = 0;
+            m_ProgressBar.maxValue = 100;
+            m_ProgressBar.currentValue = 0;
         }
 	}
 }

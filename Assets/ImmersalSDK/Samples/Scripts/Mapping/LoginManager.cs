@@ -18,7 +18,7 @@ using Immersal.REST;
 
 namespace Immersal.Samples.Mapping
 {
-    public class LoginManager : MonoBehaviour
+    public class LoginManager : MonoBehaviour, IJobHost
     {
         public GameObject loginPanel;
         public TMP_InputField emailField;
@@ -32,12 +32,22 @@ namespace Immersal.Samples.Mapping
         private CanvasGroup m_CanvasGroup;
         private ImmersalSDK m_Sdk;
         private ToggleMappingMode m_ToggleMappingMode;
-        private BaseMapper m_Mapper = null;
+        private MapperBase m_Mapper = null;
+
+        public string server
+        {
+            get { return m_Sdk.localizationServer; }
+        }
+
+        public string token
+        {
+            get { return m_Sdk.developerToken; }
+        }
 
         void Start()
         {
             m_Sdk = ImmersalSDK.Instance;
-            m_Mapper = UnityEngine.Object.FindObjectOfType<BaseMapper>();
+            m_Mapper = UnityEngine.Object.FindObjectOfType<MapperBase>();
 
             m_CanvasGroup = loginPanel.GetComponent<CanvasGroup>();
             m_ToggleMappingMode = loginPanel.GetComponent<ToggleMappingMode>();
@@ -55,71 +65,58 @@ namespace Immersal.Samples.Mapping
         {
             if (emailField.text.Length > 0 && passwordField.text.Length > 0)
             {
-                StartCoroutine(Login());
+                Login();
             }
         }
 
-        private IEnumerator Login()
+        private void Login()
         {
-            SDKLoginRequest loginRequest = new SDKLoginRequest();
-            loginRequest.login = emailField.text;
-            loginRequest.password = passwordField.text;
-
-            loginErrorText.gameObject.SetActive(false);
-
-            string jsonString = JsonUtility.ToJson(loginRequest);
-            byte[] myData = System.Text.Encoding.UTF8.GetBytes(jsonString);
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, m_Sdk.localizationServer, Endpoint.LOGIN), jsonString))
+            CoroutineJobLogin j = new CoroutineJobLogin();
+            j.host = this;
+            j.username = emailField.text;
+            j.password = passwordField.text;
+            j.OnStart += () =>
             {
-                request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-                request.SetRequestHeader("Accept", "application/json");
-                yield return request.SendWebRequest();
-
-                //Debug.Log("Response code: " + request.responseCode);
-
-                if (request.isNetworkError || request.isHttpError)
+                loginErrorText.gameObject.SetActive(false);
+            };
+            j.OnError += (UnityWebRequest request) =>
+            {
+                if (request.responseCode == (long)HttpStatusCode.BadRequest)
                 {
-                    Debug.Log(request.error);
-                    if (request.responseCode == (long)HttpStatusCode.BadRequest)
-                    {
-                        loginErrorText.text = "Login failed, please try again";
-                        loginErrorText.gameObject.SetActive(true);
-                    }
+                    loginErrorText.text = "Login failed, please try again";
+                    loginErrorText.gameObject.SetActive(true);
                 }
-                else
+            };
+            j.OnResult += (SDKLoginResult result) =>
+            {
+                if (result.error == "none")
                 {
-                    Debug.Log(request.downloadHandler.text);
-                    PlayerPrefs.SetString("login", loginRequest.login);
-                    PlayerPrefs.SetString("password", loginRequest.password);
+                    PlayerPrefs.SetString("login", j.username);
+                    PlayerPrefs.SetString("password", j.password);
+                    PlayerPrefs.SetString("token", result.token);
+                    m_Sdk.developerToken = result.token;
 
-                    SDKLoginResult loginResult = JsonUtility.FromJson<SDKLoginResult>(request.downloadHandler.text);
-                    if (loginResult.error == "none")
+                    m_ToggleMappingMode?.EnableMappingMode();
+
+                    if (m_ToggleMappingMode?.MappingUI != null)
                     {
-                        PlayerPrefs.SetString("token", loginResult.token);
-                        m_Sdk.developerToken = loginResult.token;
-
-                        m_ToggleMappingMode?.EnableMappingMode();
-
-                        if (m_ToggleMappingMode?.MappingUI != null)
-                        {
-                            m_ToggleMappingMode.MappingUI.GetComponent<BaseMapper>().OnLogOut += OnLogOut;
-                        }
-
-                        loginErrorText.gameObject.SetActive(false);
-                        
-                        FadeOut();
-
-                        OnLogin?.Invoke();
+                        m_ToggleMappingMode.MappingUI.GetComponent<MapperBase>().OnLogOut += OnLogOut;
                     }
-                    else if (loginResult.error == "auth")
-                    {
-                        loginErrorText.text = "Login failed, please try again";
-                        loginErrorText.gameObject.SetActive(true);
-                    }
+
+                    loginErrorText.gameObject.SetActive(false);
+                    
+                    FadeOut();
+
+                    OnLogin?.Invoke();
                 }
-            }
+                else if (result.error == "auth")
+                {
+                    loginErrorText.text = "Login failed, please try again";
+                    loginErrorText.gameObject.SetActive(true);
+                }
+            };
+
+            StartCoroutine(j.RunJob());
         }
 
         private void OnLogOut()

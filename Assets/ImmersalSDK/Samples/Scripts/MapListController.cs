@@ -12,11 +12,8 @@ Contact sdk@immersal.com for licensing requests.
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Net;
 using UnityEngine;
-using UnityEngine.Networking;
 using TMPro;
-using Immersal.Samples.Mapping;
 using Immersal.AR;
 using Immersal.REST;
 
@@ -30,7 +27,6 @@ namespace Immersal.Samples
 
         private List<SDKJob> m_Maps;
         private TMP_Dropdown m_Dropdown;
-        private int m_Bank = 0;
         private string m_Token = "";
         private string m_Server;
         private List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
@@ -109,20 +105,46 @@ namespace Immersal.Samples
 
         public void GetMaps()
         {
-            CoroutineListMaps j = new CoroutineListMaps();
+            CoroutineJobListJobs j = new CoroutineJobListJobs();
             j.host = this;
-            j.bank = m_Bank;
-            j.dropdown = m_Dropdown;
-            j.maps = m_Maps;
+            j.OnSuccess += (SDKJobsResult result) =>
+            {
+                if (result.error == "none" && result.count > 0)
+                {
+                    List<string> names = new List<string>();
+
+                    foreach (SDKJob job in result.jobs)
+                    {
+                        if (job.status == "sparse" || job.status == "done")
+                        {
+                            this.m_Maps.Add(job);
+                            names.Add(job.name);
+                        }
+                    }
+
+                    this.m_Dropdown.AddOptions(names);
+                }
+            };
+
             m_Jobs.Add(j);
         }
 
         public void LoadMap(int id)
         {
-            CoroutineLoadMap j = new CoroutineLoadMap();
+            CoroutineJobLoadMap j = new CoroutineJobLoadMap();
             j.host = this;
             j.id = id;
-            j.arMap = m_ARMap;
+            j.OnSuccess += (SDKMapResult result) =>
+            {
+                if (result.error == "none")
+                {
+                    byte[] mapData = Convert.FromBase64String(result.b64);
+                    Debug.Log(string.Format("Load map {0} ({1} bytes)", id, mapData.Length));
+
+                    this.m_ARMap.LoadMap(mapData);
+                }
+            };
+
             m_Jobs.Add(j);
         }
 
@@ -133,94 +155,4 @@ namespace Immersal.Samples
             m_JobLock = 0;
         }
     }
-
-    public class CoroutineListMaps : CoroutineJob
-    {
-        public int bank;
-        public List<SDKJob> maps;
-        public TMP_Dropdown dropdown;
-
-        public override IEnumerator RunJob()
-        {
-            SDKJobsRequest r = new SDKJobsRequest();
-            r.token = host.token;
-            r.bank = this.bank;
-            string jsonString = JsonUtility.ToJson(r);
-
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.LIST_JOBS), jsonString))
-            {
-                request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-                request.SetRequestHeader("Accept", "application/json");
-                yield return request.SendWebRequest();
-
-                if (request.isNetworkError || request.isHttpError)
-                {
-                    Debug.LogError(request.error);
-                }
-                else if (request.responseCode == (long)HttpStatusCode.OK)
-                {
-                    SDKJobsResult result = JsonUtility.FromJson<SDKJobsResult>(request.downloadHandler.text);
-
-                    if (result.error == "none" && result.count > 0)
-                    {
-                        List<string> names = new List<string>();
-
-                        foreach (SDKJob job in result.jobs)
-                        {
-                            if (job.status == "sparse" || job.status == "done")
-                            {
-                                maps.Add(job);
-                                names.Add(job.name);
-                            }
-                        }
-
-                        dropdown.AddOptions(names);
-                    }
-                }
-            }
-        }
-    }
-
-	public class CoroutineLoadMap : CoroutineJob
-	{
-		public int id;
-        public ARMap arMap;
-
-		public override IEnumerator RunJob()
-		{
-			Debug.Log("*************************** CoroutineLoadMap ***************************");
-			SDKMapRequest r = new SDKMapRequest();
-			r.token = host.token;
-			r.id = this.id;
-
-			string jsonString2 = JsonUtility.ToJson(r);
-			using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.LOAD_MAP), jsonString2))
-			{
-				request.method = UnityWebRequest.kHttpVerbPOST;
-				request.useHttpContinue = false;
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.SetRequestHeader("Accept", "application/json");
-				yield return request.SendWebRequest();
-
-				if (request.isNetworkError || request.isHttpError)
-				{
-					Debug.Log(request.error);
-				}
-				else if (request.responseCode == (long)HttpStatusCode.OK)
-				{
-					SDKMapResult result = JsonUtility.FromJson<SDKMapResult>(request.downloadHandler.text);
-					if (result.error == "none")
-					{
-
-						byte[] mapData = Convert.FromBase64String(result.b64);
-						Debug.Log("Load map " + this.id + " (" + mapData.Length + " bytes)");
-
-                        arMap.LoadMap(mapData);
-					}
-				}
-			}
-		}
-	}
 }

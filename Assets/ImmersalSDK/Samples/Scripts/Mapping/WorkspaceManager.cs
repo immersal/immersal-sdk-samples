@@ -31,6 +31,8 @@ namespace Immersal.Samples.Mapping
 		private GameObject promptSubmitMap = null;
 		[SerializeField]
 		public TMP_InputField newMapName = null;
+		[SerializeField]
+		public TMP_Dropdown detailLevelDropdown = null;
 
 		private enum UIState { Default, Tools, DeleteData, SubmitNewMap };
 		private UIState uiState = UIState.Default;

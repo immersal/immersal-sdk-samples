@@ -16,6 +16,8 @@ namespace Immersal.AR
     [ExecuteAlways]
     public class ARMap : MonoBehaviour
     {
+        public const int MAX_VERTICES = 65535;
+
         public enum RenderMode { DoNotRender, EditorOnly, EditorAndRuntime }
 
         [HideInInspector]
@@ -24,17 +26,13 @@ namespace Immersal.AR
         public TextAsset mapFile;
         [HideInInspector]
         public Color color = new Color(0.2f, 0.7f, 0.9f);
-        private Transform m_Root;
-        private int m_MapId = -1;
         private Mesh m_Mesh = null;
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
         private ARSpace m_ARSpace = null;
 
-        public Transform root
-        {
-            get { return m_Root; }
-        }
+        public Transform root { get; private set; }
+        public int mapId { get; private set; }
 
         public void InitMesh()
         {
@@ -68,32 +66,16 @@ namespace Immersal.AR
             switch (renderMode)
             {
                 case RenderMode.DoNotRender:
-                    FreeMap();
                     m_MeshRenderer.enabled = false;
                     break;
                 case RenderMode.EditorOnly:
                     if (Application.isEditor && !Application.isPlaying)
-                    {
-                        FreeMap();
-                        LoadMap();
                         m_MeshRenderer.enabled = true;
-                    }
                     else
-                    {
                         m_MeshRenderer.enabled = false;
-                    }
                     break;
                 case RenderMode.EditorAndRuntime:
-                    if (Application.isEditor && !Application.isPlaying)
-                    {
-                        FreeMap();
-                        LoadMap();
-                        m_MeshRenderer.enabled = true;
-                    }
-                    else
-                    {
-                        m_MeshRenderer.enabled = true;
-                    }
+                    m_MeshRenderer.enabled = true;
                     break;
                 default:
                     break;
@@ -102,13 +84,11 @@ namespace Immersal.AR
 
         public void FreeMap()
         {
-            if (m_MapId != -1)
+            if (mapId > 0)
             {
-                Immersal.Core.FreeMap(m_MapId);
-                if (!Application.isEditor)
-                {
-                    ARSpace.UnregisterSpace(root, m_MapId);
-                }
+                Immersal.Core.FreeMap(mapId);
+                ARSpace.UnregisterSpace(root, mapId);
+                mapId = -1;
             }
         }
 
@@ -119,32 +99,28 @@ namespace Immersal.AR
                 mapBytes = (mapFile != null) ? mapFile.bytes : null;
             }
 
-            if (mapBytes == null)
-                return -1;
-
-            m_MapId = Immersal.Core.LoadMap(mapBytes);
-
-            if (m_MapId != -1)
+            if (mapBytes != null && mapId <= 0)
             {
-                Vector3[] points = new Vector3[65536];
-                int num = Immersal.Core.GetPointCloud(m_MapId, points);
+                mapId = Immersal.Core.LoadMap(mapBytes);
+            }
+
+            if (mapId > 0)
+            {
+                Vector3[] points = new Vector3[MAX_VERTICES];
+                int num = Immersal.Core.GetPointCloud(mapId, points);
 
                 CreateCloud(points, num);
 
-                if (!Application.isEditor)
-                {
-                    m_Root = m_ARSpace.transform;
-                    ARSpace.RegisterSpace(m_Root, m_MapId, transform.localPosition, transform.localRotation, transform.localScale);
-                }
+                root = m_ARSpace.transform;
+                ARSpace.RegisterSpace(root, mapId, transform.localPosition, transform.localRotation, transform.localScale);
             }
 
-            return m_MapId;
+            return mapId;
         }
 
         public void CreateCloud(Vector3[] points, int totalPoints, Matrix4x4 offset)
         {
-            const int max_vertices = 65536;
-            int numPoints = totalPoints >= max_vertices ? max_vertices : totalPoints;
+            int numPoints = totalPoints >= MAX_VERTICES ? MAX_VERTICES : totalPoints;
             Color32 fix_col = color;
             int[] indices = new int[numPoints];
             Vector3[] pts = new Vector3[numPoints];
@@ -182,11 +158,7 @@ namespace Immersal.AR
         private void OnEnable()
         {
             InitMesh();
-
-            if (!(Application.isEditor && !Application.isPlaying))
-            {
-                LoadMap();
-            }
+            LoadMap();
         }
 
         private void OnDisable()

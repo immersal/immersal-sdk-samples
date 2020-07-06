@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace Immersal.AR.HWAR
 {
-    public class HWARLocalizer : BaseLocalizer
+    public class HWARLocalizer : LocalizerBase
 	{
 		public event MapChanged OnMapChanged = null;
 		public event PoseFound OnPoseFound = null;
@@ -66,7 +66,7 @@ namespace Immersal.AR.HWAR
 
                 int mapId = t.Result;
 
-                if (mapId >= 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
+                if (mapId > 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
                 {
 					if (mapId != lastLocalizedMapId)
 					{

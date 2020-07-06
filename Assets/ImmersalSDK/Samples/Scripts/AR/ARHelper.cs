@@ -60,9 +60,9 @@ namespace Immersal.AR
 			rot *= Quaternion.Euler(0f, 0f, angle);
 		}
 
-		public static void GetPlaneData(out byte[] pixels, XRCameraImage image)
+		public static void GetPlaneData(out byte[] pixels, XRCpuImage image)
 		{
-			XRCameraImagePlane plane = image.GetPlane(0); // use the Y plane
+			XRCpuImage.Plane plane = image.GetPlane(0);	// use the Y plane
 			int width = image.width, height = image.height;
 			pixels = new byte[width * height];
 
@@ -85,14 +85,14 @@ namespace Immersal.AR
 			}
 		}
 
-		public static void GetPlaneDataRGB(out byte[] pixels, XRCameraImage image)
+		public static void GetPlaneDataRGB(out byte[] pixels, XRCpuImage image)
 		{
-			var conversionParams = new XRCameraImageConversionParams
+			var conversionParams = new XRCpuImage.ConversionParams
 			{
 				inputRect = new RectInt(0, 0, image.width, image.height),
 				outputDimensions = new Vector2Int(image.width, image.height),
 				outputFormat = TextureFormat.RGB24,
-				transformation = CameraImageTransformation.None
+				transformation = XRCpuImage.Transformation.None
 			};
 
 			int size = image.GetConvertedDataSize(conversionParams);

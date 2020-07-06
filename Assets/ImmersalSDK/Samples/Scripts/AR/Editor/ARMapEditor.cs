@@ -27,8 +27,10 @@ namespace Immersal.AR
             TextAsset map = (TextAsset)EditorGUILayout.ObjectField(new GUIContent("Map File", ".bytes file from the Developer Portal"), targ.mapFile, typeof(TextAsset), false);
             if (map != targ.mapFile)
             {
+                targ.FreeMap();
                 targ.mapFile = map;
                 targ.InitMesh();
+                targ.LoadMap();
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             }
 
@@ -37,6 +39,7 @@ namespace Immersal.AR
             {
                 targ.color = color;
                 targ.InitMesh();
+                targ.LoadMap();
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             }
 
@@ -45,6 +48,7 @@ namespace Immersal.AR
             {
                 targ.renderMode = renderMode;
                 targ.InitMesh();
+                targ.LoadMap();
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             }
         }

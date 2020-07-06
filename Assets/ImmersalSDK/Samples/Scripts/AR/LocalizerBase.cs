@@ -33,7 +33,7 @@ namespace Immersal.AR
 		public double vAltitude;
 	}
 
-    public abstract class BaseLocalizer : MonoBehaviour
+    public abstract class LocalizerBase : MonoBehaviour
 	{
 		[Tooltip("Time between localization requests in seconds")]
 		[SerializeField]
@@ -58,6 +58,25 @@ namespace Immersal.AR
         public bool isTracking { get; protected set; }
         public bool isLocalizing { get; protected set; }
         public bool highFrequencyMode { get; protected set; }
+
+        private static LocalizerBase instance = null;
+        public static LocalizerBase Instance
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (instance == null && !Application.isPlaying)
+                {
+                    instance = FindObjectOfType<LocalizerBase>();
+                }
+#endif
+                if (instance == null)
+                {
+                    Debug.LogError("No Localizer instance found. Ensure one exists in the scene.");
+                }
+                return instance;
+            }
+        }
 
         public bool downsample
 		{
@@ -100,6 +119,20 @@ namespace Immersal.AR
 			isLocalizing = false;
 			
 			yield break;
+		}
+
+		public virtual void Awake()
+		{
+			if (instance == null)
+			{
+				instance = this;
+			}
+			if (instance != this)
+			{
+				Debug.LogError("There must be only one Localizer object in a scene.");
+				UnityEngine.Object.DestroyImmediate(this);
+				return;
+			}
 		}
 
 		public virtual void Start()

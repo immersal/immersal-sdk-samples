@@ -21,7 +21,7 @@ public class AppController : MonoBehaviour
     [SerializeField]
     private Common.SessionComponent m_HWARSession = null;
 
-    private BaseLocalizer m_Localizer = null;
+    private LocalizerBase m_Localizer = null;
     private bool m_SDKStarted = false;
 
     // Start is called before the first frame update

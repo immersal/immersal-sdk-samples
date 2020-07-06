@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace Immersal.AR
 {
-    public class ARLocalizer : BaseLocalizer
+    public class ARLocalizer : LocalizerBase
 	{
 		public event MapChanged OnMapChanged = null;
 		public event PoseFound OnPoseFound = null;
@@ -60,11 +60,11 @@ namespace Immersal.AR
 
         public override IEnumerator Localize()
 		{
-			XRCameraImage image;
+			XRCpuImage image;
 			ARCameraManager cameraManager = m_Sdk.cameraManager;
 			var cameraSubsystem = cameraManager.subsystem;
 
-			if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+			if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
 			{
 				stats.localizationAttemptCount++;
 				Vector3 camPos = m_Cam.transform.position;
@@ -92,7 +92,7 @@ namespace Immersal.AR
 
                 int mapId = t.Result;
 
-                if (mapId >= 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
+                if (mapId > 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
                 {
 					if (mapId != lastLocalizedMapId)
 					{

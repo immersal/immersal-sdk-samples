@@ -50,20 +50,11 @@ namespace Immersal.Samples.Util
 		private int m_TrackingQuality = 0;
 		private bool m_HasPose = false;
 		private ImmersalSDK m_Sdk;
-		private BaseLocalizer m_Localizer;
+		private LocalizerBase m_Localizer;
 
 		void Start () {
 			m_Sdk = ImmersalSDK.Instance;
-			if (ImmersalSDK.isHWAR)
-			{
-				#if HWAR
-				m_Localizer = m_Sdk.gameObject.GetComponent<HWARLocalizer>();
-				#endif
-			}
-			else
-			{
-				m_Localizer = m_Sdk.gameObject.GetComponent<ARLocalizer>();
-			}
+			m_Localizer = LocalizerBase.Instance;
 			m_Image = GetComponent<Image> ();
 
             if (indicatorMode == IndicatorMode.multiplyColor)
