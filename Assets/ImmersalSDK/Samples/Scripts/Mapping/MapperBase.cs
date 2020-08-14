@@ -281,7 +281,7 @@ namespace Immersal.Samples.Mapping
             }
 
             // Start service before querying location
-            #if UNITY_IOS || PLATFORM_ANDROID
+            #if (UNITY_IOS || PLATFORM_ANDROID) && !UNITY_EDITOR
             NativeBindings.StartLocation();
             #else
             Input.location.Start(0.001f, 0.001f);
@@ -289,7 +289,7 @@ namespace Immersal.Samples.Mapping
 
             // Wait until service initializes
             int maxWait = 20;
-            #if UNITY_IOS || PLATFORM_ANDROID
+            #if (UNITY_IOS || PLATFORM_ANDROID) && !UNITY_EDITOR
             while (!NativeBindings.LocationServicesEnabled() && maxWait > 0)
             #else
             while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
@@ -309,7 +309,7 @@ namespace Immersal.Samples.Mapping
             }
 
             // Connection has failed
-            #if UNITY_IOS || PLATFORM_ANDROID
+            #if (UNITY_IOS || PLATFORM_ANDROID) && !UNITY_EDITOR
             if (!NativeBindings.LocationServicesEnabled())
             #else
             if (Input.location.status == LocationServiceStatus.Failed)
@@ -321,7 +321,7 @@ namespace Immersal.Samples.Mapping
                 yield break;
             }
 
-            #if UNITY_IOS || PLATFORM_ANDROID
+            #if (UNITY_IOS || PLATFORM_ANDROID) && !UNITY_EDITOR
             if (NativeBindings.LocationServicesEnabled())
             #else
             if (Input.location.status == LocationServiceStatus.Running)
