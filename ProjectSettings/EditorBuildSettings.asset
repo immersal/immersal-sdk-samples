@@ -6,27 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/ImmersalSDK/Samples/Scenes/MappingApp.unity
-    guid: 7a27266a32fe24d6fabb7b0b9550074d
-  - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MapDownloadSample.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MultimapSample.unity
-    guid: 4de518348129a56429d198068366562d
-  - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/ContentPlacementSample.unity
-    guid: a5347933d518cc34ba0c72bc19f2f118
-  - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MultiplayerSample.unity
-    guid: 263cce6359605a54ca895b0a135822a4
-  - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/NavigationSampleNavMesh.unity
-    guid: 98454a452db26144ca9d0692e148ed12
+    path: Assets/Scenes/HelloImmersal.unity
+    guid: 026b52fb0ac014cae8cdcf9e6e9763aa
   m_configObjects:
-    com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20,
-      type: 2}
-    com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: 61430ebb5678b4a2680a97641f470d65,
-      type: 2}
-    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d2bb15fa8c2bf4d90921035afa2666fa,
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 37a1f8bdd410d4b828deab52a2e4f83c,
       type: 2}
