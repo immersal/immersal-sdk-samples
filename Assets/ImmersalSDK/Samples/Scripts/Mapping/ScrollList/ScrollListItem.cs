@@ -144,8 +144,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 			{
 				DateTime dateCreated = DateTime.Parse(m_Data.created).ToLocalTime();
 				DateTime dateModified = DateTime.Parse(m_Data.modified).ToLocalTime();
-				double diffInSeconds = (dateModified - dateCreated).TotalSeconds;
-				dateField.text = string.Format("{0}\n({1} secs)", dateCreated.ToString("yyyy-MM-dd HH:mm"), diffInSeconds);
+				dateField.text = dateCreated.ToString("yyyy-MM-dd HH:mm");
 			}
 		}
 

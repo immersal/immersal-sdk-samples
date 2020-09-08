@@ -12,6 +12,7 @@ Contact sdk@immersal.com for licensing requests.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +20,7 @@ using Immersal.AR;
 using Immersal.REST;
 using Immersal.Samples.Util;
 using UnityEngine.Events;
+using UnityEngine.Networking;
 using TMPro;
 #if PLATFORM_ANDROID
 using UnityEngine.Android;
@@ -135,6 +137,14 @@ namespace Immersal.Samples.Mapping
             get { return m_Bank; }
         }
 
+        public string tempImagePath
+        {
+            get
+            {
+                return string.Format("{0}/Images", Application.persistentDataPath);
+            }
+        }
+
         #region Abstract methods
 
         protected abstract IEnumerator Capture(bool anchor);
@@ -151,6 +161,18 @@ namespace Immersal.Samples.Mapping
             stats.imageCount = 0;
             stats.locFail = 0;
             stats.locSucc = 0;
+
+            DirectoryInfo dataDir = new DirectoryInfo(tempImagePath);
+            if (dataDir.Exists)
+            {
+                dataDir.Delete(true);
+            }
+
+            Directory.CreateDirectory(tempImagePath);
+
+            #if UNITY_IOS
+            UnityEngine.iOS.Device.SetNoBackupFlag(tempImagePath);
+            #endif
         }
 
         protected virtual void OnDisable()
@@ -419,7 +441,11 @@ namespace Immersal.Samples.Mapping
         private IEnumerator RunJob(CoroutineJob j)
         {
             yield return StartCoroutine(j.RunJob());
-            m_Jobs.RemoveAt(0);
+
+            if (m_Jobs.Count > 0)
+            {
+                m_Jobs.RemoveAt(0);
+            }
             m_JobLock = 0;
         }
 
@@ -427,6 +453,7 @@ namespace Immersal.Samples.Mapping
         {
             return stats;
         }
+
         Matrix4x4 Rot(double angle, int axis)
         {
             float cang = (float)System.Math.Cos(angle * System.Math.PI / 180.0);
@@ -703,6 +730,12 @@ namespace Immersal.Samples.Mapping
             CoroutineJobLoadMap j = new CoroutineJobLoadMap();
             j.host = this;
             j.id = mapId;
+
+            j.OnStart += () =>
+            {
+                mappingUIManager.SetProgress(0);
+                mappingUIManager.ShowProgressBar();
+            };
             j.OnSuccess += (SDKMapResult result) =>
             {
                 if (result.error == "none")
@@ -711,6 +744,17 @@ namespace Immersal.Samples.Mapping
                     Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", mapId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
                     StartCoroutine(CompleteMapLoad(mapData));
                 }
+
+                mappingUIManager.HideProgressBar();
+            };
+            j.OnProgress += (float progress) =>
+            {
+                int value = (int)(100f * progress);
+                mappingUIManager.SetProgress(value);
+            };
+            j.OnError += (UnityWebRequest request) =>
+            {
+                mappingUIManager.HideProgressBar();
             };
 
             m_Jobs.Add(j);

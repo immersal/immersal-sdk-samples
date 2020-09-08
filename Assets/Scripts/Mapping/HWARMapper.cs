@@ -9,6 +9,7 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+#if HWAR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,41 +19,36 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using Immersal.AR;
+using Immersal.AR.HWAR;
 using Immersal.REST;
 using Immersal.Samples.Util;
-using UnityEngine.XR.ARFoundation;
-using UnityEngine.XR.ARSubsystems;
+using HuaweiARUnitySDK;
 
-namespace Immersal.Samples.Mapping
+namespace Immersal.Samples.Mapping.HWAR
 {
-    public class Mapper : MapperBase
+    public class HWARMapper : MapperBase
     {
-        private void SessionStateChanged(ARSessionStateChangedEventArgs args)
+        private void SetSessionState()
         {
-            ImageRunUpdate();
+            bool isTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
 
-            m_IsTracking = args.state == ARSessionState.SessionTracking;
+            if (isTracking != m_IsTracking)
+            {
+                ImageRunUpdate();
+            }
 
             var captureButton = workspaceManager.captureButton.GetComponent<Button>();
             var localizeButton = visualizeManager.localizeButton.GetComponent<Button>();
-            captureButton.interactable = m_IsTracking;
-            localizeButton.interactable = m_IsTracking;
+            captureButton.interactable = isTracking;
+            localizeButton.interactable = isTracking;
+            m_IsTracking = isTracking;
         }
 
-        protected override void OnEnable()
+        public override void Update()
         {
-#if !UNITY_EDITOR
-            ARSession.stateChanged += SessionStateChanged;
-#endif
-            base.OnEnable();
-        }
+            SetSessionState();
 
-        protected override void OnDisable()
-        {
-#if !UNITY_EDITOR
-            ARSession.stateChanged -= SessionStateChanged;
-#endif
-            base.OnDisable();
+            base.Update();
         }
 
         protected override IEnumerator Capture(bool anchor)
@@ -63,11 +59,10 @@ namespace Immersal.Samples.Mapping
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
-            XRCpuImage image;
-            ARCameraManager cameraManager = m_Sdk.cameraManager;
-            var cameraSubsystem = cameraManager.subsystem;
+			ARCameraImageBytes image = null;
+			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
-            if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+			if (image != null && image.IsAvailable)
             {
                 CoroutineJobCapture j = new CoroutineJobCapture();
                 j.host = this;
@@ -93,23 +88,15 @@ namespace Immersal.Samples.Mapping
                 Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
                 j.rotation = r;
                 j.position = p;
-				j.intrinsics = ARHelper.GetIntrinsics();
-                int width = image.width;
-                int height = image.height;
+				j.intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
+                int width = image.Width;
+                int height = image.Height;
 
                 byte[] pixels;
                 int channels = 0;
 
-                if (m_RgbCapture)
-                {
-                    ARHelper.GetPlaneDataRGB(out pixels, image);
-                    channels = 3;
-                }
-                else
-                {
-                    ARHelper.GetPlaneData(out pixels, image);
-                    channels = 1;
-                }
+                HWARHelper.GetPlaneData(out pixels, image);
+                channels = 1;
 
                 byte[] capture = new byte[channels * width * height + 1024];
 
@@ -136,7 +123,7 @@ namespace Immersal.Samples.Mapping
 
                 if (m_SessionFirstImage)
                     m_SessionFirstImage = false;
-                
+
                 j.OnStart += () =>
                 {
                     uploadStartTime = Time.realtimeSinceStartup;
@@ -178,19 +165,18 @@ namespace Immersal.Samples.Mapping
 
         public override void Localize()
         {
-            XRCpuImage image;
-            ARCameraManager cameraManager = m_Sdk.cameraManager;
-            var cameraSubsystem = cameraManager.subsystem;
+			ARCameraImageBytes image = null;
+            bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
-            if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+			if (image != null && image.IsAvailable)
             {
                 CoroutineJobLocalize j = new CoroutineJobLocalize();
                 Camera cam = this.mainCamera;
                 Vector3 camPos = cam.transform.position;
                 Quaternion camRot = cam.transform.rotation;
-                j.intrinsics = ARHelper.GetIntrinsics();
-                j.width = image.width;
-                j.height = image.height;
+                j.intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
+                j.width = image.Width;
+                j.height = image.Height;
                 j.rotation = camRot;
                 j.position = camPos;
                 j.OnSuccess += (int mapId, Vector3 position, Quaternion rotation) =>
@@ -226,7 +212,7 @@ namespace Immersal.Samples.Mapping
                     Debug.Log("*************************** Localization Failed ***************************");
                 };
 
-                ARHelper.GetPlaneData(out j.pixels, image);
+                HWARHelper.GetPlaneData(out j.pixels, image);
                 m_Jobs.Add(j);
                 image.Dispose();
             }
@@ -234,13 +220,10 @@ namespace Immersal.Samples.Mapping
 
         public override void LocalizeServer()
         {
-            bool rgb = false;   
+			ARCameraImageBytes image = null;
+            bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
 
-            ARCameraManager cameraManager = m_Sdk.cameraManager;
-            var cameraSubsystem = cameraManager.subsystem;
-
-            XRCpuImage image;
-            if (cameraSubsystem.TryAcquireLatestCpuImage(out image))
+			if (image != null && image.IsAvailable)
             {
                 CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
 
@@ -271,20 +254,12 @@ namespace Immersal.Samples.Mapping
                 j.host = this;
                 j.rotation = camRot;
                 j.position = camPos;
-                j.intrinsics = ARHelper.GetIntrinsics();
-                j.width = image.width;
-                j.height = image.height;
+                j.intrinsics = isHD ? HWARHelper.GetIntrinsics() : HWARHelper.GetIntrinsics(image.Width, image.Height);
+                j.width = image.Width;
+                j.height = image.Height;
 
-                if (rgb)
-                {
-                    ARHelper.GetPlaneDataRGB(out j.pixels, image);
-                    j.channels = 3;
-                }
-                else
-                {
-                    ARHelper.GetPlaneData(out j.pixels, image);
-                    j.channels = 1;
-                }
+                HWARHelper.GetPlaneData(out j.pixels, image);
+                j.channels = 1;
 
                 j.OnResult += (SDKLocalizeResult result) =>
                 {
@@ -354,3 +329,4 @@ namespace Immersal.Samples.Mapping
         }
     }
 }
+#endif

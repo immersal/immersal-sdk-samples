@@ -6,24 +6,34 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/ImmersalSDK/Samples/Scenes/MappingApp.unity
-    guid: 7a27266a32fe24d6fabb7b0b9550074d
+    path: Assets/Scenes/MappingApp.unity
+    guid: f1386cbc67d2b4dae8106aff744e611e
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MapDownloadSample.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/Scenes/ContentPlacementSample.unity
+    guid: 0d8bbf56a0335421c859d9d89e434854
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MultimapSample.unity
-    guid: 4de518348129a56429d198068366562d
+    path: Assets/Scenes/MapDownloadSample.unity
+    guid: 14ad1dc0f14c3469da3b7ad6fbc6a9d4
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/ContentPlacementSample.unity
-    guid: a5347933d518cc34ba0c72bc19f2f118
+    path: Assets/Scenes/MultimapSample.unity
+    guid: acb58393ab94644959690d0680c59d36
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MultiplayerSample.unity
-    guid: 263cce6359605a54ca895b0a135822a4
+    path: Assets/Scenes/MultiplayerSample.unity
+    guid: af11cf3e17509483f8ca4a9d6a5a5d3a
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/NavigationSampleNavMesh.unity
-    guid: 98454a452db26144ca9d0692e148ed12
+    path: Assets/Scenes/NavigationSampleGraph.unity
+    guid: e34e8dce71979493498939b3faa65583
+  - enabled: 0
+    path: Assets/Scenes/StartScene.unity
+    guid: ba7dd3a127ba84339b0be6f86e576ec6
+  - enabled: 0
+    path: Assets/Scenes/NavigationSampleNavMesh.unity
+    guid: 64e76ae131d5040999b7414754dd5c2d
   m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: b0ea30c3457f24791937a1c5dad29039,
+      type: 2}
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 6bbd0dc2d2128402bbbaa2ce6e9da053,
+      type: 2}
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20,
       type: 2}
     com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: 61430ebb5678b4a2680a97641f470d65,
