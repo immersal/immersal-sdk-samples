@@ -12,8 +12,10 @@ Contact sdk@immersal.com for licensing requests.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 using Immersal.AR;
 using Immersal.REST;
@@ -116,17 +118,20 @@ namespace Immersal.Samples.Mapping
                     return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                 });
 
-                Task<string> convertTask = captureTask.ContinueWith<string>((antecedent) =>
-                {
-                    return Convert.ToBase64String(capture, 0, antecedent.Result.captureSize);
-                });
-
-                while (!convertTask.IsCompleted)
+                while (!captureTask.IsCompleted)
                 {
                     yield return null;
                 }
 
-                j.encodedImage = convertTask.Result;
+                string path = string.Format("{0}/{1}", this.tempImagePath, System.Guid.NewGuid());
+                using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(path)))
+                {
+                    writer.Write(capture, 0, captureTask.Result.captureSize);
+                }
+
+                j.imagePath = path;
+                j.encodedImage = "";
+
                 NotifyIfConnected(captureTask.Result);
 
                 if (m_SessionFirstImage)
@@ -151,8 +156,12 @@ namespace Immersal.Samples.Mapping
                 j.OnProgress += (float progress) =>
                 {
                     int value = (int)(100f * progress);
-                    Debug.Log(string.Format("Upload progress: {0}%", value));
+                    //Debug.Log(string.Format("Upload progress: {0}%", value));
                     mappingUIManager.SetProgress(value);
+                };
+                j.OnError += (UnityWebRequest request) =>
+                {
+                    mappingUIManager.HideProgressBar();
                 };
 
                 m_Jobs.Add(j);
