@@ -7,7 +7,7 @@ In the Assets folder, you need to add Nreal SDK (NRSDK folder): We have used NRS
 Our demo video: https://youtu.be/qUU8OIPy9W4
 uses our internal Massively Multi-User solution which is not publicly available at the moment. If you want to achieve something similar, use Unity Networking (UNET), Photon Unity Networking (PUN), Google Firebase Realtime Database, SpatialOS or any other 3rd party framework to transfer the "ARSpace" coordinates between localized users.
 
-The Nreal SDK documentation suggests Unity 2018.2.X or higher, this reference project has been made with Unity 2019.4.1f1, in case of problems you can try to either downgrade or upgrade that.
+The Nreal SDK documentation suggests Unity 2018.2.X or higher, this reference project has been made with Unity 2019.4.1f1, in case of problems you can try to either downgrade or upgrade from that.
 
 Known issues:
 * Localization is done using the images from the RGB camera. With the left/right SLAM tracking cameras, better results could be achieved.
