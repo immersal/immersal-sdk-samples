@@ -4,6 +4,20 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2020-09-11
+### Added
+- Samples: Nreal Light localization support, [see here](https://github.com/immersal/arcloud-sdk-samples/tree/nreal)
+- Samples: Progress bar for map loading
+
+### Changed
+- Samples: Huawei AR Engine support moved to its [own branch](https://github.com/immersal/arcloud-sdk-samples/tree/hwar)
+- Samples: Api Compatibility Level was errorneously set to .NET 4.x, switched back to .NET Standard 2.0
+- Samples: Mapper now stores queued images into the persistent data directory to avoid out-of-memory crashes
+- Samples: Updated to Unity 2019.4.9f1 LTS and AR Foundation 4.0.8
+
+### Fixed
+- Samples: `NativeBindings` errors in Unity Editor
+
 ## [1.7.0] - 2020-07-02
 ### Added
 - Core: Improved localization robustness
