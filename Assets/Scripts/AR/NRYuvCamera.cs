@@ -21,7 +21,7 @@ namespace NRKernal
     {
         public delegate void CaptureEvent();
         public delegate void CaptureErrorEvent(string msg);
-        public delegate void CaptureUpdateEvent(byte[] data);
+        public delegate void CaptureUpdateEvent(IntPtr texturePtr);
         public static CaptureEvent OnImageUpdate;
         public static CaptureUpdateEvent OnCaptureUpdate;
         public static CaptureErrorEvent OnError;
@@ -44,14 +44,14 @@ namespace NRKernal
         }
 
         public static int FrameCount = 0;
-        private static bool isRGBCamStart = false;
-        private static bool isInitiate = false;
+        private static bool m_IsPlaying = false;
+        private static bool m_IsInitialized = false;
 
         public static bool IsRGBCamPlaying
         {
             get
             {
-                return isRGBCamStart;
+                return m_IsPlaying;
             }
         }
 
@@ -59,13 +59,15 @@ namespace NRKernal
 
         public static ObjectPool FramePool;
 
+        private static List<RGBCameraTextureBase> m_ActiveTextures;
+
         public static void Initialize()
         {
-            if (isInitiate)
+            if (m_IsInitialized)
             {
                 return;
             }
-            NRDebugger.Log("[NRRgbCamera] Initialize");
+            NRDebugger.Log("[NRYuvCamera] Initialize");
             m_NativeCamera = new NativeCamera();
 #if !UNITY_EDITOR
             m_NativeCamera.Create();
@@ -82,8 +84,32 @@ namespace NRKernal
                 m_RGBFrames.Limit = 5;
             }
 
-            isInitiate = true;
+            m_ActiveTextures = new List<RGBCameraTextureBase>();
+
+            m_IsInitialized = true;
             SetImageFormat(CameraImageFormat.YUV_420_888);
+        }
+
+        public static void Regist(RGBCameraTextureBase tex)
+        {
+            Initialize();
+            m_ActiveTextures.Add(tex);
+        }
+
+        public static void UnRegist(RGBCameraTextureBase tex)
+        {
+            int index = -1;
+            for (int i = 0; i < m_ActiveTextures.Count; i++)
+            {
+                if (tex == m_ActiveTextures[i])
+                {
+                    index = i;
+                }
+            }
+            if (index != -1)
+            {
+                m_ActiveTextures.RemoveAt(index);
+            }
         }
 
         private static void SetImageFormat(CameraImageFormat format)
@@ -91,7 +117,7 @@ namespace NRKernal
 #if !UNITY_EDITOR
             m_NativeCamera.SetImageFormat(format);
 #endif
-            NRDebugger.Log("[NRRgbCamera] SetImageFormat : " + format.ToString());
+            NRDebugger.Log("[NRYuvCamera] SetImageFormat : " + format.ToString());
         }
 
         [MonoPInvokeCallback(typeof(NativeCamera.NRRGBCameraImageCallback))]
@@ -104,7 +130,7 @@ namespace NRKernal
                 m_NativeCamera.GetRawData(rgb_camera_image_handle, ref TexturePtr, ref RawDataSize);
                 m_NativeCamera.DestroyImage(rgb_camera_image_handle);
 
-                NRDebugger.Log(string.Format("[NRRgbCamera] on first fram ready textureptr:{0} rawdatasize:{1} Resolution:{2}",
+                NRDebugger.Log(string.Format("[NRYuvCamera] on first fram ready textureptr:{0} rawdatasize:{1} Resolution:{2}",
                    TexturePtr, RawDataSize, Resolution.ToString()));
                 return;
             }
@@ -120,51 +146,49 @@ namespace NRKernal
 
             if (OnCaptureUpdate != null)
             {
-                byte[] data = new byte[RawDataSize];
-                Marshal.Copy(TexturePtr, data, 0, RawDataSize);
-                OnCaptureUpdate(data);
+                OnCaptureUpdate(TexturePtr);
             }
             m_NativeCamera.DestroyImage(rgb_camera_image_handle);
         }
 
         public static void Play()
         {
-            if (!isInitiate)
+            if (!m_IsInitialized)
             {
                 Initialize();
             }
-            if (isRGBCamStart)
+            if (m_IsPlaying)
             {
                 return;
             }
-            NRDebugger.Log("[NRRgbCamera] Start to play");
+            NRDebugger.Log("[NRYuvCamera] Start to play");
 #if !UNITY_EDITOR
             m_NativeCamera.StartCapture();
 #endif
-            isRGBCamStart = true;
+            m_IsPlaying = true;
         }
 
         public static bool HasFrame()
         {
-            return isRGBCamStart && m_RGBFrames.Count > 0;
+            return m_IsPlaying && (m_RGBFrames.Count > 0 || m_CurrentFrame.data != null);
         }
 
-        private static int _lastFrame = -1;
-        private static RGBRawDataFrame _currentFrame;
+        private static int m_LastFrame = -1;
+        private static RGBRawDataFrame m_CurrentFrame;
         public static RGBRawDataFrame GetRGBFrame()
         {
-            if (Time.frameCount != _lastFrame)
+            if (Time.frameCount != m_LastFrame && m_RGBFrames.Count > 0)
             {
-                _currentFrame = m_RGBFrames.Dequeue();
-                _lastFrame = Time.frameCount;
+                m_CurrentFrame = m_RGBFrames.Dequeue();
+                m_LastFrame = Time.frameCount;
             }
 
-            return _currentFrame;
+            return m_CurrentFrame;
         }
 
         private static void QueueFrame(IntPtr textureptr, int size, UInt64 timestamp)
         {
-            if (!isRGBCamStart)
+            if (!m_IsPlaying)
             {
                 NRDebugger.LogError("rgb camera not stopped properly, it still sending data.");
                 return;
@@ -183,17 +207,21 @@ namespace NRKernal
 
         public static void Stop()
         {
-            if (!isRGBCamStart)
+            if (!m_IsPlaying)
             {
                 return;
             }
-            NRDebugger.Log("[NRRgbCamera] Start to Stop");
-#if !UNITY_EDITOR
-            m_NativeCamera.StopCapture();
-#endif
-            isRGBCamStart = false;
+            NRDebugger.Log("[NRYuvCamera] Start to Stop");
 
-            Release();
+            // If there is no a active texture, pause and release camera resource.
+            if (m_ActiveTextures.Count == 0)
+            {
+                m_IsPlaying = false;
+#if !UNITY_EDITOR
+                m_NativeCamera.StopCapture();
+#endif
+                Release();
+            }
         }
 
         public static void Release()
@@ -203,15 +231,16 @@ namespace NRKernal
                 return;
             }
 
-            NRDebugger.Log("[NRRgbCamera] Start to Release");
+            NRDebugger.Log("[NRYuvCamera] Start to Release");
 #if !UNITY_EDITOR
-                m_NativeCamera.Release();
-                m_NativeCamera = null;
+            m_NativeCamera.Release();
+            m_NativeCamera = null;
 #endif
+            m_CurrentFrame.data = null;
             OnError = null;
             OnImageUpdate = null;
-            isInitiate = false;
-            isRGBCamStart = false;
+            m_IsInitialized = false;
+            m_IsPlaying = false;
         }
     }
 }

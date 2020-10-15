@@ -3,16 +3,13 @@ using UnityEngine;
 using Immersal;
 using Immersal.AR;
 using Immersal.REST;
-using TMPro;
 
 public class NRAppController : MonoBehaviour, IJobHost
 {
     [SerializeField]
     private ARMap m_ARMap = null;
     [SerializeField]
-    private TextMeshProUGUI m_DebugText = null;
-    [SerializeField]
-    private int mapId = 0;   // change this to your map ID
+    private int mapServerId = 0;   // change this to your map server ID
 
     private ImmersalSDK m_Sdk;
 
@@ -31,9 +28,9 @@ public class NRAppController : MonoBehaviour, IJobHost
     {
         m_Sdk = ImmersalSDK.Instance;
 
-        if (mapId > 0)
+        if (mapServerId > 0)
         {
-            LoadMap(mapId);
+            LoadMap(mapServerId);
         }
     }
 
@@ -44,18 +41,11 @@ public class NRAppController : MonoBehaviour, IJobHost
         j.id = id;
         j.OnSuccess += (SDKMapResult result) =>
         {
-            m_DebugText.text = result.error;
-
             if (result.error == "none")
             {
                 byte[] mapData = Convert.FromBase64String(result.b64);
                 Debug.Log(string.Format("Load map {0} ({1} bytes)", id, mapData.Length));
                 this.m_ARMap.LoadMap(mapData);
-                this.m_DebugText.text = "Loaded map";
-            }
-            else
-            {
-                this.m_DebugText.text = "Failed to load map";
             }
         };
 

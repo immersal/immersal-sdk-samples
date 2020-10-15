@@ -10,6 +10,7 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -21,32 +22,176 @@ namespace Immersal.AR.Nreal
 	{
 		public event MapChanged OnMapChanged = null;
 		public event PoseFound OnPoseFound = null;
-		public delegate void MapChanged(int newMapId);
+		public delegate void MapChanged(int newMapHandle);
 		public delegate void PoseFound(LocalizerPose newPose);
 
+		private static NRLocalizer instance = null;
+
 		private bool m_HasTexture = false;
-		private byte[] m_PixelBuffer = null;
+
+		public static NRLocalizer Instance
+		{
+			get
+			{
+#if UNITY_EDITOR
+				if (instance == null && !Application.isPlaying)
+				{
+					instance = UnityEngine.Object.FindObjectOfType<NRLocalizer>();
+				}
+#endif
+				if (instance == null)
+				{
+					Debug.LogError("No NRLocalizer instance found. Ensure one exists in the scene.");
+				}
+				return instance;
+			}
+		}
+
+		void Awake()
+		{
+			if (instance == null)
+			{
+				instance = this;
+			}
+			if (instance != this)
+			{
+				Debug.LogError("There must be only one NRLocalizer object in a scene.");
+				UnityEngine.Object.DestroyImmediate(this);
+				return;
+			}
+		}
 
         public override void Start()
         {
-			NRYuvCamera.OnCaptureUpdate += OnCaptureUpdate;
-			NRYuvCamera.Play();
+			base.Start();
+
+			m_Sdk.Localizer = instance;
+			StartLocalizing();
         }
 
-		private void OnCaptureUpdate(byte[] buffer)
+		public override void StartLocalizing()
 		{
-			m_PixelBuffer = buffer;
-			m_HasTexture = true;
+			base.StartLocalizing();
+
+			if (autoStart)
+			{
+				NRYuvCamera.OnCaptureUpdate += OnCaptureUpdate;
+				NRYuvCamera.Play();
+			}
 		}
 
-		public override void Update()
+		public override void StopLocalizing()
+		{
+			if (NRYuvCamera.IsRGBCamPlaying)
+				NRYuvCamera.Stop();
+			
+			base.StopLocalizing();
+		}
+
+		protected override void Update()
 		{
             isTracking = NRFrame.SessionStatus == SessionState.Running;
 
             base.Update();
 		}
 
-        public Vector4 GetIntrinsics(float width, float height)
+        public override IEnumerator TryToLocalize()
+		{
+			while (!m_HasTexture)
+			{
+				yield return null;
+			}
+
+			if (m_PixelBuffer != IntPtr.Zero)
+			{
+				stats.localizationAttemptCount++;
+				Vector3 camPos = m_Cam.transform.position;
+				Quaternion camRot = m_Cam.transform.rotation;
+				int width = NRYuvCamera.Resolution.width;
+				int height = NRYuvCamera.Resolution.height;
+				Vector4 intrinsics = GetIntrinsics(width, height);
+				Vector3 pos = Vector3.zero;
+				Quaternion rot = Quaternion.identity;
+
+				float startTime = Time.realtimeSinceStartup;
+
+				Task<int> t = Task.Run(() =>
+				{
+					return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, m_PixelBuffer);
+				});
+
+				while (!t.IsCompleted)
+				{
+					yield return null;
+				}
+
+                int mapHandle = t.Result;
+                float elapsedTime = Time.realtimeSinceStartup - startTime;
+
+                if (mapHandle >= 0 && ARSpace.mapHandleToOffset.ContainsKey(mapHandle))
+                {
+                    Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+
+					if (mapHandle != lastLocalizedMapHandle)
+					{
+						if (resetOnMapChange)
+						{
+							Reset();
+						}
+						
+						lastLocalizedMapHandle = mapHandle;
+
+						OnMapChanged?.Invoke(mapHandle);
+					}
+
+					rot *= Quaternion.Euler(0f, 0f, -90.0f);
+                    MapOffset mo = ARSpace.mapHandleToOffset[mapHandle];
+                    stats.localizationSuccessCount++;
+
+					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+					Vector3 scaledPos = new Vector3
+						(
+							pos.x * mo.scale.x,
+							pos.y * mo.scale.y,
+							pos.z * mo.scale.z
+						);
+					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
+					Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+					Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+
+					if (useFiltering)
+						mo.space.filter.RefinePose(m);
+					else
+						ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+
+					LocalizerPose localizerPose;
+					GetLocalizerPose(out localizerPose, mapHandle, pos, rot, m.inverse);
+					OnPoseFound?.Invoke(localizerPose);
+
+					if (ARSpace.mapHandleToMap.ContainsKey(mapHandle))
+					{
+						ARMap map = ARSpace.mapHandleToMap[mapHandle];
+						map.NotifySuccessfulLocalization(mapHandle);
+					}
+                }
+				else
+				{
+                    Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+				}
+			}
+
+			m_HasTexture = false;
+
+			yield return StartCoroutine(base.TryToLocalize());
+		}
+
+		private void OnCaptureUpdate(IntPtr buffer)
+		{
+			m_PixelBuffer = buffer;
+			m_HasTexture = true;
+		}
+
+        private Vector4 GetIntrinsics(float width, float height)
         {
             bool result = false;
             EyeProjectMatrixData data = NRFrame.GetEyeProjectMatrix(out result, m_Cam.nearClipPlane, m_Cam.farClipPlane);
@@ -71,83 +216,5 @@ namespace Immersal.AR.Nreal
 
             return intrinsics;
         }
-
-        public override IEnumerator Localize()
-		{
-			while (!m_HasTexture)
-			{
-				yield return null;
-			}
-
-			if (m_PixelBuffer != null)
-			{
-				stats.localizationAttemptCount++;
-				Vector3 camPos = m_Cam.transform.position;
-				Quaternion camRot = m_Cam.transform.rotation;
-				int width = NRYuvCamera.Resolution.width;
-				int height = NRYuvCamera.Resolution.height;
-                byte[] pixels = new byte[width * height];
-				System.Buffer.BlockCopy(m_PixelBuffer, 0, pixels, 0, pixels.Length);
-				Vector4 intrinsics = GetIntrinsics(width, height);
-				Vector3 pos = Vector3.zero;
-				Quaternion rot = Quaternion.identity;
-
-				float startTime = Time.realtimeSinceStartup;
-
-				Task<int> t = Task.Run(() =>
-				{
-					return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, pixels);
-				});
-
-				while (!t.IsCompleted)
-				{
-					yield return null;
-				}
-
-                int mapId = t.Result;
-
-                if (mapId >= 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
-                {
-					if (mapId != lastLocalizedMapId)
-					{
-						if (m_ResetOnMapChange)
-						{
-							foreach (KeyValuePair<Transform, SpaceContainer> item in ARSpace.transformToSpace)
-								item.Value.filter.ResetFiltering();
-						}
-						
-						lastLocalizedMapId = mapId;
-
-						OnMapChanged?.Invoke(mapId);
-					}
-
-					rot *= Quaternion.Euler(0f, 0f, -90.0f);
-                    MapOffset mo = ARSpace.mapIdToOffset[mapId];
-                    float elapsedTime = Time.realtimeSinceStartup - startTime;
-                    Debug.Log(string.Format("Relocalised in {0} seconds", elapsedTime));
-                    stats.localizationSuccessCount++;
-
-					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
-					Vector3 scaledPos = new Vector3
-						(
-							pos.x * mo.scale.x,
-							pos.y * mo.scale.y,
-							pos.z * mo.scale.z
-						);
-					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
-					Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-					Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-					mo.space.filter.RefinePose(m);
-
-					LocalizerPose localizerPose;
-					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
-					OnPoseFound?.Invoke(localizerPose);
-                }
-			}
-
-			m_HasTexture = false;
-
-			yield return StartCoroutine(base.Localize());
-		}
 	}
 }
