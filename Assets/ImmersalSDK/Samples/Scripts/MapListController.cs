@@ -129,17 +129,17 @@ namespace Immersal.Samples
             m_Jobs.Add(j);
         }
 
-        public void LoadMap(int id)
+        public void LoadMap(int jobId)
         {
             CoroutineJobLoadMap j = new CoroutineJobLoadMap();
             j.host = this;
-            j.id = id;
+            j.id = jobId;
             j.OnSuccess += (SDKMapResult result) =>
             {
                 if (result.error == "none")
                 {
                     byte[] mapData = Convert.FromBase64String(result.b64);
-                    Debug.Log(string.Format("Load map {0} ({1} bytes)", id, mapData.Length));
+                    Debug.Log(string.Format("Load map {0} ({1} bytes)", jobId, mapData.Length));
 
                     this.m_ARMap.LoadMap(mapData);
                 }

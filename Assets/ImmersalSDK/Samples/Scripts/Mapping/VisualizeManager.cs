@@ -19,17 +19,7 @@ namespace Immersal.Samples.Mapping
 {
     public class VisualizeManager : MonoBehaviour
     {
-        [SerializeField]
-        private MappingUIComponent topMenu = null;
-        [SerializeField]
         public MappingUIComponent localizeButton = null;
-        [SerializeField]
-        private GameObject mapSelect = null;
-        [SerializeField]
-        private GameObject deletePrompt = null;
-        [SerializeField]
-        private GameObject restoreMapImagesPrompt = null;
-
         public static List<int> loadJobs = new List<int>();
 
         public event ItemSelected OnItemSelected = null;
@@ -43,9 +33,24 @@ namespace Immersal.Samples.Mapping
         public delegate void SelectorOpened();
         public delegate void SelectorClosed();
 
+        [SerializeField]
+        private MappingUIComponent m_OptionsButton = null;
+        [SerializeField]
+        private MappingUIComponent m_MapDownloadButton = null;
+        [SerializeField]
+        private MappingUIComponent m_InfoPanel = null;
+        [SerializeField]
+        private GameObject m_MapDownloadList = null;
+        [SerializeField]
+        private GameObject m_PromptDeleteMap = null;
+        [SerializeField]
+        private GameObject m_PromptRestoreMap = null;
+        [SerializeField]
+        private GameObject m_OptionsScrollList = null;
+
         private SDKJob m_ActiveFunctionJob = null;
 
-        private enum UIState { Default, SlotSelect};
+        private enum UIState { Default, MapList, Options};
         private UIState uiState = UIState.Default;
 
         // for delete / restore
@@ -54,9 +59,9 @@ namespace Immersal.Samples.Mapping
             set { m_ActiveFunctionJob = value; }
         }
 
-        public void SetSelectSlotData(SDKJob[] data, List<int> activeMaps)
+        public void SetMapListData(SDKJob[] data, List<int> activeMaps)
         {
-            mapSelect.GetComponent<ScrollListControl>().SetData(data, activeMaps);
+            m_MapDownloadList.GetComponent<ScrollListControl>().SetData(data, activeMaps);
         }
 
         public void OnListItemSelect(SDKJob job)
@@ -66,12 +71,12 @@ namespace Immersal.Samples.Mapping
 
         public void ToggleDeletePrompt(bool on)
         {
-            deletePrompt.SetActive(on);
+            m_PromptDeleteMap.SetActive(on);
         }
 
         public void ToggleRestoreMapImagesPrompt(bool on)
         {
-            restoreMapImagesPrompt.SetActive(on);
+            m_PromptRestoreMap.SetActive(on);
         }
 
         public void OnListItemDelete()
@@ -90,16 +95,16 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        public void SlotSelect()
+        public void MapList()
         {
-            if (uiState == UIState.SlotSelect)
+            if (uiState == UIState.MapList)
             {
                 uiState = UIState.Default;
                 OnSelectorClosed?.Invoke();
             }
             else
             {
-                uiState = UIState.SlotSelect;
+                uiState = UIState.MapList;
                 OnSelectorOpened?.Invoke();
             }
             ChangeState(uiState);
@@ -111,19 +116,46 @@ namespace Immersal.Samples.Mapping
             ChangeState(uiState);
         }
 
+        public void Options()
+        {
+            if (uiState == UIState.Options)
+            {
+                uiState = UIState.Default;
+            }
+            else
+            {
+                uiState = UIState.Options;
+            }
+            ChangeState(uiState);
+        }
+
         private void ChangeState(UIState state)
         {
             switch (state)
             {
                 case UIState.Default:
-                    topMenu.Activate();
+                    m_InfoPanel.Activate();
                     localizeButton.Activate();
-                    mapSelect.SetActive(false);
+                    m_OptionsButton.Activate();
+                    m_MapDownloadButton.Activate();
+                    m_MapDownloadList.SetActive(false);
+                    m_OptionsScrollList.SetActive(false);
                     break;
-                case UIState.SlotSelect:
-                    topMenu.Activate();
+                case UIState.MapList:
+                    m_InfoPanel.Disable();
                     localizeButton.Disable();
-                    mapSelect.SetActive(true);
+                    m_OptionsButton.Disable();
+                    m_MapDownloadButton.Activate();
+                    m_MapDownloadList.SetActive(true);
+                    m_OptionsScrollList.SetActive(false);
+                    break;
+                case UIState.Options:
+                    m_InfoPanel.Disable();
+                    localizeButton.Disable();
+                    m_OptionsButton.Activate();
+                    m_MapDownloadButton.Disable();
+                    m_MapDownloadList.SetActive(false);
+                    m_OptionsScrollList.SetActive(true);
                     break;
                 default:
                     break;

@@ -17,31 +17,29 @@ namespace Immersal.Samples.Mapping
 {
 	public class WorkspaceManager : MonoBehaviour
     {
-        [SerializeField]
-        private MappingUIComponent toolsButton = null;
-		[SerializeField]
 		public MappingUIComponent captureButton = null;
-		[SerializeField]
-		public MappingUIComponent statsBox = null;
-		[SerializeField]
-		private GameObject toolsScrollList = null;
-		[SerializeField]
-		private GameObject promptDeleteData = null;
-		[SerializeField]
-		private GameObject promptSubmitMap = null;
-		[SerializeField]
 		public TMP_InputField newMapName = null;
-		[SerializeField]
 		public TMP_Dropdown detailLevelDropdown = null;
 
-		private enum UIState { Default, Tools, DeleteData, SubmitNewMap };
+		[SerializeField]
+        private MappingUIComponent m_OptionsButton = null;
+		[SerializeField]
+		public MappingUIComponent m_InfoPanel = null;
+		[SerializeField]
+		private GameObject m_OptionsScrollList = null;
+		[SerializeField]
+		private GameObject m_PromptDeleteData = null;
+		[SerializeField]
+		private GameObject m_PromptConstructMap = null;
+
+		private enum UIState { Default, Options, DeleteData, SubmitNewMap };
 		private UIState uiState = UIState.Default;
 
-		public void Tools() {
-			if (uiState == UIState.Tools) {
+		public void Options() {
+			if (uiState == UIState.Options) {
 				uiState = UIState.Default;
 			} else {
-				uiState = UIState.Tools;
+				uiState = UIState.Options;
 			}
 			ChangeState(uiState);
 		}
@@ -72,40 +70,40 @@ namespace Immersal.Samples.Mapping
 		private void ChangeState(UIState state) {
 			switch (state) {
 				case UIState.Default:
-					toolsButton.Activate();
+					m_OptionsButton.Activate();
 					captureButton.Activate();
-					statsBox.Activate();
-					toolsScrollList.SetActive(false);
-					promptDeleteData.SetActive(false);
-					promptSubmitMap.SetActive(false);
-					statsBox.gameObject.SetActive(true);
+					m_InfoPanel.Activate();
+					m_OptionsScrollList.SetActive(false);
+					m_PromptDeleteData.SetActive(false);
+					m_PromptConstructMap.SetActive(false);
+					m_InfoPanel.gameObject.SetActive(true);
 					break;
-				case UIState.Tools:
-					toolsButton.Activate();
+				case UIState.Options:
+					m_OptionsButton.Activate();
 					captureButton.Disable();
-					statsBox.Disable();
-					toolsScrollList.SetActive(true);
-					promptDeleteData.SetActive(false);
-					promptSubmitMap.SetActive(false);
-					statsBox.gameObject.SetActive(true);
+					m_InfoPanel.Disable();
+					m_OptionsScrollList.SetActive(true);
+					m_PromptDeleteData.SetActive(false);
+					m_PromptConstructMap.SetActive(false);
+					m_InfoPanel.gameObject.SetActive(true);
 					break;
 				case UIState.DeleteData:
-					toolsButton.Disable();
+					m_OptionsButton.Disable();
 					captureButton.Disable();
-					statsBox.Disable();
-					toolsScrollList.SetActive(false);
-					promptDeleteData.SetActive(true);
-					promptSubmitMap.SetActive(false);
-					statsBox.gameObject.SetActive(true);
+					m_InfoPanel.Disable();
+					m_OptionsScrollList.SetActive(false);
+					m_PromptDeleteData.SetActive(true);
+					m_PromptConstructMap.SetActive(false);
+					m_InfoPanel.gameObject.SetActive(true);
 					break;
 				case UIState.SubmitNewMap:
-					toolsButton.Disable();
+					m_OptionsButton.Disable();
 					captureButton.Disable();
-					statsBox.Disable();
-					toolsScrollList.SetActive(false);
-					promptDeleteData.SetActive(false);
-					promptSubmitMap.SetActive(true);
-					statsBox.gameObject.SetActive(true);
+					m_InfoPanel.Disable();
+					m_OptionsScrollList.SetActive(false);
+					m_PromptDeleteData.SetActive(false);
+					m_PromptConstructMap.SetActive(true);
+					m_InfoPanel.gameObject.SetActive(true);
 					break;
 				default:
 					break;

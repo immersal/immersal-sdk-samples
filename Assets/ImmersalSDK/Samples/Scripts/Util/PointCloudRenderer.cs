@@ -20,8 +20,18 @@ namespace Immersal.Samples.Util
 		[HideInInspector]
 		public GameObject go;
 		[HideInInspector]
-        public int mapId;
+        public int mapHandle;
 		public static bool visible = true;
+
+		private Color[] m_PointcloudColors = new Color[]	{	new Color(0.22f, 1f, 0.46f), 
+																new Color(0.96f, 0.14f, 0.14f),
+																new Color(0.16f, 0.69f, 0.95f),
+																new Color(0.93f, 0.84f, 0.12f),
+																new Color(0.57f, 0.93f, 0.12f),
+																new Color(1f, 0.38f, 0.78f),
+																new Color(0.4f, 0f, 0.9f),
+																new Color(0.89f, 0.4f, 0f)
+															};
 
 		public void Init()
 		{
@@ -54,13 +64,13 @@ namespace Immersal.Samples.Util
 
 		public void CreateCloud(Vector3[] points, int totalPoints, Matrix4x4 offset)
 		{
-			const int max_vertices = 65536;
+			const int max_vertices = 65535;
 			int numPoints = totalPoints >= max_vertices ? max_vertices : totalPoints;
-            Color32 fix_col  = Random.ColorHSV(0f, 1f, 0.8f, 0.8f, 0.85f, 0.85f);
+			Color32 fix_col = m_PointcloudColors[Random.Range(0, m_PointcloudColors.Length)];
             int[] indices = new int[numPoints];
 			Vector3[] pts = new Vector3[numPoints];
 			Color32[] col = new Color32[numPoints];
-            for (int i = 0; i < numPoints; ++i)
+            for (int i = 0; i < numPoints; i++)
 			{
 				indices[i] = i;
 				pts[i] = offset.MultiplyPoint3x4(points[i]);

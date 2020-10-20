@@ -17,7 +17,7 @@ namespace Immersal.Samples.Mapping
     [RequireComponent(typeof(TMP_InputField))]
     public class RestrictInputText : MonoBehaviour
     {
-        private enum CharacterSet {alphanumeric, integer};
+        private enum CharacterSet {alphanumeric, number, integer};
 
         [SerializeField]
         private CharacterSet characterSet = CharacterSet.alphanumeric;
@@ -29,6 +29,9 @@ namespace Immersal.Samples.Mapping
             {
                 case CharacterSet.alphanumeric:
                     inputField.contentType = TMP_InputField.ContentType.Alphanumeric;
+                    break;
+                case CharacterSet.number:
+                    inputField.contentType = TMP_InputField.ContentType.DecimalNumber;
                     break;
                 case CharacterSet.integer:
                     inputField.contentType = TMP_InputField.ContentType.IntegerNumber;

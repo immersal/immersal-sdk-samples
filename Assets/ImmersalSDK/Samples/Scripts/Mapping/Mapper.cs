@@ -12,8 +12,10 @@ Contact sdk@immersal.com for licensing requests.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 using Immersal.AR;
 using Immersal.REST;
@@ -73,7 +75,7 @@ namespace Immersal.Samples.Mapping
                 j.index = m_ImageIndex++;
                 j.anchor = anchor;
 
-                if (gpsOn)
+                if (mapperSettings.useGps)
                 {
                     j.latitude = m_Latitude;
                     j.longitude = m_Longitude;
@@ -116,17 +118,20 @@ namespace Immersal.Samples.Mapping
                     return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                 });
 
-                Task<string> convertTask = captureTask.ContinueWith<string>((antecedent) =>
-                {
-                    return Convert.ToBase64String(capture, 0, antecedent.Result.captureSize);
-                });
-
-                while (!convertTask.IsCompleted)
+                while (!captureTask.IsCompleted)
                 {
                     yield return null;
                 }
 
-                j.encodedImage = convertTask.Result;
+                string path = string.Format("{0}/{1}", this.tempImagePath, System.Guid.NewGuid());
+                using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(path)))
+                {
+                    writer.Write(capture, 0, captureTask.Result.captureSize);
+                }
+
+                j.imagePath = path;
+                j.encodedImage = "";
+
                 NotifyIfConnected(captureTask.Result);
 
                 if (m_SessionFirstImage)
@@ -151,8 +156,12 @@ namespace Immersal.Samples.Mapping
                 j.OnProgress += (float progress) =>
                 {
                     int value = (int)(100f * progress);
-                    Debug.Log(string.Format("Upload progress: {0}%", value));
+                    //Debug.Log(string.Format("Upload progress: {0}%", value));
                     mappingUIManager.SetProgress(value);
+                };
+                j.OnError += (UnityWebRequest request) =>
+                {
+                    mappingUIManager.HideProgressBar();
                 };
 
                 m_Jobs.Add(j);
@@ -165,6 +174,18 @@ namespace Immersal.Samples.Mapping
             m_bCaptureRunning = false;
             var captureButton = workspaceManager.captureButton.GetComponent<Button>();
             captureButton.interactable = true;
+        }
+
+        public void TryLocalize()
+        {
+            if (mapperSettings.useServerLocalizer)
+            {
+                LocalizeServer();
+            }
+            else
+            {
+                Localize();
+            }
         }
 
         public override void Localize()
@@ -184,26 +205,31 @@ namespace Immersal.Samples.Mapping
                 j.height = image.height;
                 j.rotation = camRot;
                 j.position = camPos;
-                j.OnSuccess += (int mapId, Vector3 position, Quaternion rotation) =>
+                j.param1 = mapperSettings.param1;
+                j.param2 = mapperSettings.param2;
+                j.param3 = mapperSettings.param3;
+                j.param4 = mapperSettings.param4;
+                j.OnSuccess += (int mapHandle, Vector3 position, Quaternion rotation) =>
                 {
                     this.stats.locSucc++;
 
                     Debug.Log("*************************** Localization Succeeded ***************************");
+                    Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", j.param1, j.param2, j.param3, j.param4));
                     Matrix4x4 cloudSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
                     Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                    Debug.Log("id " + mapId + "\n" +
+                    Debug.Log("handle " + mapHandle + "\n" +
                             "fc 4x4\n" + cloudSpace + "\n" +
                             "ft 4x4\n" + trackerSpace);
 
                     Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
 
                     LocalizerPose lastLocalizedPose;
-                    LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, position, rotation, m.inverse);
+                    LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapHandle, position, rotation, m.inverse);
                     this.lastLocalizedPose = lastLocalizedPose;
 
                     foreach (PointCloudRenderer p in this.pcr.Values)
                     {
-                        if (p.mapId == mapId)
+                        if (p.mapHandle == mapHandle)
                         {
                             p.go.transform.position = m.GetColumn(3);
                             p.go.transform.rotation = m.rotation;
@@ -235,14 +261,7 @@ namespace Immersal.Samples.Mapping
             {
                 CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
 
-                if (gpsOn)
-                {
-                    j.useGPS = true;
-                    j.latitude = m_Latitude;
-                    j.longitude = m_Longitude;
-                    j.radius = DefaultRadius;
-                }
-                else
+                if (mapperSettings.serverLocalizationWithIds)
                 {
                     int n = pcr.Count;
 
@@ -255,6 +274,13 @@ namespace Immersal.Samples.Mapping
                         j.mapIds[count++].id = id;
                     }
                 }
+                else
+                {
+                    j.useGPS = true;
+                    j.latitude = m_Latitude;
+                    j.longitude = m_Longitude;
+                    j.radius = DefaultRadius;
+                }
 
                 Camera cam = this.mainCamera;
                 Vector3 camPos = cam.transform.position;
@@ -265,6 +291,10 @@ namespace Immersal.Samples.Mapping
                 j.intrinsics = ARHelper.GetIntrinsics();
                 j.width = image.width;
                 j.height = image.height;
+                j.param1 = mapperSettings.param1;
+                j.param2 = mapperSettings.param2;
+                j.param3 = mapperSettings.param3;
+                j.param4 = mapperSettings.param4;
 
                 if (rgb)
                 {
@@ -292,6 +322,7 @@ namespace Immersal.Samples.Mapping
                             this.stats.locSucc++;
 
                             Debug.Log("*************************** On-Server Localization Succeeded ***************************");
+                            Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", j.param1, j.param2, j.param3, j.param4));
                             Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
                                     "ft 4x4\n" + trackerSpace);
 
