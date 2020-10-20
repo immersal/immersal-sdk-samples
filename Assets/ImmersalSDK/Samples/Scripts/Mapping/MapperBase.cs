@@ -44,6 +44,8 @@ namespace Immersal.Samples.Mapping
         [HideInInspector]
         public MappingUIManager mappingUIManager;
         [HideInInspector]
+        public MapperSettings mapperSettings;
+        [HideInInspector]
         public WorkspaceManager workspaceManager;
         [HideInInspector]
         public VisualizeManager visualizeManager;
@@ -75,8 +77,8 @@ namespace Immersal.Samples.Mapping
         private AudioSource m_CameraShutterClick;
         private IEnumerator m_UpdateJobList;
         private Camera m_MainCamera = null;
-        
-		private static IDispatch Dispatch;
+
+        private static IDispatch Dispatch;
 
         public string token
         {
@@ -222,6 +224,7 @@ namespace Immersal.Samples.Mapping
             Dispatch = new MainThreadDispatch();
             m_CameraShutterClick = GetComponent<AudioSource>();
             mappingUIManager = GetComponentInChildren<MappingUIManager>();
+            mapperSettings = GetComponent<MapperSettings>();
             workspaceManager = mappingUIManager.workspaceManager;
             visualizeManager = mappingUIManager.visualizeManager;
             visualizeManager.OnItemSelected += OnItemSelected;
@@ -237,11 +240,9 @@ namespace Immersal.Samples.Mapping
         {
             m_Sdk = ImmersalSDK.Instance;
 
-            if ((PlayerPrefs.GetInt("use_gps", 0) == 1))
-            {
-                mappingUIManager.gpsToggle.isOn = true;
-            }
+            mappingUIManager.vLocationText.text = "No VGPS localizations";
 
+            Invoke("StartGPS", 0.1f);
             StartCoroutine(StatusPoll());
             Jobs();
         }
@@ -287,8 +288,7 @@ namespace Immersal.Samples.Mapping
             #endif
             PlayerPrefs.SetInt("use_gps", 0);
             NotificationManager.Instance.GenerateNotification("Geolocation tracking stopped");
-            mappingUIManager.locationText.text = "";
-            mappingUIManager.locationPanel.SetActive(false);
+            mappingUIManager.locationText.text = "GPS not enabled";
         }
 
         private IEnumerator EnableLocationServices()
@@ -297,6 +297,7 @@ namespace Immersal.Samples.Mapping
             if (!Input.location.isEnabledByUser)
             {
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(false);
+                mapperSettings.SetUseGPS(false);
                 NotificationManager.Instance.GenerateNotification("Location services not enabled");
                 Debug.Log("Location services not enabled");
                 yield break;
@@ -325,6 +326,7 @@ namespace Immersal.Samples.Mapping
             if (maxWait < 1)
             {
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(false);
+                mapperSettings.SetUseGPS(false);
                 NotificationManager.Instance.GenerateNotification("Location services timed out");
                 Debug.Log("Timed out");
                 yield break;
@@ -338,6 +340,7 @@ namespace Immersal.Samples.Mapping
             #endif
             {
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(false);
+                mapperSettings.SetUseGPS(false);
                 NotificationManager.Instance.GenerateNotification("Unable to determine device location");
                 Debug.Log("Unable to determine device location");
                 yield break;
@@ -349,8 +352,9 @@ namespace Immersal.Samples.Mapping
             if (Input.location.status == LocationServiceStatus.Running)
             #endif
             {
-                PlayerPrefs.SetInt("use_gps", 1);
-                mappingUIManager.locationPanel.SetActive(true);
+                //PlayerPrefs.SetInt("use_gps", 1);
+                mappingUIManager.gpsToggle.SetIsOnWithoutNotify(true);
+                mapperSettings.SetUseGPS(true);
                 NotificationManager.Instance.GenerateNotification("Tracking geolocation");
             }
         }
@@ -547,12 +551,12 @@ namespace Immersal.Samples.Mapping
                 m_Vaccuracy = Input.location.lastData.verticalAccuracy;
                 #endif
 
-                string txt = string.Format("lat: {0}, lon: {1}, alt: {2}, hacc: {3}, vacc: {4}", 
+                string txt = string.Format("Lat: {0}, Lon: {1}, Alt: {2}, HAcc: {3}, VAcc: {4}", 
                                 m_Latitude.ToString("0.00000"), 
                                 m_Longitude.ToString("0.00000"), 
-                                m_Altitude.ToString("0.00"), 
-                                m_Haccuracy.ToString("0.00"), 
-                                m_Vaccuracy.ToString("0.00"));
+                                m_Altitude.ToString("0.0"), 
+                                m_Haccuracy.ToString("0.0"), 
+                                m_Vaccuracy.ToString("0.0"));
                 
                 mappingUIManager.locationText.text = txt;
             }
@@ -585,40 +589,40 @@ namespace Immersal.Samples.Mapping
             }
 
             string txt2 = string.Format("VLat: {0}, VLon: {1}, VAlt: {2}, VBRG: {3}", 
-                            m_VLatitude.ToString("0.00000"),
-                            m_VLongitude.ToString("0.00000"),
-                            m_VAltitude.ToString("0.00"),
+                            m_VLatitude.ToString("0.000000"),
+                            m_VLongitude.ToString("0.000000"),
+                            m_VAltitude.ToString("0.0"),
                             m_VBearing.ToString("0.0"));
             
             mappingUIManager.vLocationText.text = txt2;
         }
 
-        public void DeleteMap(int mapId)
+        public void DeleteMap(int jobId)
         {
             CoroutineJobDeleteMap j = new CoroutineJobDeleteMap();
             j.host = this;
-            j.id = mapId;
+            j.id = jobId;
             j.OnSuccess += (SDKDeleteMapResult result) =>
             {
                 if (result.error == "none")
                 {
-                    Debug.Log(string.Format("Map {0} deleted successfully.", mapId));
+                    Debug.Log(string.Format("Map {0} deleted successfully.", jobId));
                 }
             };
 
             m_Jobs.Add(j);
         }
 
-        public void RestoreMapImages(int mapId)
+        public void RestoreMapImages(int jobId)
         {
             CoroutineJobRestoreMapImages j = new CoroutineJobRestoreMapImages();
             j.host = this;
-            j.id = mapId;
+            j.id = jobId;
             j.OnSuccess += (SDKRestoreMapImagesResult result) =>
             {
                 if (result.error == "none")
                 {
-                    Debug.Log(string.Format("Successfully restored images for map {0}", mapId));
+                    Debug.Log(string.Format("Successfully restored images for map {0}", jobId));
                 }
             };
 
@@ -650,19 +654,14 @@ namespace Immersal.Samples.Mapping
             CoroutineJobConstruct j = new CoroutineJobConstruct();
             j.host = this;
             j.name = workspaceManager.newMapName.text;
-
-            int featureCount = 600;
-            if(workspaceManager.detailLevelDropdown.value == 1)
-            {
-                featureCount = 1024;
-            }
-
-            j.featureCount = featureCount;
+            j.featureCount = mapperSettings.mapDetailLevel;
+            j.preservePoses = mapperSettings.preservePoses;
+            j.windowSize = mapperSettings.windowSize;
             j.OnSuccess += (SDKConstructResult result) =>
             {
                 if (result.error == "none")
                 {
-                    Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images", result.id, result.size));
+                    Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
                 }
             };
 
@@ -706,20 +705,19 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        public void LoadMap(int mapId)
+        public void LoadMap(int jobId)
         {
-            if (pcr.ContainsKey(mapId))
+            if (pcr.ContainsKey(jobId))
             {
                 CoroutineJobFreeMap jf = new CoroutineJobFreeMap();
-                jf.id = pcr[mapId].mapId;
+                jf.id = pcr[jobId].mapHandle;
                 jf.OnSuccess += (int result) =>
                 {
                     if (result == 1)
                     {
-                        Debug.Log("FreeMap: " + mapId);
-                        PointCloudRenderer p = pcr[mapId];
+                        PointCloudRenderer p = pcr[jobId];
                         p.ClearCloud();
-                        pcr.Remove(mapId);
+                        pcr.Remove(jobId);
                     }
                 };
 
@@ -729,7 +727,7 @@ namespace Immersal.Samples.Mapping
 
             CoroutineJobLoadMap j = new CoroutineJobLoadMap();
             j.host = this;
-            j.id = mapId;
+            j.id = jobId;
 
             j.OnStart += () =>
             {
@@ -741,8 +739,8 @@ namespace Immersal.Samples.Mapping
                 if (result.error == "none")
                 {
                     byte[] mapData = Convert.FromBase64String(result.b64);
-                    Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", mapId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
-                    StartCoroutine(CompleteMapLoad(mapData));
+                    Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", jobId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
+                    StartCoroutine(CompleteMapLoad(jobId, mapData));
                 }
 
                 mappingUIManager.HideProgressBar();
@@ -760,7 +758,7 @@ namespace Immersal.Samples.Mapping
             m_Jobs.Add(j);
         }
 
-        IEnumerator CompleteMapLoad(byte[] mapData)
+        IEnumerator CompleteMapLoad(int jobId, byte[] mapData)
         {
             Vector3[] vector3Array = new Vector3[ARMap.MAX_VERTICES];
 
@@ -774,13 +772,11 @@ namespace Immersal.Samples.Mapping
                 yield return null;
             }
 
-            int id = t0.Result;
-
-            Debug.Log("mapId " + id);
+            int mapHandle = t0.Result;
 
             Task<int> t1 = Task.Run(() =>
             {
-                return Immersal.Core.GetPointCloud(id, vector3Array);
+                return Immersal.Core.GetPointCloud(mapHandle, vector3Array);
             });
 
             while (!t1.IsCompleted)
@@ -790,19 +786,17 @@ namespace Immersal.Samples.Mapping
 
             int num = t1.Result;
 
-            Debug.Log("map points: " + num);
-
             PointCloudRenderer renderer = gameObject.AddComponent<PointCloudRenderer>();
             renderer.CreateCloud(vector3Array, num);
-            renderer.mapId = id;
-            if (!pcr.ContainsKey(id)) {
-                pcr.Add(id, renderer);
+            renderer.mapHandle = mapHandle;
+            if (!pcr.ContainsKey(jobId)) {
+                pcr.Add(jobId, renderer);
             }
 
             stats.locFail = 0;
             stats.locSucc = 0;
 
-            VisualizeManager.loadJobs.Remove(id);
+            VisualizeManager.loadJobs.Remove(jobId);
         }
 
         public void Jobs()
@@ -811,7 +805,7 @@ namespace Immersal.Samples.Mapping
             List<int> activeMaps = new List<int>();
             j.host = this;
 
-            if (gpsOn)
+            if (mapperSettings.listOnlyNearbyMaps)
             {
                 j.useGPS = true;
                 j.latitude = m_Latitude;
@@ -829,7 +823,7 @@ namespace Immersal.Samples.Mapping
             {
                 if (result.error == "none")
                 {
-                    this.visualizeManager.SetSelectSlotData(result.jobs, activeMaps);
+                    this.visualizeManager.SetMapListData(result.jobs, activeMaps);
                 }
             };
 

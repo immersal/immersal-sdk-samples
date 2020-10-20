@@ -22,8 +22,10 @@ namespace Immersal.Samples.Mapping
         public VisualizeManager visualizeManager;
         public TextMeshProUGUI locationText = null;
         public TextMeshProUGUI vLocationText = null;
+
         public Toggle gpsToggle = null;
-        public GameObject locationPanel = null;
+        //public Toggle nearbyMapsToggle = null;
+        //public Toggle serverLocalizeToggle = null;
 
         [SerializeField]
         private HorizontalProgressBar m_ProgressBar = null;

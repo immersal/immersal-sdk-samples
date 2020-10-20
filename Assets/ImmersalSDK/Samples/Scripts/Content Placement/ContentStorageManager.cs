@@ -131,7 +131,8 @@ namespace Immersal.Samples.ContentPlacement
             }
             catch (FileNotFoundException e)
             {
-                Debug.LogError(dataPath + " not found\nNo objects loaded: " + e.Message);
+                Debug.Log(e.Message + "\n.json file for content storage not found. Created a new file!");
+                File.WriteAllText(dataPath, "");
             }
         }
     }

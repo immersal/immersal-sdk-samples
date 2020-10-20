@@ -7,7 +7,7 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/ImmersalSDK/Samples/Scenes/MappingApp.unity
-    guid: 7a27266a32fe24d6fabb7b0b9550074d
+    guid: c248af4dffbfc36498566b9e4934d129
   - enabled: 0
     path: Assets/ImmersalSDK/Samples/Scenes/MapDownloadSample.unity
     guid: 99c9720ab356a0642a771bea13969a05
