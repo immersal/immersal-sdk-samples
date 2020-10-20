@@ -654,9 +654,7 @@ namespace Immersal.Samples.Mapping
             CoroutineJobConstruct j = new CoroutineJobConstruct();
             j.host = this;
             j.name = workspaceManager.newMapName.text;
-            j.featureCount = mapperSettings.mapDetailLevel;
-            j.preservePoses = mapperSettings.preservePoses;
-            j.windowSize = mapperSettings.windowSize;
+            j.featureCount = 600;
             j.OnSuccess += (SDKConstructResult result) =>
             {
                 if (result.error == "none")

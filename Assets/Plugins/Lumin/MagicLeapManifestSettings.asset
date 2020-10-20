@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cf5b356e131a944286fec26d7c40b4e, type: 3}
+  m_Name: MagicLeapManifestSettings
+  m_EditorClassIdentifier: 
+  m_MinimumAPILevel: 8
+  m_PrivilegeGroups:
+  - m_Name: Autogranted
+    m_Privileges:
+    - m_ApiLevel: 3
+      m_Enabled: 0
+      m_Name: AddressBookBasicAccess
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: BackgroundDownload
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: BackgroundUpload
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: BatteryInfo
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: BluetoothAdapterExternalApp
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: BluetoothAdapterUser
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: BluetoothGattWrite
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: ConnectBackgroundMusicService
+    - m_ApiLevel: 8
+      m_Enabled: 0
+      m_Name: ConnectionAccess
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: ControllerPose
+    - m_ApiLevel: 7
+      m_Enabled: 0
+      m_Name: DesktopCompanion
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: DrmCertificates
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: GesturesConfig
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: GesturesSubscribe
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: HandMesh
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: IdentityRead
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: InAppPurchase
+    - m_ApiLevel: 1
+      m_Enabled: 1
+      m_Name: Internet
+    - m_ApiLevel: 1
+      m_Enabled: 1
+      m_Name: LowLatencyLightwear
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: MusicService
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: NormalNotificationsUsage
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: Occlusion
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: PcfRead
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: PwFoundObjRead
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: PowerInfo
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: RegisterBackgroundMusicService
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: ScreensProvider
+    - m_ApiLevel: 6
+      m_Enabled: 0
+      m_Name: SecureBrowserWindow
+    - m_ApiLevel: 5
+      m_Enabled: 0
+      m_Name: SocialConnectionsInvitesAccess
+    - m_ApiLevel: 8
+      m_Enabled: 0
+      m_Name: SocialConnectionsSelectAccess
+    - m_ApiLevel: 5
+      m_Enabled: 0
+      m_Name: WifiStatusRead
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: WorldReconstruction
+  - m_Name: Sensitive
+    m_Privileges:
+    - m_ApiLevel: 2
+      m_Enabled: 0
+      m_Name: AddressBookRead
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: AddressBookWrite
+    - m_ApiLevel: 4
+      m_Enabled: 0
+      m_Name: CoarseLocation
+    - m_ApiLevel: 8
+      m_Enabled: 0
+      m_Name: Expressions
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: LocalAreaNetwork
+    - m_ApiLevel: 8
+      m_Enabled: 0
+      m_Name: ObjectData
+  - m_Name: Reality
+    m_Privileges:
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: AudioCaptureMic
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: AudioRecognizer
+    - m_ApiLevel: 1
+      m_Enabled: 1
+      m_Name: CameraCapture
+    - m_ApiLevel: 5
+      m_Enabled: 1
+      m_Name: ComputerVision
+    - m_ApiLevel: 8
+      m_Enabled: 0
+      m_Name: ConnectionAudioCaptureStreaming
+    - m_ApiLevel: 8
+      m_Enabled: 0
+      m_Name: ConnectionVideoCaptureStreaming
+    - m_ApiLevel: 7
+      m_Enabled: 0
+      m_Name: FineLocation
+    - m_ApiLevel: 1
+      m_Enabled: 0
+      m_Name: VoiceInput

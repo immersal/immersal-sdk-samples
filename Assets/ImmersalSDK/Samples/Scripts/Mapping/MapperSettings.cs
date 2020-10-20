@@ -29,8 +29,6 @@ namespace Immersal.Samples.Mapping
         public int resolution { get; private set; } = 0;
         public int mapDetailLevel { get; private set; } = 600;
         public bool serverLocalizationWithIds { get; private set; } = true;
-        public bool preservePoses { get; private set; } = false;
-        public int windowSize { get; private set; } = 0;
         public int param1 { get; private set; } = 0;
         public int param2 { get; private set; } = 12;
         public float param3 { get; private set; } = 0f;
@@ -58,10 +56,6 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private Toggle m_ServerLocalizationWithIdsToggle = null;
         [SerializeField]
-        private Toggle m_PreservePosesToggle = null;
-        [SerializeField]
-        private TMP_InputField m_WindowSizeInput = null;
-        [SerializeField]
         private TMP_InputField m_Param1Input = null;
         [SerializeField]
         private TMP_InputField m_Param2Input = null;
@@ -85,8 +79,6 @@ namespace Immersal.Samples.Mapping
             public int resolution;
             public int mapDetailLevel;
             public bool serverLocalizationWithIds;
-            public bool preservePoses;
-            public int windowSize;
             public int param1;
             public int param2;
             public float param3;
@@ -139,21 +131,6 @@ namespace Immersal.Samples.Mapping
         public void SetServerLocalizationWithIds(bool value)
         {
             serverLocalizationWithIds = value;
-            SaveSettingsToPrefs();
-        }
-
-        public void SetPreservePoses(bool value)
-        {
-            preservePoses = value;
-            SaveSettingsToPrefs();
-        }
-
-        public void SetWindowSize(string value)
-        {
-            int a;
-            int.TryParse(value, out a);
-
-            param1 = a;
             SaveSettingsToPrefs();
         }
 
@@ -225,10 +202,6 @@ namespace Immersal.Samples.Mapping
                 mapDetailLevel = loadFile.mapDetailLevel;
                 m_ServerLocalizationWithIdsToggle.SetIsOnWithoutNotify(loadFile.serverLocalizationWithIds);
                 serverLocalizationWithIds = loadFile.serverLocalizationWithIds;
-                m_PreservePosesToggle.SetIsOnWithoutNotify(loadFile.preservePoses);
-                preservePoses = loadFile.preservePoses;
-                m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
-                windowSize = loadFile.windowSize;
                 m_Param1Input.SetTextWithoutNotify(loadFile.param1.ToString());
                 param1 = loadFile.param1;
                 m_Param2Input.SetTextWithoutNotify(loadFile.param2.ToString());
@@ -260,8 +233,6 @@ namespace Immersal.Samples.Mapping
             saveFile.resolution = resolution;
             saveFile.mapDetailLevel = mapDetailLevel;
             saveFile.serverLocalizationWithIds = serverLocalizationWithIds;
-            saveFile.preservePoses = preservePoses;
-            saveFile.windowSize = windowSize;
             saveFile.param1 = param1;
             saveFile.param2 = param2;
             saveFile.param3 = param3;

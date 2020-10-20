@@ -63,11 +63,11 @@ namespace Immersal.Samples.Mapping
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
-            XRCpuImage image;
+            XRCameraImage image;
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
-            if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
             {
                 CoroutineJobCapture j = new CoroutineJobCapture();
                 j.host = this;
@@ -190,11 +190,11 @@ namespace Immersal.Samples.Mapping
 
         public override void Localize()
         {
-            XRCpuImage image;
+            XRCameraImage image;
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
-            if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
             {
                 CoroutineJobLocalize j = new CoroutineJobLocalize();
                 Camera cam = this.mainCamera;
@@ -256,8 +256,8 @@ namespace Immersal.Samples.Mapping
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
-            XRCpuImage image;
-            if (cameraSubsystem.TryAcquireLatestCpuImage(out image))
+            XRCameraImage image;
+            if (cameraSubsystem.TryGetLatestImage(out image))
             {
                 CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
 
