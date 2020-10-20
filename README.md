@@ -1,3 +1,24 @@
+# Prerequisites
+
+This is just a shallow copy of the master branch, none of the sample scenes are implemented for Magic Leap. There is a scene under **/Scenes/BasicLocalization.unity** that shows how to localize with the SDK on the Magic Leap 1 headset.
+
+In the Assets folder, you need to add Magic Leap Unity SDK (MagicLeap folder): We have used version 0.24.2.
+
+Because of the ongoing development of both AR Foundation / Magic Leap XR Plugin and the MLSDK, we have used a specific combination of various versions to get things running:
+
+* Unity 2020.2b7
+* AR Foundation 3.1.5
+* Magic Leap XR Plugin 5.1.2
+* XR Plugin Management 3.2.13
+* Lumin SDK 0.24.1
+* Magic Leap Unity Package 0.24.2
+
+Known issues:
+* The sample scene works with the on-server localizer for now. You need to manually type the map's server id in the `ARSpace / ARMap` gameobject.
+* No point cloud is rendered for debugging currently
+* None of the sample scenes from the master branch work. If you want to create a working app, you should first map a space with Immersal Mapper (App Store: https://apps.apple.com/us/app/immersal-mapper/id1466607906, Play Store: https://play.google.com/store/apps/details?id=com.immersal.sdk.mapper), and load the map into your Unity scene and then use the *MLLocalizer* script to localize against the map.
+
+
 # Immersal SDK Samples
 In this repository you will find sample projects that use our [Immersal SDK](https://developers.immersal.com/ "Register and download SDK"), demonstrating some of the functionalities of the Augmented Reality SDK. The currently included examples are listed below:
 
