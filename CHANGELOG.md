@@ -4,6 +4,20 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2020-10-20
+### Added
+- Samples: Magic Leap localization support and a reference Unity project, [see here](https://github.com/immersal/arcloud-sdk-samples/tree/magicleap)
+- Core: OnPoseFound and OnPoseLost events in `ImmersalSDK`, OnFirstLocalization event in `ARMap`
+- Core: `ARLocalizer` now has start/stop/pause/resume methods
+
+### Changed
+- Core: Localizer does not return the map id anymore. Instead, it returns a map handle like an earlier SDK version did.
+- Immersal Mapper: Updated UI
+- Samples: Restructured Unity core package and the Unity sample project. `ARMap`, `ARLocalizer`, and other essential scripts are now part of the core package. This should make future SDK updates to new versions easier.
+- Samples: Code cleanup
+- Samples: Reworked the `pointcloud3d` shader to support point size attribute on OpenGL, Vulkan and Metal platforms
+- Samples: Mapper app sample updated to the latest version
+
 ## [1.8.0] - 2020-09-11
 ### Added
 - Samples: Nreal Light localization support, [see here](https://github.com/immersal/arcloud-sdk-samples/tree/nreal)
