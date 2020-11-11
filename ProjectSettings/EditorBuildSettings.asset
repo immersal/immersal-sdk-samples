@@ -24,9 +24,9 @@ EditorBuildSettings:
     path: Assets/ImmersalSDK/Samples/Scenes/NavigationSampleNavMesh.unity
     guid: 98454a452db26144ca9d0692e148ed12
   m_configObjects:
-    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 54ea553dd4d5543c0a4387e5e77e4c96,
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: a71208f28aadf4aa28dda8b07bd02e62,
       type: 2}
-    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 6bbd0dc2d2128402bbbaa2ce6e9da053,
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 5a339459f38d14f9d86d7c4dfaac2522,
       type: 2}
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20,
       type: 2}
