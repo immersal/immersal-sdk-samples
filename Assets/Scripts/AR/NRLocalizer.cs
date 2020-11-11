@@ -95,23 +95,24 @@ namespace Immersal.AR.Nreal
             base.Update();
 		}
 
-        public override IEnumerator TryToLocalize()
+        public override async void Localize()
 		{
 			while (!m_HasTexture)
 			{
-				yield return null;
+				await Task.Yield();
 			}
 
 			if (m_PixelBuffer != IntPtr.Zero)
 			{
 				stats.localizationAttemptCount++;
+				Vector4 intrinsics;
 				Vector3 camPos = m_Cam.transform.position;
 				Quaternion camRot = m_Cam.transform.rotation;
 				int width = NRYuvCamera.Resolution.width;
 				int height = NRYuvCamera.Resolution.height;
-				Vector4 intrinsics = GetIntrinsics(width, height);
 				Vector3 pos = Vector3.zero;
 				Quaternion rot = Quaternion.identity;
+				GetIntrinsics(out intrinsics, width, height);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -120,10 +121,7 @@ namespace Immersal.AR.Nreal
 					return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, m_PixelBuffer);
 				});
 
-				while (!t.IsCompleted)
-				{
-					yield return null;
-				}
+				await t;
 
                 int mapHandle = t.Result;
                 float elapsedTime = Time.realtimeSinceStartup - startTime;
@@ -182,7 +180,7 @@ namespace Immersal.AR.Nreal
 
 			m_HasTexture = false;
 
-			yield return StartCoroutine(base.TryToLocalize());
+			base.Localize();
 		}
 
 		private void OnCaptureUpdate(IntPtr buffer)
@@ -191,11 +189,11 @@ namespace Immersal.AR.Nreal
 			m_HasTexture = true;
 		}
 
-        private Vector4 GetIntrinsics(float width, float height)
+        private void GetIntrinsics(out Vector4 intrinsics, float width, float height)
         {
             bool result = false;
             EyeProjectMatrixData data = NRFrame.GetEyeProjectMatrix(out result, m_Cam.nearClipPlane, m_Cam.farClipPlane);
-            Vector4 intrinsics = Vector4.zero;
+            intrinsics = Vector4.zero;
 
             if (result)
             {
@@ -213,8 +211,6 @@ namespace Immersal.AR.Nreal
 				intrinsics.z = 648.262f;
 				intrinsics.w = 369.875f;*/
             }
-
-            return intrinsics;
         }
 	}
 }
