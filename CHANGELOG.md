@@ -4,6 +4,16 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2020-11-11
+### Added
+- REST API: proper URI identifiers
+- REST API: new endpoints for image capture and on-server localization, where the image payload can be sent as binary instead of a Base64-encoded string.
+- Immersal Mapper / REST API: Use tracker poses (beta)
+
+### Changed
+- Immersal Mapper: Smaller filesize in image uploads
+- Immersal Mapper: Localization and capturing is now faster especially on older devices, such as iPhone 7 and beyond
+
 ## [1.9.0] - 2020-10-20
 ### Added
 - Samples: Magic Leap localization support and a reference Unity project, [see here](https://github.com/immersal/arcloud-sdk-samples/tree/magicleap)

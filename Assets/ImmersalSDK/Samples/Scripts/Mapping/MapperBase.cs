@@ -70,6 +70,7 @@ namespace Immersal.Samples.Mapping
         protected double m_VAltitude = 0.0;
         protected float m_VBearing = 0f;
         protected bool m_bCaptureRunning = false;
+		protected IntPtr m_PixelBuffer = IntPtr.Zero;
 
         private string m_Server = null;
         private string m_Token = null;
@@ -98,16 +99,7 @@ namespace Immersal.Samples.Mapping
 
         public string server
         {
-            get
-            {
-                if (m_Server == null)
-                {
-                    m_Server = m_Sdk.localizationServer;
-                }
-
-                return m_Server;
-            }
-            set { m_Server = value; }
+            get { return m_Sdk.localizationServer; }
         }
 
         public Camera mainCamera
@@ -149,7 +141,7 @@ namespace Immersal.Samples.Mapping
 
         #region Abstract methods
 
-        protected abstract IEnumerator Capture(bool anchor);
+        protected abstract void Capture(bool anchor);
         public abstract void Localize();
         public abstract void LocalizeServer();
 
@@ -239,6 +231,8 @@ namespace Immersal.Samples.Mapping
         void Start()
         {
             m_Sdk = ImmersalSDK.Instance;
+
+            Immersal.Core.SetInteger("LocalizationMaxPixels", 1280*720);
 
             mappingUIManager.vLocationText.text = "No VGPS localizations";
 
@@ -692,7 +686,7 @@ namespace Immersal.Samples.Mapping
                 var captureButton = workspaceManager.captureButton.GetComponent<Button>();
                 captureButton.interactable = false;
                 m_CameraShutterClick.Play();
-                StartCoroutine(Capture(false));
+                Capture(false);
             }
         }
 
@@ -701,28 +695,27 @@ namespace Immersal.Samples.Mapping
             if (!m_bCaptureRunning)
             {
                 m_CameraShutterClick.Play();
-                StartCoroutine(Capture(true));
+                Capture(true);
             }
         }
 
-        public void LoadMap(int jobId)
+        public async void LoadMap(int jobId)
         {
             if (pcr.ContainsKey(jobId))
             {
-                CoroutineJobFreeMap jf = new CoroutineJobFreeMap();
-                jf.id = pcr[jobId].mapHandle;
-                jf.OnSuccess += (int result) =>
+                Task<int> t0 = Task.Run(() =>
                 {
-                    if (result == 1)
-                    {
-                        PointCloudRenderer p = pcr[jobId];
-                        p.ClearCloud();
-                        pcr.Remove(jobId);
-                    }
-                };
+                    return Immersal.Core.FreeMap(pcr[jobId].mapHandle);
+                });
 
-                m_Jobs.Add(jf);
-                return;
+                await t0;
+
+                if (t0.Result == 1)
+                {
+                    PointCloudRenderer p = pcr[jobId];
+                    p.ClearCloud();
+                    pcr.Remove(jobId);
+                }
             }
 
             CoroutineJobLoadMap j = new CoroutineJobLoadMap();
@@ -740,7 +733,7 @@ namespace Immersal.Samples.Mapping
                 {
                     byte[] mapData = Convert.FromBase64String(result.b64);
                     Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", jobId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
-                    StartCoroutine(CompleteMapLoad(jobId, mapData));
+                    CompleteMapLoad(jobId, mapData);
                 }
 
                 mappingUIManager.HideProgressBar();
@@ -758,7 +751,7 @@ namespace Immersal.Samples.Mapping
             m_Jobs.Add(j);
         }
 
-        IEnumerator CompleteMapLoad(int jobId, byte[] mapData)
+        async void CompleteMapLoad(int jobId, byte[] mapData)
         {
             Vector3[] vector3Array = new Vector3[ARMap.MAX_VERTICES];
 
@@ -766,31 +759,28 @@ namespace Immersal.Samples.Mapping
             {
                 return Immersal.Core.LoadMap(mapData);
             });
-                
-            while (!t0.IsCompleted)
-            {
-                yield return null;
-            }
+
+            await t0;
 
             int mapHandle = t0.Result;
 
-            Task<int> t1 = Task.Run(() =>
+            if (mapHandle >= 0)
             {
-                return Immersal.Core.GetPointCloud(mapHandle, vector3Array);
-            });
+                Task<int> t1 = Task.Run(() =>
+                {
+                    return Immersal.Core.GetPointCloud(mapHandle, vector3Array);
+                });
 
-            while (!t1.IsCompleted)
-            {
-                yield return null;
-            }
+                await t1;
 
-            int num = t1.Result;
+                int num = t1.Result;
 
-            PointCloudRenderer renderer = gameObject.AddComponent<PointCloudRenderer>();
-            renderer.CreateCloud(vector3Array, num);
-            renderer.mapHandle = mapHandle;
-            if (!pcr.ContainsKey(jobId)) {
-                pcr.Add(jobId, renderer);
+                PointCloudRenderer renderer = gameObject.AddComponent<PointCloudRenderer>();
+                renderer.CreateCloud(vector3Array, num);
+                renderer.mapHandle = mapHandle;
+                if (!pcr.ContainsKey(jobId)) {
+                    pcr.Add(jobId, renderer);
+                }
             }
 
             stats.locFail = 0;

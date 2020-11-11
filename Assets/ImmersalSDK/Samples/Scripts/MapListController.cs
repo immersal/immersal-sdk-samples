@@ -28,7 +28,6 @@ namespace Immersal.Samples
         private List<SDKJob> m_Maps;
         private TMP_Dropdown m_Dropdown;
         private string m_Token = "";
-        private string m_Server;
         private List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
         private int m_JobLock = 0;
         private ImmersalSDK m_Sdk;
@@ -36,7 +35,7 @@ namespace Immersal.Samples
 
         public string server
         {
-            get { return m_Server; }
+            get { return m_Sdk.localizationServer; }
         }
 
         public string token
@@ -64,7 +63,6 @@ namespace Immersal.Samples
         {
             m_Sdk = ImmersalSDK.Instance;
             m_Token = m_Sdk.developerToken;
-            m_Server = m_Sdk.localizationServer;
 
             GetMaps();
         }
