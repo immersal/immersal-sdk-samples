@@ -716,6 +716,7 @@ namespace Immersal.Samples.Mapping
                     p.ClearCloud();
                     pcr.Remove(jobId);
                 }
+                return;
             }
 
             CoroutineJobLoadMap j = new CoroutineJobLoadMap();
