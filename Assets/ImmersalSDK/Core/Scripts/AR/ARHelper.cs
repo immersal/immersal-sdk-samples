@@ -19,9 +19,9 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Immersal.AR
 {
 	public class ARHelper {
-		public static Vector4 GetIntrinsics()
+		public static void GetIntrinsics(out Vector4 intrinsics)
         {
-            Vector4 intrinsics = Vector4.zero;
+            intrinsics = Vector4.zero;
 			XRCameraIntrinsics intr;
 			ARCameraManager manager = ImmersalSDK.Instance?.cameraManager;
 
@@ -32,8 +32,6 @@ namespace Immersal.AR
 				intrinsics.z = intr.principalPoint.x;
 				intrinsics.w = intr.principalPoint.y;
             }
-
-            return intrinsics;
         }
 
 		public static void GetRotation(ref Quaternion rot)

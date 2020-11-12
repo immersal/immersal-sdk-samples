@@ -114,13 +114,6 @@ namespace Immersal.AR
 			get { return m_Stats; }
 		}
 
-        public virtual IEnumerator TryToLocalize()
-		{
-			Debug.Log(string.Format("Successful localizations: {0}/{1}", stats.localizationSuccessCount, stats.localizationAttemptCount));
-			isLocalizing = false;
-			yield break;
-		}
-
 		public virtual void Start()
 		{
 			m_Sdk = ImmersalSDK.Instance;
@@ -188,7 +181,8 @@ namespace Immersal.AR
 
 		public virtual void Localize()
 		{
-			StartCoroutine(TryToLocalize());
+			Debug.Log(string.Format("Successful localizations: {0}/{1}", stats.localizationSuccessCount, stats.localizationAttemptCount));
+			isLocalizing = false;
 		}
 
 		protected virtual void Update()
@@ -237,7 +231,7 @@ namespace Immersal.AR
 				{
 					float elapsedTime = curTime - m_BurstStartTime;
 					isLocalizing = true;
-					StartCoroutine(TryToLocalize());
+					Localize();
 					if (stats.localizationSuccessCount == 10 || elapsedTime >= 15f)
 					{
 						m_BurstModeActive = false;
@@ -249,7 +243,7 @@ namespace Immersal.AR
 			{
 				m_LastLocalizeTime = curTime;
 				isLocalizing = true;
-				StartCoroutine(TryToLocalize());
+				Localize();
 			}
 		}
 

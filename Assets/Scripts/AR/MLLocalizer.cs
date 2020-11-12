@@ -34,7 +34,6 @@ namespace Immersal.AR.MagicLeap
 	    
 	    protected List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
 	    private int m_JobLock = 0;
-	    private string m_Server = null;
 	    private string m_Token = null;
 
 		private static MLLocalizer instance = null;
@@ -57,16 +56,7 @@ namespace Immersal.AR.MagicLeap
 
 	    public string server
 	    {
-		    get
-		    {
-			    if (m_Server == null)
-			    {
-				    m_Server = m_Sdk.localizationServer;
-			    }
-
-			    return m_Server;
-		    }
-		    set { m_Server = value; }
+		    get { return m_Sdk.localizationServer; }
 	    }
 	    
         public event MapChanged OnMapChanged = null;
@@ -169,7 +159,7 @@ namespace Immersal.AR.MagicLeap
 	        }
         }
 
-        public override IEnumerator TryToLocalize()
+        public override async void Localize()
         {
 	        byte[] pngBytes = null;
 	        Transform cameraTransform = null;
@@ -184,7 +174,8 @@ namespace Immersal.AR.MagicLeap
 		        {
 			        return m_cameraDataProvider.TryAcquirePngBytes(out pngBytes, out cameraTransform);
 		        });
-		        while (!t.IsCompleted) { yield return null; }
+
+				await t;
 	        
 		        // Get intrinsics
 		        bool gotIntrinsics = m_cameraDataProvider.TryAcquireIntrinsics(out intrinsics);
@@ -202,7 +193,7 @@ namespace Immersal.AR.MagicLeap
 			{
 				stats.localizationAttemptCount++;
 				
-				MLCoroutineJobLocalizerServer j = new MLCoroutineJobLocalizerServer();
+				CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
 				
 				int n = ARSpace.mapHandleToMap.Count;
 				j.mapIds = new SDKMapId[n];
@@ -216,7 +207,7 @@ namespace Immersal.AR.MagicLeap
 
 				j.host = this;
 				j.intrinsics = intrinsics;
-				j.pixels = pngBytes;
+				j.image = pngBytes;
 				
 				if (imageRenderer)
 				{
@@ -228,14 +219,14 @@ namespace Immersal.AR.MagicLeap
 							textureBuffer.filterMode = FilterMode.Point;
 						}
 
-						bool loadSuccessful = textureBuffer.LoadImage(j.pixels);
+						bool loadSuccessful = textureBuffer.LoadImage(j.image);
 						if (loadSuccessful && textureBuffer.width != 8 && textureBuffer.height != 8)
 							imageRenderer.material.mainTexture = textureBuffer;
 					});
 				}
 				
 				if (saveLocalizationImageOnDevice)
-					File.WriteAllBytes(Path.Combine(Application.persistentDataPath, "latestImage.png"), j.pixels);
+					File.WriteAllBytes(Path.Combine(Application.persistentDataPath, "latestImage.png"), j.image);
 
 				Vector3 camPos = cameraTransform.position;
 				Quaternion camRot = cameraTransform.rotation;
@@ -304,7 +295,7 @@ namespace Immersal.AR.MagicLeap
 				m_Jobs.Add(j);
 			}
 
-			yield return StartCoroutine(base.TryToLocalize());
+			base.Localize();
 		}
         
         private IEnumerator RunJob(CoroutineJob j)

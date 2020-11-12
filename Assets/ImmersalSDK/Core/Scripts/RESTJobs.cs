@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -85,6 +86,8 @@ namespace Immersal.REST
     {
         public string name;
         public int featureCount = 600;
+        public int windowSize = 0;
+        public bool preservePoses = false;
         public Action<SDKConstructResult> OnSuccess;
 
         public override IEnumerator RunJob()
@@ -96,6 +99,7 @@ namespace Immersal.REST
             r.token = host.token;
             r.name = this.name;
             r.featureCount = this.featureCount;
+            r.preservePoses = this.preservePoses;
 
             string jsonString = JsonUtility.ToJson(r);
             using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CONSTRUCT_MAP), jsonString))
@@ -302,11 +306,15 @@ namespace Immersal.REST
             imageRequest.altitude = altitude;
 
             byte[] image = File.ReadAllBytes(imagePath);
-            imageRequest.b64 = Convert.ToBase64String(image);
 
             string jsonString = JsonUtility.ToJson(imageRequest);
+            byte[] jsonBytes = Encoding.ASCII.GetBytes(jsonString);
+            byte[] body = new byte[jsonBytes.Length + 1 + image.Length];
+            Array.Copy(jsonBytes, 0, body, 0, jsonBytes.Length);
+            body[jsonBytes.Length] = 0;
+            Array.Copy(image, 0, body, jsonBytes.Length + 1, image.Length);
 
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CAPTURE_IMAGE), jsonString))
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.CAPTURE_IMAGE_BIN), body))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
                 request.useHttpContinue = false;
@@ -338,64 +346,11 @@ namespace Immersal.REST
         }
     }
 
-    public class CoroutineJobLocalize : CoroutineJob
-    {
-        public Vector4 intrinsics;
-        public Quaternion rotation;
-        public Vector3 position;
-        public byte[] pixels;
-        public int width;
-        public int height;
-        public int param1;
-        public int param2;
-        public float param3;
-        public float param4;
-        public Action<int, Vector3, Quaternion> OnSuccess;
-        public Action OnFail;
-
-        public override IEnumerator RunJob()
-        {
-            Debug.Log("*************************** CoroutineJobLocalize ***************************");
-            this.OnStart?.Invoke();
-
-            Vector3 pos = new Vector3();
-            Quaternion rot = new Quaternion();
-
-            Task<int> t = Task.Run(() =>
-            {
-                GCHandle bufferHandle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
-                int r = Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, bufferHandle.AddrOfPinnedObject());
-                bufferHandle.Free();
-                return r;
-            });
-
-            while (!t.IsCompleted)
-            {
-                yield return null;
-            }
-
-            int mapHandle = t.Result;
-
-            if (mapHandle >= 0)
-            {
-                this.OnSuccess?.Invoke(mapHandle, pos, rot);
-            }
-            else
-            {
-                this.OnFail?.Invoke();
-            }
-        }
-    }
-
     public class CoroutineJobLocalizeServer : CoroutineJob
     {
         public Vector4 intrinsics;
         public Quaternion rotation;
         public Vector3 position;
-        public byte[] pixels;
-        public int width;
-        public int height;
-        public int channels;
         public int param1;
         public int param2;
         public float param3;
@@ -405,27 +360,13 @@ namespace Immersal.REST
         public double radius = 0.0;
         public bool useGPS = false;
         public SDKMapId[] mapIds;
+        public byte[] image;
         public Action<SDKLocalizeResult> OnResult;
 
         public override IEnumerator RunJob()
         {
             Debug.Log("*************************** CoroutineJobLocalize On-Server ***************************");
             this.OnStart?.Invoke();
-
-            byte[] capture = new byte[channels * width * height + 1024];
-            Task<(string, icvCaptureInfo)> t = Task.Run(() =>
-            {
-                icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-                return (Convert.ToBase64String(capture, 0, info.captureSize), info);
-            });
-
-            while (!t.IsCompleted)
-            {
-                yield return null;
-            }
-
-            string encodedImage = t.Result.Item1;
-            icvCaptureInfo captureInfo = t.Result.Item2;
 
             SDKLocalizeRequest imageRequest = this.useGPS ? new SDKGeoLocalizeRequest() : new SDKLocalizeRequest();
             imageRequest.token = host.token;
@@ -437,8 +378,6 @@ namespace Immersal.REST
             imageRequest.param2 = 12;
             imageRequest.param3 = 0.0;
             imageRequest.param4 = 2.0;
-
-            imageRequest.b64 = encodedImage;
 
             if (this.useGPS)
             {
@@ -453,9 +392,15 @@ namespace Immersal.REST
             }
 
             string jsonString = JsonUtility.ToJson(imageRequest);
-            string endpoint = this.useGPS ? Endpoint.SERVER_GEOLOCALIZE : Endpoint.SERVER_LOCALIZE;
+            byte[] jsonBytes = Encoding.ASCII.GetBytes(jsonString);
+            byte[] body = new byte[jsonBytes.Length + 1 + image.Length];
+            Array.Copy(jsonBytes, 0, body, 0, jsonBytes.Length);
+            body[jsonBytes.Length] = 0;
+            Array.Copy(image, 0, body, jsonBytes.Length + 1, image.Length);
 
-            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, endpoint), jsonString))
+            string endpoint = this.useGPS ? Endpoint.SERVER_GEOLOCALIZE_BIN : Endpoint.SERVER_LOCALIZE_BIN;
+
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, endpoint), body))
             {
                 request.method = UnityWebRequest.kHttpVerbPOST;
                 request.useHttpContinue = false;
@@ -626,30 +571,6 @@ namespace Immersal.REST
                     this.OnSuccess?.Invoke(result);
                 }
             }
-        }
-    }
-
-    public class CoroutineJobFreeMap : CoroutineJob
-    {
-        public int id;
-        public Action<int> OnSuccess;
-
-        public override IEnumerator RunJob()
-        {
-            Debug.Log("*************************** CoroutineJobFreeMap ***************************");
-            this.OnStart?.Invoke();
-
-            Task<int> t0 = Task.Run(() =>
-            {
-                return Immersal.Core.FreeMap(id);
-            });
-
-            while (!t0.IsCompleted)
-            {
-                yield return null;
-            }
-            
-            this.OnSuccess?.Invoke(t0.Result);
         }
     }
 

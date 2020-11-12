@@ -21,7 +21,7 @@ namespace Immersal
 {
 	public class ImmersalSDK : MonoBehaviour
 	{
-		public static string sdkVersion = "1.9.0";
+		public static string sdkVersion = "1.10.0";
 		public static bool isHWAR = false;
 
         public enum CameraResolution { Default, HD, FullHD, Max };	// With Huawei AR Engine SDK, only Default (640x480) and Max (1440x1080) are supported.
@@ -92,6 +92,10 @@ namespace Immersal
 		public string localizationServer
 		{
 			get { return m_LocalizationServer; }
+			set
+			{
+				m_LocalizationServer = value;
+			}
 		}
 
 		public ARCameraManager cameraManager

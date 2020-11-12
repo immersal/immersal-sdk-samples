@@ -15,23 +15,26 @@ namespace Immersal.REST
 {
     public static class Endpoint
     {
-        public const string URL_FORMAT          = "{0}/fcgi?{1}";
-        public const string CAPTURE_IMAGE       = "1";
-        public const string CONSTRUCT_MAP       = "2";
-        public const string LOAD_MAP            = "3";
-        public const string DOWNLOAD_SPARSE     = "5";
-        public const string LOGIN               = "6";
-        public const string LIST_JOBS           = "8";
-        public const string CLEAR_JOB           = "9";
-        public const string STATUS              = "10";
-        public const string DOWNLOAD_DENSE      = "14";
-        public const string DELETE_MAP          = "16";
-        public const string SERVER_LOCALIZE     = "17";
-        public const string RESTORE_MAP_IMAGES  = "19";
-        public const string LIST_GEOJOBS        = "20";
-        public const string SERVER_GEOLOCALIZE  = "21";
-        public const string SERVER_ECEF         = "23";
-        public const string DOWNLOAD_TEXTURED   = "27";
+        public const string URL_FORMAT             = "{0}/{1}";
+        public const string CAPTURE_IMAGE          = "captureb64";
+        public const string CONSTRUCT_MAP          = "construct";
+        public const string LOAD_MAP               = "mapb64";
+        public const string DOWNLOAD_SPARSE        = "sparse";
+        public const string LOGIN                  = "login";
+        public const string LIST_JOBS              = "list";
+        public const string CLEAR_JOB              = "clear";
+        public const string STATUS                 = "status";
+        public const string DOWNLOAD_DENSE         = "dense";
+        public const string DELETE_MAP             = "delete";
+        public const string SERVER_LOCALIZE        = "localizeb64";
+        public const string RESTORE_MAP_IMAGES     = "restore";
+        public const string LIST_GEOJOBS           = "geolist";
+        public const string SERVER_GEOLOCALIZE     = "geolocalizeb64";
+        public const string SERVER_ECEF            = "ecef";
+        public const string DOWNLOAD_TEXTURED      = "tex";
+        public const string CAPTURE_IMAGE_BIN      = "capture";
+        public const string SERVER_LOCALIZE_BIN    = "localize";
+        public const string SERVER_GEOLOCALIZE_BIN = "geolocalize";
     }
 
     [Serializable]
@@ -78,6 +81,8 @@ namespace Immersal.REST
     {
         public string name;
         public int featureCount;
+        public bool preservePoses;
+        public int windowSize;
     }
 
     [Serializable]
@@ -165,7 +170,6 @@ namespace Immersal.REST
         public double latitude;
         public double longitude;
         public double altitude;
-        public string b64;
     }
 
     [Serializable]
@@ -199,7 +203,6 @@ namespace Immersal.REST
         public int param2;
         public double param3;
         public double param4;
-        public string b64;
         public SDKMapId[] mapIds;
     }
 
