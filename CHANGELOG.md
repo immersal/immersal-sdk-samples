@@ -4,6 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2021-01-07
+### Added
+- Core: New default localizer with improved performance
+- REST API: New functions using async/await instead of Unity coroutines
+
+### Changed
+- Switched to `System.Net.HttpClient` everywhere, because of random problems with `UnityWebRequest` on iOS
+- General bug fixes
+
 ## [1.10.0] - 2020-11-11
 ### Added
 - REST API: proper URI identifiers

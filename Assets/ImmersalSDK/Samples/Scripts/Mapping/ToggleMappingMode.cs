@@ -23,6 +23,17 @@ namespace Immersal.Samples.Mapping
             get { return m_MappingUI; }
         }
 
+        void Start()
+        {
+            LoginManager loginManager = LoginManager.Instance;
+
+            if (loginManager != null)
+            {
+                loginManager.OnLogin += EnableMappingMode;
+                loginManager.OnLogout += DisableMappingMode;
+            }
+        }
+
         public void EnableMappingMode()
         {
             if (m_MappingUI == null)

@@ -118,6 +118,7 @@ namespace Immersal.Samples.ContentPlacement
         public void LoadContents()
         {
             string dataPath = Path.Combine(Application.persistentDataPath, m_Filename);
+            Debug.Log(string.Format("Trying to load file: {0}", dataPath));
 
             try
             {
@@ -128,6 +129,8 @@ namespace Immersal.Samples.ContentPlacement
                     GameObject go = Instantiate(m_ContentPrefab, m_ARSpace.transform);
                     go.transform.localPosition = pos;
                 }
+
+                Debug.Log("Successfully loaded file!");
             }
             catch (FileNotFoundException e)
             {

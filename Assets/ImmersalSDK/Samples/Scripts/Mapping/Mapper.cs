@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -70,8 +71,7 @@ namespace Immersal.Samples.Mapping
 
             if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
             {
-                CoroutineJobCapture j = new CoroutineJobCapture();
-                j.host = this;
+                JobCaptureAsync j = new JobCaptureAsync();
                 j.run = (int)(m_ImageRun & 0xEFFFFFFF);
                 j.index = m_ImageIndex++;
                 j.anchor = anchor;
@@ -89,11 +89,11 @@ namespace Immersal.Samples.Mapping
 
                 Camera cam = this.mainCamera;
                 Quaternion _q = cam.transform.rotation;
-                Matrix4x4 r = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
+                Matrix4x4 rot = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
                 Vector3 _p = cam.transform.position;
-                Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
-                j.rotation = r;
-                j.position = p;
+                Vector3 pos = new Vector3(_p.x, _p.y, -_p.z);
+                j.rotation = rot;
+                j.position = pos;
 
 				ARHelper.GetIntrinsics(out j.intrinsics);
 
@@ -142,9 +142,9 @@ namespace Immersal.Samples.Mapping
                     mappingUIManager.SetProgress(0);
                     mappingUIManager.ShowProgressBar();
                 };
-                j.OnSuccess += (SDKImageResult result) =>
+                j.OnResult += (SDKResultBase r) =>
                 {
-                    if (result.error == "none")
+                    if (r is SDKImageResult result && result.error == "none")
                     {
                         float et = Time.realtimeSinceStartup - uploadStartTime;
                         Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
@@ -152,18 +152,18 @@ namespace Immersal.Samples.Mapping
 
                     mappingUIManager.HideProgressBar();
                 };
-                j.OnProgress += (float progress) =>
+                j.Progress.ProgressChanged += (s, progress) =>
                 {
                     int value = (int)(100f * progress);
                     //Debug.Log(string.Format("Upload progress: {0}%", value));
                     mappingUIManager.SetProgress(value);
                 };
-                j.OnError += (UnityWebRequest request) =>
+                j.OnError += (HttpResponseMessage response) =>
                 {
                     mappingUIManager.HideProgressBar();
                 };
 
-                m_Jobs.Add(j);
+                m_Jobs.Add(j.RunJobAsync());
                 image.Dispose();
 
                 float elapsedTime = Time.realtimeSinceStartup - captureStartTime;
@@ -203,6 +203,7 @@ namespace Immersal.Samples.Mapping
                 int param2 = mapperSettings.param2;
                 float param3 = mapperSettings.param3;
                 float param4 = mapperSettings.param4;
+                int method = mapperSettings.localizer;
 
                 ARHelper.GetIntrinsics(out intrinsics);
                 ARHelper.GetPlaneDataFast(ref m_PixelBuffer, image);
@@ -214,7 +215,7 @@ namespace Immersal.Samples.Mapping
 
                     Task<int> t = Task.Run(() =>
                     {
-                        return Immersal.Core.LocalizeImage(out position, out rotation, image.width, image.height, ref intrinsics, m_PixelBuffer);
+                        return Immersal.Core.LocalizeImage(out position, out rotation, image.width, image.height, ref intrinsics, m_PixelBuffer, param1, param2, param3, param4, method);
                     });
 
                     await t;
@@ -271,7 +272,7 @@ namespace Immersal.Samples.Mapping
             XRCpuImage image;
             if (cameraSubsystem.TryAcquireLatestCpuImage(out image))
             {
-                CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
+                JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
                 if (mapperSettings.serverLocalizationWithIds)
                 {
@@ -302,7 +303,6 @@ namespace Immersal.Samples.Mapping
                 int width = image.width;
                 int height = image.height;
 
-                j.host = this;
                 j.rotation = camRot;
                 j.position = camPos;
                 j.param1 = mapperSettings.param1;
@@ -334,9 +334,9 @@ namespace Immersal.Samples.Mapping
 
                 j.image = t.Result.Item1;
 
-                j.OnResult += (SDKLocalizeResult result) =>
+                j.OnResult += (SDKResultBase r) =>
                 {
-                    if (result.success)
+                    if (r is SDKLocalizeResult result && result.success)
                     {
                         Matrix4x4 m = Matrix4x4.identity;
                         Matrix4x4 cloudSpace = Matrix4x4.identity;
@@ -363,25 +363,23 @@ namespace Immersal.Samples.Mapping
                             }
                         }
 
-                        CoroutineJobEcef je = new CoroutineJobEcef();
-                        je.host = this;
+                        JobEcefAsync je = new JobEcefAsync();
                         je.id = result.map;
-                        je.OnSuccess += (SDKEcefResult result2) =>
+                        je.OnResult += (SDKResultBase r2) =>
                         {
-                            if (result2.error == "none")
+                            if (r2 is SDKEcefResult result2 && result2.error == "none")
                             {
-                                Debug.Log(result2.ecef);
                                 LocalizerPose lastLocalizedPose;
                                 LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
                                 this.lastLocalizedPose = lastLocalizedPose;
                             }
                             else
                             {
-                                Debug.LogError(result2.error);
+                                Debug.LogError(r2.error);
                             }
                         };
 
-                        m_Jobs.Add(je);
+                        m_Jobs.Add(je.RunJobAsync());
                     }
                     else
                     {
@@ -390,7 +388,7 @@ namespace Immersal.Samples.Mapping
                     }
                 };
 
-                m_Jobs.Add(j);
+                m_Jobs.Add(j.RunJobAsync());
                 image.Dispose();
             }
         }
