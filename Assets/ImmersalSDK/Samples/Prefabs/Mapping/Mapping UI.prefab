@@ -15211,7 +15211,7 @@ MonoBehaviour:
   m_CaretColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_CustomCaretColor: 0
   m_SelectionColor: {r: 0.65882355, g: 0.80784315, b: 1, a: 0.7529412}
-  m_Text: 600
+  m_Text: 1024
   m_CaretBlinkRate: 0.85
   m_CaretWidth: 1
   m_ReadOnly: 0
@@ -24942,12 +24942,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: acb6cad3ade2b4acfa4533f0b95133dd, type: 3}
---- !u!224 &6296851262343412844 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8259776055801621442, guid: acb6cad3ade2b4acfa4533f0b95133dd,
-    type: 3}
-  m_PrefabInstance: {fileID: 2720867227584157614}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &756002022995181267 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3440659433439193469, guid: acb6cad3ade2b4acfa4533f0b95133dd,
@@ -24960,6 +24954,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d70ba40a7f184ad687e0d5b50a0453c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &6296851262343412844 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8259776055801621442, guid: acb6cad3ade2b4acfa4533f0b95133dd,
+    type: 3}
+  m_PrefabInstance: {fileID: 2720867227584157614}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7729931945773394693
 PrefabInstance:
   m_ObjectHideFlags: 0

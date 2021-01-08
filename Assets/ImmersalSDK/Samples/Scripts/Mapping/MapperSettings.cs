@@ -31,7 +31,7 @@ namespace Immersal.Samples.Mapping
         public bool downsampleWhenLocalizing { get; private set; } = false;
         public int resolution { get; private set; } = 0;
         public int localizer { get; private set; } = 1;
-        public int mapDetailLevel { get; private set; } = 600;
+        public int mapDetailLevel { get; private set; } = 1024;
         public bool serverLocalizationWithIds { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
         public int windowSize { get; private set; } = 0;
@@ -355,8 +355,8 @@ namespace Immersal.Samples.Mapping
             resolution = 0;
             m_LocalizerDropdown.SetValueWithoutNotify(1);
             localizer = 1;
-            m_MapDetailLevelInput.SetTextWithoutNotify(600.ToString());
-            mapDetailLevel = 600;
+            m_MapDetailLevelInput.SetTextWithoutNotify(1024.ToString());
+            mapDetailLevel = 1024;
             m_ServerLocalizationWithIdsToggle.SetIsOnWithoutNotify(true);
             serverLocalizationWithIds = true;
             m_ListOnlyNearbyMapsToggle.SetIsOnWithoutNotify(false);
