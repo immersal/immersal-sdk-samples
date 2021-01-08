@@ -573,6 +573,54 @@ namespace Immersal.REST
             }
         }
     }
+    public class CoroutineJobSetPrivacy : CoroutineJob
+    {
+        public int id;
+        public int privacy;
+        public Action<SDKMapPrivacyResult> OnSuccess;
+
+        public override IEnumerator RunJob()
+        {
+            Debug.Log("*************************** CoroutineJobLogin ***************************");
+            this.OnStart?.Invoke();
+
+            SDKMapPrivacyRequest privacyRequest = new SDKMapPrivacyRequest();
+            privacyRequest.token = host.token;
+            privacyRequest.id = this.id;
+            privacyRequest.privacy = this.privacy;
+
+            string jsonString = JsonUtility.ToJson(privacyRequest);
+            using (UnityWebRequest request = UnityWebRequest.Put(string.Format(Endpoint.URL_FORMAT, host.server, Endpoint.PRIVACY), jsonString))
+            {
+                request.method = UnityWebRequest.kHttpVerbPOST;
+                request.useHttpContinue = false;
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+                var operation = request.SendWebRequest();
+
+                while (!operation.isDone)
+                {
+                    this.OnProgress?.Invoke(request.uploadHandler.progress);
+                    yield return null;
+                }
+
+                Debug.Log("Response code: " + request.responseCode);
+
+                if (request.isNetworkError || request.isHttpError)
+                {
+                    Debug.LogError(request.error);
+                    this.isNetworkError = true;
+                    this.OnError?.Invoke(request);
+
+                }
+                else if (request.responseCode == (long)HttpStatusCode.OK)
+                {
+                    SDKMapPrivacyResult result = JsonUtility.FromJson<SDKMapPrivacyResult>(request.downloadHandler.text);
+                    this.OnSuccess?.Invoke(result);
+                }
+            }
+        }
+    }
 
     public class CoroutineJobLogin : CoroutineJob
     {

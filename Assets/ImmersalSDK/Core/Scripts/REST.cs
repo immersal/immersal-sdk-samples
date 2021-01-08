@@ -35,6 +35,7 @@ namespace Immersal.REST
         public const string CAPTURE_IMAGE_BIN      = "capture";
         public const string SERVER_LOCALIZE_BIN    = "localize";
         public const string SERVER_GEOLOCALIZE_BIN = "geolocalize";
+        public const string PRIVACY                = "privacy";
     }
 
     [Serializable]
@@ -270,6 +271,20 @@ namespace Immersal.REST
 
     [Serializable]
     public class SDKRestoreMapImagesResult : SDKResultBase
+    {
+
+    }
+
+    [Serializable]
+    public class SDKMapPrivacyRequest
+    {
+        public string token;
+        public int id;
+        public int privacy;
+    }
+
+    [Serializable]
+    public class SDKMapPrivacyResult : SDKResultBase
     {
 
     }

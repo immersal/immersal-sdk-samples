@@ -37,12 +37,53 @@ namespace Immersal.AR
         public static Dictionary<int, MapOffset> mapHandleToOffset = new Dictionary<int, MapOffset>();
         public static Dictionary<int, ARMap> mapHandleToMap = new Dictionary<int, ARMap>();
 
+		private static ARSpace instance = null;
+
         private Matrix4x4 m_InitialOffset = Matrix4x4.identity;
 
         public Matrix4x4 initialOffset
         {
             get { return m_InitialOffset; }
         }
+
+    	public static ARSpace Instance
+		{
+			get
+			{
+#if UNITY_EDITOR
+				if (instance == null && !Application.isPlaying)
+				{
+					instance = UnityEngine.Object.FindObjectOfType<ARSpace>();
+				}
+#endif
+				if (instance == null)
+				{
+					Debug.LogError("No ARSpace instance found. Ensure one exists in the scene.");
+				}
+				return instance;
+			}
+		}
+
+		void Awake()
+		{
+			if (instance == null)
+			{
+				instance = this;
+
+                Vector3 pos = transform.position;
+                Quaternion rot = transform.rotation;
+
+                Matrix4x4 offset = Matrix4x4.TRS(pos, rot, Vector3.one);
+
+                m_InitialOffset = offset;
+			}
+			if (instance != this)
+			{
+				Debug.LogError("There must be only one ARSpace object in a scene.");
+				UnityEngine.Object.DestroyImmediate(this);
+				return;
+			}
+		}
 
 		public Pose ToCloudSpace(Vector3 camPos, Quaternion camRot)
 		{
@@ -61,16 +102,6 @@ namespace Immersal.AR
 
 			return new Pose(m.GetColumn(3), m.rotation);
 		}
-
-        private void Awake()
-        {
-            Vector3 pos = transform.position;
-            Quaternion rot = transform.rotation;
-
-            Matrix4x4 offset = Matrix4x4.TRS(pos, rot, Vector3.one);
-
-            m_InitialOffset = offset;
-        }
 
         public static void RegisterSpace(Transform tr, int mapHandle, ARMap map, Vector3 offsetPosition, Quaternion offsetRotation, Vector3 offsetScale)
 		{

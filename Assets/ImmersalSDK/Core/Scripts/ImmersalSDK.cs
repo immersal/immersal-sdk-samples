@@ -14,6 +14,7 @@ using UnityEngine.Events;
 using Unity.Collections;
 using UnityEngine.XR.ARFoundation;
 using System;
+using System.Net.Http;
 using Immersal.AR;
 using UnityEngine.XR.ARSubsystems;
 
@@ -21,7 +22,7 @@ namespace Immersal
 {
 	public class ImmersalSDK : MonoBehaviour
 	{
-		public static string sdkVersion = "1.10.0";
+		public static string sdkVersion = "1.11.0";
 		public static bool isHWAR = false;
 
         public enum CameraResolution { Default, HD, FullHD, Max };	// With Huawei AR Engine SDK, only Default (640x480) and Max (1440x1080) are supported.
@@ -58,6 +59,8 @@ namespace Immersal
 		private int m_SLAMTrackingQuality = 0;
 		private bool m_HasPose = false;
 		private XRCameraConfiguration? m_InitialConfig;
+
+        public static HttpClient client;
 
 		public int targetFrameRate
 		{
@@ -162,6 +165,12 @@ namespace Immersal
 		void Start()
 		{
 			SetFrameRate();
+			
+			HttpClientHandler handler = new HttpClientHandler();
+			handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
+			client = new HttpClient(handler);
+			client.DefaultRequestHeaders.ExpectContinue = false;
+
 			onPoseLost?.Invoke();
 		}
 

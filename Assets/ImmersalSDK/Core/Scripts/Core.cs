@@ -86,7 +86,7 @@ namespace Immersal
         /// <param name="intrinsics">Camera intrinsics</param>
         /// <param name="pixels">Raw pixel buffer data from the camera</param>
         /// <returns>An integer map ID if succeeded, -1 otherwise</returns>
-        public static int LocalizeImage(out Vector3 pos, out Quaternion rot, int width, int height, ref Vector4 intrinsics, IntPtr pixels, int param1 = 0, int param2 = 12, float param3 = 0.0f, float param4 = 2.0f) => Native.icvLocalize(out pos, out rot, width, height, ref intrinsics, pixels, param1, param2, param3, param4);
+        public static int LocalizeImage(out Vector3 pos, out Quaternion rot, int width, int height, ref Vector4 intrinsics, IntPtr pixels, int param1 = 0, int param2 = 12, float param3 = 0.0f, float param4 = 2.0f, int method = 1) => Native.icvLocalize(out pos, out rot, width, height, ref intrinsics, pixels, param1, param2, param3, param4, method);
 
         /// <summary>
         /// 
@@ -252,7 +252,7 @@ namespace Immersal
         public static extern icvCaptureInfo icvCaptureImage(IntPtr capture, int captureSizeMax, IntPtr pixels, int width, int height, int channels);
 
         [DllImport(Assembly)]
-        public static extern int icvLocalize(out Vector3 pos, out Quaternion rot, int width, int height, ref Vector4 intrinsics, IntPtr pixels, int param1, int param2, float param3, float param4);
+        public static extern int icvLocalize(out Vector3 pos, out Quaternion rot, int width, int height, ref Vector4 intrinsics, IntPtr pixels, int param1, int param2, float param3, float param4, int method);
 
         [DllImport(Assembly)]
         public static extern int icvMapToEcefGet(IntPtr mapToEcef, int handle);

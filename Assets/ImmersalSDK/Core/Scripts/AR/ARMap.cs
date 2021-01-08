@@ -32,8 +32,7 @@ namespace Immersal.AR
         public TextAsset mapFile;
         [HideInInspector]
         public Color color = new Color(0.57f, 0.93f, 0.12f);
-		[SerializeField]
-		private MapLocalizedEvent onFirstLocalization = null;
+		public MapLocalizedEvent OnFirstLocalization = null;
         private Mesh m_Mesh = null;
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
@@ -73,6 +72,10 @@ namespace Immersal.AR
             Material material = new Material(Shader.Find("Immersal/pointcloud3d"));
             m_MeshRenderer.material = material;
 
+            m_MeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            m_MeshRenderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            m_MeshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+
             switch (renderMode)
             {
                 case RenderMode.DoNotRender:
@@ -103,7 +106,14 @@ namespace Immersal.AR
                 Immersal.Core.FreeMap(mapHandle);
                 ARSpace.UnregisterSpace(root, mapHandle);
                 mapHandle = -1;
+                m_Mesh.Clear();
+                Reset();
             }
+        }
+
+        public virtual void Reset()
+        {
+            m_LocalizedOnce = false;
         }
 
         public virtual int LoadMap(byte[] mapBytes = null)
@@ -163,7 +173,7 @@ namespace Immersal.AR
             if (m_LocalizedOnce)
                 return;
             
-            onFirstLocalization?.Invoke(mapHandle);
+            OnFirstLocalization?.Invoke(mapHandle);
             m_LocalizedOnce = true;
         }
 

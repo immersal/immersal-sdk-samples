@@ -14,6 +14,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Immersal.REST;
 
 namespace Immersal.AR
 {
@@ -53,6 +54,12 @@ namespace Immersal.AR
 		[Tooltip("Try to localize at maximum speed at app startup / resume")]
 		[SerializeField]
 		protected bool m_BurstMode = true;
+		[Tooltip("Use the on-server localizer")]
+		[SerializeField]
+		protected bool m_UseServerLocalizer = false;
+		[Tooltip("Optional server map IDs when the on-server localizer is used")]
+		[SerializeField]
+		protected SDKMapId[] m_ServerMapIds = new SDKMapId[] { };
 
 		public int lastLocalizedMapHandle { get; protected set; }
         public bool isTracking { get; protected set; }
@@ -109,6 +116,18 @@ namespace Immersal.AR
 			}
 		}
 
+		public bool useServerLocalizer
+		{
+			get { return m_UseServerLocalizer; }
+			set { m_UseServerLocalizer = value; }
+		}
+
+		public SDKMapId[] serverMapIds
+		{
+			get { return m_ServerMapIds; }
+			set { m_ServerMapIds = value; }
+		}
+
 		public LocalizerStats stats
 		{
 			get { return m_Stats; }
@@ -150,6 +169,8 @@ namespace Immersal.AR
 
 		public virtual void Reset()
 		{
+			lastLocalizedMapHandle = -1;
+
 			foreach (KeyValuePair<Transform, SpaceContainer> item in ARSpace.transformToSpace)
 				item.Value.filter.ResetFiltering();
 		}
@@ -177,6 +198,11 @@ namespace Immersal.AR
 		public virtual void Resume()
 		{
 			SetContinuousLocalization(true);
+		}
+
+		public virtual void LocalizeServer(SDKMapId[] mapIds)
+		{
+			isLocalizing = false;
 		}
 
 		public virtual void Localize()
@@ -231,7 +257,14 @@ namespace Immersal.AR
 				{
 					float elapsedTime = curTime - m_BurstStartTime;
 					isLocalizing = true;
-					Localize();
+					if (useServerLocalizer && serverMapIds.Length > 0)
+					{
+						LocalizeServer(serverMapIds);
+					}
+					else
+					{
+						Localize();
+					}
 					if (stats.localizationSuccessCount == 10 || elapsedTime >= 15f)
 					{
 						m_BurstModeActive = false;
@@ -243,7 +276,14 @@ namespace Immersal.AR
 			{
 				m_LastLocalizeTime = curTime;
 				isLocalizing = true;
-				Localize();
+				if (useServerLocalizer && serverMapIds.Length > 0)
+				{
+					LocalizeServer(serverMapIds);
+				}
+				else
+				{
+					Localize();
+				}
 			}
 		}
 
