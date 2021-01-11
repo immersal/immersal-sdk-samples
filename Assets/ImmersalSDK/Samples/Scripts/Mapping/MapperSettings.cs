@@ -84,7 +84,7 @@ namespace Immersal.Samples.Mapping
         private string m_Filename = "settings.json";
 
         [System.Serializable]
-        private struct MapperSettingsFile
+        public struct MapperSettingsFile
         {
             public int version;
             public bool useGps;

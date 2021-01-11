@@ -11,12 +11,14 @@ Contact sdk@immersal.com for licensing requests.
 
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
 using Immersal.REST;
+using Immersal.Samples.Mapping;
 
 namespace Immersal.Samples.Mapping
 {
@@ -74,7 +76,28 @@ namespace Immersal.Samples.Mapping
             m_Sdk = ImmersalSDK.Instance;
             m_CanvasGroup = loginPanel.GetComponent<CanvasGroup>();
 
+            LoadSettingsFromPrefs();
+
             Invoke("FillFields", 0.1f);
+        }
+
+        private void LoadSettingsFromPrefs()
+        {
+            string dataPath = Path.Combine(Application.persistentDataPath, "settings.json");
+
+            try
+            {
+                MapperSettings.MapperSettingsFile loadFile = JsonUtility.FromJson<MapperSettings.MapperSettingsFile>(File.ReadAllText(dataPath));
+
+                if (loadFile.serverUrl != null)
+                {
+                    m_Sdk.localizationServer = loadFile.serverUrl;
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                Debug.Log(e.Message + "\nsettings.json file not found");
+            }
         }
 
         void FillFields()
