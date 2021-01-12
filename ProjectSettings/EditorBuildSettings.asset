@@ -9,5 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/HelloImmersal.unity
     guid: 026b52fb0ac014cae8cdcf9e6e9763aa
   m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 4b1d5a042e31248bd96476a68f09d908,
+      type: 2}
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: aca21216c255244f6921fd940642a26d,
+      type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 37a1f8bdd410d4b828deab52a2e4f83c,
       type: 2}

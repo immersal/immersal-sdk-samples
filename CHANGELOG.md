@@ -4,6 +4,12 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] - 2021-01-12
+### Changed
+- `NRLocalizer`: Added support for the on-server localizer
+- `NRLocalizer`: Minor changes to reflect the Immersal SDK 1.11 API changes
+- Updated project files
+
 ## [1.10.0] - 2020-11-11
 ### Changed
 - `NRLocalizer.cs`: Minor changes to reflect the Immersal SDK 1.10.0 API changes

@@ -1,7 +1,11 @@
-﻿Shader "Immersal/Samples/Irisdescent"
+﻿Shader "Immersal/Samples/URP/ImmersalCube"
 {
 	Properties
 	{
+		_MainTex("Texture", 2D) = "white" {}
+		_EmissionTex("Emission", 2D) = "black" {}
+		_EmissionStrength("Emission Strength", Range(0, 5)) = 0
+
 		_DirectSpecular("Direct Specular Color", Color) = (1.0, 1.0, 1.0, 1.0)
 		_DirectGlossiness("Direct Specular Glossiness", Range(1, 50)) = 10
 
@@ -9,7 +13,7 @@
 		_IndirectGlossiness("Indirect Specular Glossiness", Range(0, 1)) = 0.5
 		_FresnelExponent("Fresnel Exponent", Range(0, 10)) = 1.0
 
-		_MainTex("Glossiness Texture", 2D) = "white" {}
+		_GlossinessTex("Glossiness Texture", 2D) = "white" {}
 		[NoScaleOffset]
 		_IBLTexCube("IBL Cubemap", Cube) = "black" {}
 	}
@@ -55,9 +59,12 @@
 			};
 
 			sampler2D _MainTex;
+			sampler2D _EmissionTex;
+			sampler2D _GlossinessTex;
 			float4 _MainTex_ST;
 			samplerCUBE _IBLTexCube;
 
+			fixed _EmissionStrength;
 			fixed3 _IndirectSpecular;
 			fixed _IndirectGlossiness;
 			fixed3 _DirectSpecular;
@@ -88,7 +95,7 @@
 
 				half3 H = normalize((o.N + o.R) * 0.5);
 				fixed mix = pow(1 - 0 - max(0.0, dot(H, -o.I)), _FresnelExponent);
-				o.falloff = lerp(0.2, 1.0, mix);
+				o.falloff = lerp(0.0, 1.0, mix);
 
 				UNITY_TRANSFER_FOG(o, o.P);
 
@@ -97,14 +104,16 @@
 
 			fixed4 frag(v2f i) : SV_Target
 			{
-				fixed glossiness = 1.0 - (tex2D(_MainTex, i.uv0).a * _IndirectGlossiness);
+				fixed4 tex = tex2D(_MainTex, i.uv0);
+				fixed4 emission = tex2D(_EmissionTex, i.uv0) * _EmissionStrength;
+				fixed glossiness = 1.0 - (tex2D(_GlossinessTex, i.uv0).a * _IndirectGlossiness);
 				fixed3 directSpecular = pow(max(0.0, dot(i.L, i.I)), _DirectGlossiness) * _DirectSpecular * i.falloff;
 				fixed3 indirectSpecular = SampleTexCube(_IBLTexCube, i.R, glossiness * GLOSSY_MIP_COUNT) * _IndirectSpecular * i.falloff;
 
 				fixed edges = pow(1.0 - max(dot(-i.I, i.N), 0.0), 3.2);
 
-				fixed4 color = 1.0;
-				color.rgb = indirectSpecular + directSpecular + (_DirectSpecular * edges);
+				fixed4 color = tex * i.falloff + emission;
+				color.rgb = color + indirectSpecular + directSpecular + (_DirectSpecular * edges);
 
 				// apply fog
 				UNITY_APPLY_FOG(i.fogCoord, color);

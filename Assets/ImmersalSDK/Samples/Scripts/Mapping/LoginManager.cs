@@ -10,15 +10,19 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
+using System.Net.Http;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
 using Immersal.REST;
+using Immersal.Samples.Mapping;
 
 namespace Immersal.Samples.Mapping
 {
-    public class LoginManager : MonoBehaviour, IJobHost
+    public class LoginManager : MonoBehaviour
     {
         public GameObject loginPanel;
         public TMP_InputField emailField;
@@ -26,33 +30,74 @@ namespace Immersal.Samples.Mapping
         public TextMeshProUGUI loginErrorText;
         public float fadeOutTime = 1f;
         public event LoginEvent OnLogin = null;
+        public event LoginEvent OnLogout = null;
         public delegate void LoginEvent();
 
         private IEnumerator m_FadeAlpha;
         private CanvasGroup m_CanvasGroup;
         private ImmersalSDK m_Sdk;
-        private ToggleMappingMode m_ToggleMappingMode;
-        private MapperBase m_Mapper = null;
 
-        public string server
+        private static LoginManager instance = null;
+
+        public static LoginManager Instance
         {
-            get { return m_Sdk.localizationServer; }
+            get
+            {
+#if UNITY_EDITOR
+                if (instance == null && !Application.isPlaying)
+                {
+                    instance = UnityEngine.Object.FindObjectOfType<LoginManager>();
+                }
+#endif
+                if (instance == null)
+                {
+                    Debug.LogError("No LoginManager instance found. Ensure one exists in the scene.");
+                }
+                return instance;
+            }
         }
 
-        public string token
+        void Awake()
         {
-            get { return m_Sdk.developerToken; }
+            if (instance == null)
+            {
+                instance = this;
+            }
+            if (instance != this)
+            {
+                Debug.LogError("There must be only one LoginManager object in a scene.");
+                UnityEngine.Object.DestroyImmediate(this);
+                return;
+            }
         }
 
         void Start()
         {
             m_Sdk = ImmersalSDK.Instance;
-            m_Mapper = UnityEngine.Object.FindObjectOfType<MapperBase>();
-
             m_CanvasGroup = loginPanel.GetComponent<CanvasGroup>();
-            m_ToggleMappingMode = loginPanel.GetComponent<ToggleMappingMode>();
+
+            LoadSettingsFromPrefs();
 
             Invoke("FillFields", 0.1f);
+        }
+
+        private void LoadSettingsFromPrefs()
+        {
+            string dataPath = Path.Combine(Application.persistentDataPath, "settings.json");
+
+            try
+            {
+                MapperSettings.MapperSettingsFile loadFile = JsonUtility.FromJson<MapperSettings.MapperSettingsFile>(File.ReadAllText(dataPath));
+
+                if (loadFile.serverUrl != null)
+                {
+                    m_Sdk.localizationServer = loadFile.serverUrl;
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                Debug.Log(e.Message + "\nsettings.json file not found");
+            }
         }
 
         void FillFields()
@@ -69,62 +114,57 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        private void Login()
+        public async void Login()
         {
-            CoroutineJobLogin j = new CoroutineJobLogin();
-            j.host = this;
+            JobLoginAsync j = new JobLoginAsync();
             j.username = emailField.text;
             j.password = passwordField.text;
             j.OnStart += () =>
             {
                 loginErrorText.gameObject.SetActive(false);
             };
-            j.OnError += (UnityWebRequest request) =>
+            j.OnError += (HttpResponseMessage response) =>
             {
-                if (request.responseCode == (long)HttpStatusCode.BadRequest)
+                if ((long)response.StatusCode == (long)HttpStatusCode.BadRequest)
                 {
                     loginErrorText.text = "Login failed, please try again";
                     loginErrorText.gameObject.SetActive(true);
                 }
             };
-            j.OnResult += (SDKLoginResult result) =>
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKLoginResult result)
                 {
-                    PlayerPrefs.SetString("login", j.username);
-                    PlayerPrefs.SetString("password", j.password);
-                    PlayerPrefs.SetString("token", result.token);
-                    m_Sdk.developerToken = result.token;
-
-                    m_ToggleMappingMode?.EnableMappingMode();
-
-                    if (m_ToggleMappingMode?.MappingUI != null)
+                    if (result.error == "none")
                     {
-                        m_ToggleMappingMode.MappingUI.GetComponent<MapperBase>().OnLogOut += OnLogOut;
+                        PlayerPrefs.SetString("login", j.username);
+                        PlayerPrefs.SetString("password", j.password);
+                        PlayerPrefs.SetString("token", result.token);
+                        m_Sdk.developerToken = result.token;
+
+                        loginErrorText.gameObject.SetActive(false);
+                        
+                        FadeOut();
+
+                        OnLogin?.Invoke();
                     }
-
-                    loginErrorText.gameObject.SetActive(false);
-                    
-                    FadeOut();
-
-                    OnLogin?.Invoke();
-                }
-                else if (result.error == "auth")
-                {
-                    loginErrorText.text = "Login failed, please try again";
-                    loginErrorText.gameObject.SetActive(true);
+                    else if (result.error == "auth")
+                    {
+                        loginErrorText.text = "Login failed, please try again";
+                        loginErrorText.gameObject.SetActive(true);
+                    }
                 }
             };
 
-            StartCoroutine(j.RunJob());
+            await j.RunJobAsync();
         }
 
-        private void OnLogOut()
+        public void Logout()
         {
-            m_Mapper.OnLogOut -= OnLogOut;
-            m_ToggleMappingMode.DisableMappingMode();
             m_CanvasGroup.alpha = 1;
             loginPanel.SetActive(true);
+
+            OnLogout?.Invoke();
         }
 
 		private void FadeOut()
