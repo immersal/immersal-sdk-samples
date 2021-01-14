@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine.XR.ARFoundation;
+using Unity.Collections.LowLevel.Unsafe;
 using Immersal.REST;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.XR.MagicLeap;
@@ -119,7 +120,120 @@ namespace Immersal.AR.MagicLeap
 			        enabled = false;
 		        }
 	        }
-        }        
+        }
+
+        public override async void Localize()
+		{
+	        byte[] pixels = null;
+			MLCamera.YUVBuffer yBuffer = default;
+	        Transform cameraTransform = null;
+	        Vector4 intrinsics = Vector4.zero;
+	        
+	        bool cameraDataIsOk = false;
+	        
+	        if (m_cameraDataProvider != null)
+	        {
+		        // Get bytes and camera transform from camera data provider
+		        Task<bool> t = Task.Run(() =>
+		        {
+			        return m_cameraDataProvider.TryAcquireLatestData(out pixels, out yBuffer, out cameraTransform);
+		        });
+
+				await t;
+	        
+		        // Get intrinsics
+		        bool gotIntrinsics = m_cameraDataProvider.TryAcquireIntrinsics(out intrinsics);
+
+		        cameraDataIsOk = t.Result && gotIntrinsics;
+	        }
+	        else
+	        {
+		        Debug.LogError("Cannot find camera data provider.");
+	        }
+
+	        if (cameraDataIsOk)
+			{
+				stats.localizationAttemptCount++;
+
+				Vector3 camPos = cameraTransform.position;
+				Quaternion camRot = cameraTransform.rotation;
+				int width = (int)yBuffer.Width;
+				int height = (int)yBuffer.Height;
+
+				unsafe
+				{
+					ulong handle;
+					byte* ptr = (byte*)UnsafeUtility.PinGCArrayAndGetDataAddress(pixels, out handle);
+					m_PixelBuffer = (IntPtr)ptr;
+					UnsafeUtility.ReleaseGCObject(handle);
+				}
+
+				if (m_PixelBuffer == IntPtr.Zero) return;
+
+				Vector3 pos = Vector3.zero;
+				Quaternion rot = Quaternion.identity;
+
+				float startTime = Time.realtimeSinceStartup;
+
+				Task<int> t = Task.Run(() =>
+				{
+					return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, m_PixelBuffer);
+				});
+
+				await t;
+
+				int mapHandle = t.Result;
+				float elapsedTime = Time.realtimeSinceStartup - startTime;
+
+				if (mapHandle >= 0 && ARSpace.mapHandleToOffset.ContainsKey(mapHandle))
+				{
+					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+					stats.localizationSuccessCount++;
+
+					if (mapHandle != lastLocalizedMapHandle)
+					{
+						if (resetOnMapChange)
+						{
+							Reset();
+						}
+						
+						lastLocalizedMapHandle = mapHandle;
+
+						OnMapChanged?.Invoke(mapHandle);
+					}
+
+					rot *= Quaternion.Euler(0f, 0f, -90f);
+					MapOffset mo = ARSpace.mapHandleToOffset[mapHandle];
+
+					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+					Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
+					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
+					Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+					Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+
+					if (useFiltering)
+						mo.space.filter.RefinePose(m);
+					else
+						ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+
+					LocalizerPose localizerPose;
+					GetLocalizerPose(out localizerPose, mapHandle, pos, rot, m.inverse);
+					OnPoseFound?.Invoke(localizerPose);
+
+					if (ARSpace.mapHandleToMap.ContainsKey(mapHandle))
+					{
+						ARMap map = ARSpace.mapHandleToMap[mapHandle];
+						map.NotifySuccessfulLocalization(mapHandle);
+					}
+				}
+				else
+				{
+					Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+				}
+			}
+
+			base.Localize();
+		}
 
         public override async void LocalizeServer(SDKMapId[] mapIds)
         {
@@ -143,8 +257,6 @@ namespace Immersal.AR.MagicLeap
 		        bool gotIntrinsics = m_cameraDataProvider.TryAcquireIntrinsics(out intrinsics);
 
 		        cameraDataIsOk = t.Result && gotIntrinsics;
-		        
-		        t.Dispose();
 	        }
 	        else
 	        {
@@ -161,8 +273,6 @@ namespace Immersal.AR.MagicLeap
 				Quaternion camRot = cameraTransform.rotation;
 
 				j.mapIds = mapIds;
-				j.position = camPos;
-				j.rotation = camRot;
 				j.intrinsics = intrinsics;
 				j.image = pngBytes;
 				
@@ -240,6 +350,16 @@ namespace Immersal.AR.MagicLeap
 									mo.space.filter.RefinePose(m);
 								else
 									ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+								
+								LocalizerPose localizerPose;
+								GetLocalizerPose(out localizerPose, mapServerId, pos, rot, m.inverse);
+								OnPoseFound?.Invoke(localizerPose);
+
+								if (ARSpace.mapHandleToMap.ContainsKey(mapServerId))
+								{
+									ARMap map = ARSpace.mapHandleToMap[mapServerId];
+									map.NotifySuccessfulLocalization(mapServerId);
+								}
 							}
 						}
 						else

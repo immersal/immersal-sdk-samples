@@ -40,4 +40,5 @@ sysinfo.txt
 Packages/packages-lock.json
 Assets/TextMesh Pro*
 Assets/MagicLeap*
+ImmersalSDK/Core*
 UserSettings/EditorUserSettings.asset

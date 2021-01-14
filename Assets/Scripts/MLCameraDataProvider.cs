@@ -9,11 +9,15 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Profiling;
 using UnityEngine.XR.MagicLeap;
+using Immersal;
 
 public class MLCameraDataProvider : MonoBehaviour, ICameraDataProvider
 {
@@ -245,14 +249,14 @@ public class MLCameraDataProvider : MonoBehaviour, ICameraDataProvider
         return false;
     }
 
-    public bool TryAcquireLatestData(out byte[] processedImageData, out MLCamera.YUVBuffer yBuffer,out Transform cameraTransform)
+    public bool TryAcquireLatestData(out byte[] processedImageData, out MLCamera.YUVBuffer yBuffer, out Transform cameraTransform)
     {
         processedImageData = null;
         yBuffer = latestYUVBuffer;
         cameraTransform = cameraTransformAtLatestCapture;
 
         if (yBuffer.Data is null || yBuffer.Data.Length <= 0) return false;
-        GetUnpaddedBytes(latestYUVBuffer, true, out processedImageData);
+        GetUnpaddedBytes(latestYUVBuffer, false, out processedImageData);
 
         return !(processedImageData is null || processedImageData.Length <= 0);
     }
@@ -261,15 +265,38 @@ public class MLCameraDataProvider : MonoBehaviour, ICameraDataProvider
     {
         pngBytes = null;
         cameraTransform = cameraTransformAtLatestCapture;
-
         if (latestYUVBuffer.Data is null || latestYUVBuffer.Data.Length <= 0) return false;
-        GetUnpaddedBytes(latestYUVBuffer, true, out pngBytes);
-        Log("Encoding YUV data into PNG format.");
-        pngBytes = ImageConversion.EncodeArrayToPNG(pngBytes, pngFormat, latestYUVBuffer.Width, latestYUVBuffer.Height);
-        
+
+        byte[] pixels;
+        int channels = 1;
+        int width = (int)latestYUVBuffer.Width;
+        int height = (int)latestYUVBuffer.Height;
+
+        GetUnpaddedBytes(latestYUVBuffer, false, out pixels);
+
+        pngBytes = new byte[channels * width * height + 1024];
+        icvCaptureInfo info = Immersal.Core.CaptureImage(pngBytes, pngBytes.Length, pixels, width, height, channels);
+        Array.Resize(ref pngBytes, info.captureSize);
         return !(pngBytes is null || pngBytes.Length <= 0);
     }
-    
+
+/*    public bool TryAcquirePngBytes(out byte[] pngBytes, out Transform cameraTransform)
+    {
+        pngBytes = null;
+        cameraTransform = cameraTransformAtLatestCapture;
+        if (latestYUVBuffer.Data is null || latestYUVBuffer.Data.Length <= 0) return false;
+
+        GetUnpaddedBytes(latestYUVBuffer, true, out pngBytes);
+        const uint channel = 4;
+        byte[] newPngBytes = null;
+        GetChannelTimesBytes(latestYUVBuffer, channel, pngBytes, out newPngBytes);
+        pngBytes = newPngBytes;
+        Log("Encoding YUV data into PNG format.");
+        pngBytes = ImageConversion.EncodeArrayToPNG(pngBytes, pngFormat, latestYUVBuffer.Width, latestYUVBuffer.Height, latestYUVBuffer.Width * channel);
+//        pngBytes = ImageConversion.EncodeArrayToPNG(pngBytes, pngFormat, latestYUVBuffer.Width, latestYUVBuffer.Height);
+        return !(pngBytes is null || pngBytes.Length <= 0);
+    }*/
+
     private void GetUnpaddedBytes(MLCamera.YUVBuffer yBuffer, bool invertVertically, out byte[] pixelBuffer)
     {
         Log("Removing padding from image bytes.");
@@ -291,6 +318,22 @@ public class MLCameraDataProvider : MonoBehaviour, ICameraDataProvider
                     UnsafeUtility.MemCpyStride(dstPtr, width, srcPtr, stride, width, height);
                 }
                 UnsafeUtility.ReleaseGCObject(handle);                
+            }
+        }
+    }
+
+    private void GetChannelTimesBytes(MLCamera.YUVBuffer yBuffer, uint channel, byte[] pixelBuffer, out byte[] newPixelBuffer)
+    {
+        int width = (int)yBuffer.Width, height = (int)yBuffer.Height;
+        newPixelBuffer = new byte[width * channel * height];
+        for (int j = 0; j < height; j++)
+        {
+            for (int i = 0; i < width; i++)
+            {
+                for (int h = 0; h < channel; h++)
+                {
+                    newPixelBuffer[width * channel * j + i * channel + h] = h != channel - 1 ? pixelBuffer[width * j + i] : System.Convert.ToByte(255);
+                }
             }
         }
     }
