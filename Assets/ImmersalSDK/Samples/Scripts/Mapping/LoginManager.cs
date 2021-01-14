@@ -100,6 +100,11 @@ namespace Immersal.Samples.Mapping
             }
         }
 
+        public void OnServerEndEdit(string s)
+        {
+            m_Sdk.localizationServer = s;
+        }
+
         public async void Login()
         {
             JobLoginAsync j = new JobLoginAsync();
@@ -126,6 +131,7 @@ namespace Immersal.Samples.Mapping
                         PlayerPrefs.SetString("login", j.username);
                         PlayerPrefs.SetString("password", j.password);
                         PlayerPrefs.SetString("token", result.token);
+                        PlayerPrefs.SetString("server", serverField.text);
                         m_Sdk.developerToken = result.token;
 
                         loginErrorText.gameObject.SetActive(false);
