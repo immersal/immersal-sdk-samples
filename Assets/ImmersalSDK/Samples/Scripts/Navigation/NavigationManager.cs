@@ -304,7 +304,7 @@ namespace Immersal.Samples.Navigation
 
         public void DisplayPathNotFoundNotification()
         {
-#if !UNITY_STANDALONE
+#if !(UNITY_STANDALONE || PLATFORM_LUMIN)
             Handheld.Vibrate();
 #endif
             Mapping.NotificationManager.Instance.GenerateNotification("Path to target could not be found.");
@@ -313,7 +313,7 @@ namespace Immersal.Samples.Navigation
 
         public void DisplayArrivedNotification()
         {
-#if !UNITY_STANDALONE
+#if !(UNITY_STANDALONE || PLATFORM_LUMIN)
             Handheld.Vibrate();
 #endif
             Mapping.NotificationManager.Instance.GenerateNotification("You have arrived!");

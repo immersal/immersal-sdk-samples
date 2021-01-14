@@ -4,6 +4,13 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] - 2021-01-14
+### Changed
+- Updated Immersal SDK to v1.11.2 from the master branch
+- Updated HWAR specific scripts for the new SDK
+- Updated Unity to 2019.4.16f1
+- Disabled ARMv7 from the build settings to speed up IL2CPP builds
+
 ## [1.7.0] - 2020-07-02
 ### Added
 - Core: Improved localization robustness

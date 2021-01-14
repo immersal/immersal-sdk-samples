@@ -13,6 +13,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,12 +29,10 @@ using UnityEngine.Android;
 
 namespace Immersal.Samples.Mapping
 {
-    public abstract class MapperBase : MonoBehaviour, IJobHost
+    public abstract class MapperBase : MonoBehaviour
     {
         protected const double DefaultRadius = 200.0;
 
-        public event LoggedOut OnLogOut = null;
-        public delegate void LoggedOut();
         public UnityEvent onConnect = null;
         public UnityEvent onFailedToConnect = null;
 
@@ -43,6 +42,8 @@ namespace Immersal.Samples.Mapping
         public Dictionary<int, PointCloudRenderer> pcr = new Dictionary<int, PointCloudRenderer>();
         [HideInInspector]
         public MappingUIManager mappingUIManager;
+        [HideInInspector]
+        public MapperSettings mapperSettings;
         [HideInInspector]
         public WorkspaceManager workspaceManager;
         [HideInInspector]
@@ -55,7 +56,7 @@ namespace Immersal.Samples.Mapping
         protected uint m_ImageRun = 0;
         protected bool m_SessionFirstImage = true;
         protected bool m_IsTracking = false;
-        protected List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
+        protected List<Task> m_Jobs = new List<Task>();
         private int m_JobLock = 0;
         protected ImmersalSDK m_Sdk;
         protected double m_Latitude = 0.0;
@@ -68,45 +69,14 @@ namespace Immersal.Samples.Mapping
         protected double m_VAltitude = 0.0;
         protected float m_VBearing = 0f;
         protected bool m_bCaptureRunning = false;
+		protected IntPtr m_PixelBuffer = IntPtr.Zero;
 
-        private string m_Server = null;
-        private string m_Token = null;
         private int m_Bank = 0;
         private AudioSource m_CameraShutterClick;
         private IEnumerator m_UpdateJobList;
         private Camera m_MainCamera = null;
-        
-		private static IDispatch Dispatch;
 
-        public string token
-        {
-            get
-            {
-                if (m_Token == null)
-                {
-                    m_Token = PlayerPrefs.GetString("token");
-                    if (m_Token == null)
-                        Debug.LogError("No valid developer token. Contact sdk@immersal.com.");
-                }
-
-                return m_Token;
-            }
-            set { m_Token = value; }
-        }
-
-        public string server
-        {
-            get
-            {
-                if (m_Server == null)
-                {
-                    m_Server = m_Sdk.localizationServer;
-                }
-
-                return m_Server;
-            }
-            set { m_Server = value; }
-        }
+        private static IDispatch Dispatch;
 
         public Camera mainCamera
         {
@@ -147,7 +117,7 @@ namespace Immersal.Samples.Mapping
 
         #region Abstract methods
 
-        protected abstract IEnumerator Capture(bool anchor);
+        protected abstract void Capture(bool anchor);
         public abstract void Localize();
         public abstract void LocalizeServer();
 
@@ -192,7 +162,7 @@ namespace Immersal.Samples.Mapping
             if (m_Jobs.Count > 0)
             {
                 m_JobLock = 1;
-                StartCoroutine(RunJob(m_Jobs[0]));
+                RunJob(m_Jobs[0]);
             }
         }
 
@@ -222,6 +192,7 @@ namespace Immersal.Samples.Mapping
             Dispatch = new MainThreadDispatch();
             m_CameraShutterClick = GetComponent<AudioSource>();
             mappingUIManager = GetComponentInChildren<MappingUIManager>();
+            mapperSettings = GetComponent<MapperSettings>();
             workspaceManager = mappingUIManager.workspaceManager;
             visualizeManager = mappingUIManager.visualizeManager;
             visualizeManager.OnItemSelected += OnItemSelected;
@@ -237,12 +208,15 @@ namespace Immersal.Samples.Mapping
         {
             m_Sdk = ImmersalSDK.Instance;
 
-            if ((PlayerPrefs.GetInt("use_gps", 0) == 1))
+            if (mapperSettings.downsampleWhenLocalizing)
             {
-                mappingUIManager.gpsToggle.isOn = true;
+                Immersal.Core.SetInteger("LocalizationMaxPixels", 1280*720);
             }
 
-            StartCoroutine(StatusPoll());
+            mappingUIManager.vLocationText.text = "No VGPS localizations";
+
+            Invoke("StartGPS", 0.1f);
+            StatusPoll();
             Jobs();
         }
 
@@ -287,8 +261,7 @@ namespace Immersal.Samples.Mapping
             #endif
             PlayerPrefs.SetInt("use_gps", 0);
             NotificationManager.Instance.GenerateNotification("Geolocation tracking stopped");
-            mappingUIManager.locationText.text = "";
-            mappingUIManager.locationPanel.SetActive(false);
+            mappingUIManager.locationText.text = "GPS not enabled";
         }
 
         private IEnumerator EnableLocationServices()
@@ -297,6 +270,7 @@ namespace Immersal.Samples.Mapping
             if (!Input.location.isEnabledByUser)
             {
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(false);
+                mapperSettings.SetUseGPS(false);
                 NotificationManager.Instance.GenerateNotification("Location services not enabled");
                 Debug.Log("Location services not enabled");
                 yield break;
@@ -325,6 +299,7 @@ namespace Immersal.Samples.Mapping
             if (maxWait < 1)
             {
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(false);
+                mapperSettings.SetUseGPS(false);
                 NotificationManager.Instance.GenerateNotification("Location services timed out");
                 Debug.Log("Timed out");
                 yield break;
@@ -338,6 +313,7 @@ namespace Immersal.Samples.Mapping
             #endif
             {
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(false);
+                mapperSettings.SetUseGPS(false);
                 NotificationManager.Instance.GenerateNotification("Unable to determine device location");
                 Debug.Log("Unable to determine device location");
                 yield break;
@@ -349,8 +325,9 @@ namespace Immersal.Samples.Mapping
             if (Input.location.status == LocationServiceStatus.Running)
             #endif
             {
-                PlayerPrefs.SetInt("use_gps", 1);
-                mappingUIManager.locationPanel.SetActive(true);
+                //PlayerPrefs.SetInt("use_gps", 1);
+                mappingUIManager.gpsToggle.SetIsOnWithoutNotify(true);
+                mapperSettings.SetUseGPS(true);
                 NotificationManager.Instance.GenerateNotification("Tracking geolocation");
             }
         }
@@ -421,26 +398,29 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        IEnumerator StatusPoll()
+        async void StatusPoll()
         {
-            CoroutineJobStatus j = new CoroutineJobStatus();
-            j.host = this;
-            j.OnSuccess += (SDKStatusResult result) =>
+            JobStatusAsync j = new JobStatusAsync();
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKStatusResult result && result.error == "none")
                 {
                     this.stats.imageCount = result.imageCount;
                 }
             };
 
-            yield return StartCoroutine(j.RunJob());
-            yield return new WaitForSeconds(3);
-            StartCoroutine(StatusPoll());
+            await j.RunJobAsync();
+            await Task.Delay(3000);
+
+            if (Application.isPlaying)
+            {
+                StatusPoll();
+            }
         }
 
-        private IEnumerator RunJob(CoroutineJob j)
+        private async void RunJob(Task t)
         {
-            yield return StartCoroutine(j.RunJob());
+            await t;
 
             if (m_Jobs.Count > 0)
             {
@@ -547,12 +527,12 @@ namespace Immersal.Samples.Mapping
                 m_Vaccuracy = Input.location.lastData.verticalAccuracy;
                 #endif
 
-                string txt = string.Format("lat: {0}, lon: {1}, alt: {2}, hacc: {3}, vacc: {4}", 
+                string txt = string.Format("Lat: {0}, Lon: {1}, Alt: {2}, HAcc: {3}, VAcc: {4}", 
                                 m_Latitude.ToString("0.00000"), 
                                 m_Longitude.ToString("0.00000"), 
-                                m_Altitude.ToString("0.00"), 
-                                m_Haccuracy.ToString("0.00"), 
-                                m_Vaccuracy.ToString("0.00"));
+                                m_Altitude.ToString("0.0"), 
+                                m_Haccuracy.ToString("0.0"), 
+                                m_Vaccuracy.ToString("0.0"));
                 
                 mappingUIManager.locationText.text = txt;
             }
@@ -585,88 +565,79 @@ namespace Immersal.Samples.Mapping
             }
 
             string txt2 = string.Format("VLat: {0}, VLon: {1}, VAlt: {2}, VBRG: {3}", 
-                            m_VLatitude.ToString("0.00000"),
-                            m_VLongitude.ToString("0.00000"),
-                            m_VAltitude.ToString("0.00"),
+                            m_VLatitude.ToString("0.000000"),
+                            m_VLongitude.ToString("0.000000"),
+                            m_VAltitude.ToString("0.0"),
                             m_VBearing.ToString("0.0"));
             
             mappingUIManager.vLocationText.text = txt2;
         }
 
-        public void DeleteMap(int mapId)
+        public void DeleteMap(int jobId)
         {
-            CoroutineJobDeleteMap j = new CoroutineJobDeleteMap();
-            j.host = this;
-            j.id = mapId;
-            j.OnSuccess += (SDKDeleteMapResult result) =>
+            JobDeleteMapAsync j = new JobDeleteMapAsync();
+            j.id = jobId;
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKDeleteMapResult result && result.error == "none")
                 {
-                    Debug.Log(string.Format("Map {0} deleted successfully.", mapId));
+                    Debug.Log(string.Format("Map {0} deleted successfully.", jobId));
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
         }
 
-        public void RestoreMapImages(int mapId)
+        public void RestoreMapImages(int jobId)
         {
-            CoroutineJobRestoreMapImages j = new CoroutineJobRestoreMapImages();
-            j.host = this;
-            j.id = mapId;
-            j.OnSuccess += (SDKRestoreMapImagesResult result) =>
+            JobRestoreMapImagesAsync j = new JobRestoreMapImagesAsync();
+            j.id = jobId;
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKRestoreMapImagesResult result && result.error == "none")
                 {
-                    Debug.Log(string.Format("Successfully restored images for map {0}", mapId));
+                    Debug.Log(string.Format("Successfully restored images for map {0}", jobId));
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
 
             m_SessionFirstImage = true;
         }
 
         public void ResetMapperPictures(bool deleteAnchor)
         {
-            CoroutineJobClear j = new CoroutineJobClear();
-            j.host = this;
+            JobClearAsync j = new JobClearAsync();
             j.anchor = deleteAnchor;
-            j.OnSuccess += (SDKClearResult result) =>
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKClearResult result && result.error == "none")
                 {
                     Debug.Log("Workspace cleared successfully");
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
 
             m_SessionFirstImage = true;
         }
 
         public void Construct()
         {
-            CoroutineJobConstruct j = new CoroutineJobConstruct();
-            j.host = this;
+            JobConstructAsync j = new JobConstructAsync();
             j.name = workspaceManager.newMapName.text;
-
-            int featureCount = 600;
-            if(workspaceManager.detailLevelDropdown.value == 1)
+            j.featureCount = mapperSettings.mapDetailLevel;
+            j.preservePoses = mapperSettings.preservePoses;
+            j.windowSize = mapperSettings.windowSize;
+            j.OnResult += (SDKResultBase r) =>
             {
-                featureCount = 1024;
-            }
-
-            j.featureCount = featureCount;
-            j.OnSuccess += (SDKConstructResult result) =>
-            {
-                if (result.error == "none")
+                if (r is SDKConstructResult result && result.error == "none")
                 {
-                    Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images", result.id, result.size));
+                    Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
         }
 
         public void NotifyIfConnected(icvCaptureInfo info)
@@ -693,7 +664,7 @@ namespace Immersal.Samples.Mapping
                 var captureButton = workspaceManager.captureButton.GetComponent<Button>();
                 captureButton.interactable = false;
                 m_CameraShutterClick.Play();
-                StartCoroutine(Capture(false));
+                Capture(false);
             }
         }
 
@@ -702,65 +673,63 @@ namespace Immersal.Samples.Mapping
             if (!m_bCaptureRunning)
             {
                 m_CameraShutterClick.Play();
-                StartCoroutine(Capture(true));
+                Capture(true);
             }
         }
 
-        public void LoadMap(int mapId)
+        public async void LoadMap(int jobId)
         {
-            if (pcr.ContainsKey(mapId))
+            if (pcr.ContainsKey(jobId))
             {
-                CoroutineJobFreeMap jf = new CoroutineJobFreeMap();
-                jf.id = pcr[mapId].mapId;
-                jf.OnSuccess += (int result) =>
+                Task<int> t0 = Task.Run(() =>
                 {
-                    if (result == 1)
-                    {
-                        Debug.Log("FreeMap: " + mapId);
-                        PointCloudRenderer p = pcr[mapId];
-                        p.ClearCloud();
-                        pcr.Remove(mapId);
-                    }
-                };
+                    return Immersal.Core.FreeMap(pcr[jobId].mapHandle);
+                });
 
-                m_Jobs.Add(jf);
+                await t0;
+
+                if (t0.Result == 1)
+                {
+                    PointCloudRenderer p = pcr[jobId];
+                    p.ClearCloud();
+                    pcr.Remove(jobId);
+                }
                 return;
             }
 
-            CoroutineJobLoadMap j = new CoroutineJobLoadMap();
-            j.host = this;
-            j.id = mapId;
+            JobLoadMapAsync j = new JobLoadMapAsync();
+            j.id = jobId;
 
             j.OnStart += () =>
             {
                 mappingUIManager.SetProgress(0);
                 mappingUIManager.ShowProgressBar();
             };
-            j.OnSuccess += (SDKMapResult result) =>
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKMapResult result && result.error == "none")
                 {
                     byte[] mapData = Convert.FromBase64String(result.b64);
-                    Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", mapId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
-                    StartCoroutine(CompleteMapLoad(mapData));
+                    Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", jobId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
+                    CompleteMapLoad(jobId, mapData);
                 }
 
                 mappingUIManager.HideProgressBar();
             };
-            j.OnProgress += (float progress) =>
+            j.Progress.ProgressChanged += (s, progress) =>
             {
                 int value = (int)(100f * progress);
                 mappingUIManager.SetProgress(value);
             };
-            j.OnError += (UnityWebRequest request) =>
+            j.OnError += (HttpResponseMessage response) =>
             {
                 mappingUIManager.HideProgressBar();
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
         }
 
-        IEnumerator CompleteMapLoad(byte[] mapData)
+        async void CompleteMapLoad(int jobId, byte[] mapData)
         {
             Vector3[] vector3Array = new Vector3[ARMap.MAX_VERTICES];
 
@@ -768,50 +737,42 @@ namespace Immersal.Samples.Mapping
             {
                 return Immersal.Core.LoadMap(mapData);
             });
-                
-            while (!t0.IsCompleted)
+
+            await t0;
+
+            int mapHandle = t0.Result;
+
+            if (mapHandle >= 0)
             {
-                yield return null;
-            }
+                Task<int> t1 = Task.Run(() =>
+                {
+                    return Immersal.Core.GetPointCloud(mapHandle, vector3Array);
+                });
 
-            int id = t0.Result;
+                await t1;
 
-            Debug.Log("mapId " + id);
+                int num = t1.Result;
 
-            Task<int> t1 = Task.Run(() =>
-            {
-                return Immersal.Core.GetPointCloud(id, vector3Array);
-            });
-
-            while (!t1.IsCompleted)
-            {
-                yield return null;
-            }
-
-            int num = t1.Result;
-
-            Debug.Log("map points: " + num);
-
-            PointCloudRenderer renderer = gameObject.AddComponent<PointCloudRenderer>();
-            renderer.CreateCloud(vector3Array, num);
-            renderer.mapId = id;
-            if (!pcr.ContainsKey(id)) {
-                pcr.Add(id, renderer);
+                PointCloudRenderer renderer = gameObject.AddComponent<PointCloudRenderer>();
+                renderer.CreateCloud(vector3Array, num);
+                renderer.mapHandle = mapHandle;
+                if (!pcr.ContainsKey(jobId)) {
+                    pcr.Add(jobId, renderer);
+                }
             }
 
             stats.locFail = 0;
             stats.locSucc = 0;
 
-            VisualizeManager.loadJobs.Remove(id);
+            VisualizeManager.loadJobs.Remove(jobId);
         }
 
         public void Jobs()
         {
-            CoroutineJobListJobs j = new CoroutineJobListJobs();
+            JobListJobsAsync j = new JobListJobsAsync();
             List<int> activeMaps = new List<int>();
-            j.host = this;
 
-            if (gpsOn)
+            if (mapperSettings.listOnlyNearbyMaps)
             {
                 j.useGPS = true;
                 j.latitude = m_Latitude;
@@ -825,20 +786,21 @@ namespace Immersal.Samples.Mapping
             }
 
             j.activeMaps = activeMaps;
-            j.OnSuccess += (SDKJobsResult result) =>
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKJobsResult result && result.error == "none")
                 {
-                    this.visualizeManager.SetSelectSlotData(result.jobs, activeMaps);
+                    this.visualizeManager.SetMapListData(result.jobs, activeMaps);
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
         }
 
         public void Logout()
         {
-            OnLogOut?.Invoke();
+            if (LoginManager.Instance != null)
+                LoginManager.Instance.Logout();
         }
     }
 

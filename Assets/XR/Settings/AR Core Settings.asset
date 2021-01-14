@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9858e958182f2e4f8dea1aa0a92e5ad, type: 3}
   m_Name: AR Core Settings
   m_EditorClassIdentifier: 
-  m_Requirement: 0
+  m_Requirement: 1

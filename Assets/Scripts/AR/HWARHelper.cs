@@ -16,40 +16,36 @@ using System.Runtime.InteropServices;
 using System;
 using Unity.Collections.LowLevel.Unsafe;
 
-namespace Immersal.AR.HWAR
+namespace Immersal.AR
 {
 	public class HWARHelper {
 
-        public static Vector4 GetIntrinsics(float width, float height)
+        public static void GetIntrinsics(out Vector4 intrinsics, bool isHD, float width, float height)
         {
-			ARCameraIntrinsics intr = ARFrame.ImageIntrinsics;
-            Vector4 intrinsics = Vector4.zero;
+            intrinsics = Vector4.zero;
 
-			Camera cam = Camera.main;
-			Matrix4x4 proj = HuaweiARUnitySDK.ARSession.GetProjectionMatrix(cam.nearClipPlane, cam.farClipPlane);
+			if (isHD)
+			{
+				ARCameraIntrinsics intr = ARFrame.ImageIntrinsics;
+				
+				intrinsics.x = intr.ARFocalLength.x;
+				intrinsics.y = intr.ARFocalLength.y;
+				intrinsics.z = intr.ARPrincipalPoint.y;	// wrong order in HWAR SDK?
+				intrinsics.w = intr.ARPrincipalPoint.x;
+			}
+			else
+			{
+				Camera cam = Camera.main;
+				Matrix4x4 proj = HuaweiARUnitySDK.ARSession.GetProjectionMatrix(cam.nearClipPlane, cam.farClipPlane);
 
-			float fy = 0.5f * proj.m11 * width;
-			float cx = 0.5f * (proj.m02 + 1.0f) * height;
-			float cy = 0.5f * (proj.m12 + 1.0f) * width;
+				float fy = 0.5f * proj.m11 * width;
+				float cx = 0.5f * (proj.m02 + 1.0f) * height;
+				float cy = 0.5f * (proj.m12 + 1.0f) * width;
 
-			intrinsics.x = intrinsics.y = fy;
-			intrinsics.z = cy;
-			intrinsics.w = cx;
-
-            return intrinsics;
-        }
-
-		public static Vector4 GetIntrinsics()
-        {
-            Vector4 intrinsics = Vector4.zero;
-			ARCameraIntrinsics intr = ARFrame.ImageIntrinsics;
-			
-			intrinsics.x = intr.ARFocalLength.x;
-			intrinsics.y = intr.ARFocalLength.y;
-			intrinsics.z = intr.ARPrincipalPoint.y;
-			intrinsics.w = intr.ARPrincipalPoint.x;
-
-            return intrinsics;
+				intrinsics.x = intrinsics.y = fy;
+				intrinsics.z = cy;
+				intrinsics.w = cx;
+			}
         }
 
 		public static void GetRotation(ref Quaternion rot)
@@ -75,6 +71,31 @@ namespace Immersal.AR.HWAR
 			}
 
 			rot *= Quaternion.Euler(0f, 0f, angle);
+		}
+
+		public static void GetPlaneDataFast(ref IntPtr pixels, ARCameraImageBytes image)
+		{
+			int width = image.Width, height = image.Height;
+
+			if (width == image.YRowStride)
+			{
+				pixels = image.Y;
+			}
+			else
+			{
+				unsafe
+				{
+					ulong handle;
+					byte[] data = new byte[width * height];
+					byte* srcPtr = (byte*)image.Y;
+					byte* dstPtr = (byte*)UnsafeUtility.PinGCArrayAndGetDataAddress(data, out handle);
+					if (width > 0 && height > 0) {
+						UnsafeUtility.MemCpyStride(dstPtr, width, srcPtr, image.YRowStride, width, height);
+					}
+					pixels = (IntPtr)dstPtr;
+					UnsafeUtility.ReleaseGCObject(handle);
+				}
+			}
 		}
 
 		public static void GetPlaneData(out byte[] pixels, ARCameraImageBytes image)

@@ -12,6 +12,7 @@ Contact sdk@immersal.com for licensing requests.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using TMPro;
 using Immersal.AR;
@@ -20,29 +21,16 @@ using Immersal.REST;
 namespace Immersal.Samples
 {
     [RequireComponent(typeof(TMP_Dropdown))]
-    public class MapListController : MonoBehaviour, IJobHost
+    public class MapListController : MonoBehaviour
     {
         [SerializeField]
         private ARMap m_ARMap = null;
 
         private List<SDKJob> m_Maps;
         private TMP_Dropdown m_Dropdown;
-        private string m_Token = "";
-        private string m_Server;
-        private List<CoroutineJob> m_Jobs = new List<CoroutineJob>();
+        private List<Task> m_Jobs = new List<Task>();
         private int m_JobLock = 0;
-        private ImmersalSDK m_Sdk;
         private TextAsset m_EmbeddedMap;
-
-        public string server
-        {
-            get { return m_Server; }
-        }
-
-        public string token
-        {
-            get { return m_Token; }
-        }
 
         void Awake()
         {
@@ -62,11 +50,7 @@ namespace Immersal.Samples
 
         void Start()
         {
-            m_Sdk = ImmersalSDK.Instance;
-            m_Token = m_Sdk.developerToken;
-            m_Server = m_Sdk.localizationServer;
-
-            GetMaps();
+            Invoke("GetMaps", 0.5f);
         }
 
         void Update()
@@ -77,7 +61,7 @@ namespace Immersal.Samples
             if (m_Jobs.Count > 0)
             {
                 m_JobLock = 1;
-                StartCoroutine(RunJob(m_Jobs[0]));
+                RunJob(m_Jobs[0]);
             }
         }
 
@@ -105,11 +89,10 @@ namespace Immersal.Samples
 
         public void GetMaps()
         {
-            CoroutineJobListJobs j = new CoroutineJobListJobs();
-            j.host = this;
-            j.OnSuccess += (SDKJobsResult result) =>
+            JobListJobsAsync j = new JobListJobsAsync();
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none" && result.count > 0)
+                if (r is SDKJobsResult result && result.error == "none" && result.count > 0)
                 {
                     List<string> names = new List<string>();
 
@@ -126,32 +109,32 @@ namespace Immersal.Samples
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
         }
 
-        public void LoadMap(int id)
+        public void LoadMap(int jobId)
         {
-            CoroutineJobLoadMap j = new CoroutineJobLoadMap();
-            j.host = this;
-            j.id = id;
-            j.OnSuccess += (SDKMapResult result) =>
+            JobLoadMapAsync j = new JobLoadMapAsync();
+            j.id = jobId;
+            j.OnResult += (SDKResultBase r) =>
             {
-                if (result.error == "none")
+                if (r is SDKMapResult result && result.error == "none")
                 {
                     byte[] mapData = Convert.FromBase64String(result.b64);
-                    Debug.Log(string.Format("Load map {0} ({1} bytes)", id, mapData.Length));
+                    Debug.Log(string.Format("Load map {0} ({1} bytes)", jobId, mapData.Length));
 
                     this.m_ARMap.LoadMap(mapData);
                 }
             };
 
-            m_Jobs.Add(j);
+            m_Jobs.Add(j.RunJobAsync());
         }
 
-        private IEnumerator RunJob(CoroutineJob j)
+        private async void RunJob(Task t)
         {
-            yield return StartCoroutine(j.RunJob());
-            m_Jobs.RemoveAt(0);
+            await t;
+            if (m_Jobs.Count > 0)
+                m_Jobs.RemoveAt(0);
             m_JobLock = 0;
         }
     }

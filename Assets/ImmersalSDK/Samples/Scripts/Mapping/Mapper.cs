@@ -10,9 +10,11 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using System;
+using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -55,27 +57,34 @@ namespace Immersal.Samples.Mapping
             base.OnDisable();
         }
 
-        protected override IEnumerator Capture(bool anchor)
+        protected override async void Capture(bool anchor)
         {
-            yield return new WaitForSeconds(0.25f);
+            await Task.Delay(250);
 
             m_bCaptureRunning = true;
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+#else
             XRCpuImage image;
+#endif
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
+#if PLATFORM_LUMIN
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+#else
             if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
             {
-                CoroutineJobCapture j = new CoroutineJobCapture();
-                j.host = this;
+                JobCaptureAsync j = new JobCaptureAsync();
                 j.run = (int)(m_ImageRun & 0xEFFFFFFF);
                 j.index = m_ImageIndex++;
                 j.anchor = anchor;
 
-                if (gpsOn)
+                if (mapperSettings.useGps)
                 {
                     j.latitude = m_Latitude;
                     j.longitude = m_Longitude;
@@ -88,17 +97,19 @@ namespace Immersal.Samples.Mapping
 
                 Camera cam = this.mainCamera;
                 Quaternion _q = cam.transform.rotation;
-                Matrix4x4 r = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
+                Matrix4x4 rot = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
                 Vector3 _p = cam.transform.position;
-                Vector3 p = new Vector3(_p.x, _p.y, -_p.z);
-                j.rotation = r;
-                j.position = p;
-				j.intrinsics = ARHelper.GetIntrinsics();
+                Vector3 pos = new Vector3(_p.x, _p.y, -_p.z);
+                j.rotation = rot;
+                j.position = pos;
+
+				ARHelper.GetIntrinsics(out j.intrinsics);
+
                 int width = image.width;
                 int height = image.height;
 
                 byte[] pixels;
-                int channels = 0;
+                int channels = 1;
 
                 if (m_RgbCapture)
                 {
@@ -108,7 +119,6 @@ namespace Immersal.Samples.Mapping
                 else
                 {
                     ARHelper.GetPlaneData(out pixels, image);
-                    channels = 1;
                 }
 
                 byte[] capture = new byte[channels * width * height + 1024];
@@ -118,10 +128,7 @@ namespace Immersal.Samples.Mapping
                     return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                 });
 
-                while (!captureTask.IsCompleted)
-                {
-                    yield return null;
-                }
+                await captureTask;
 
                 string path = string.Format("{0}/{1}", this.tempImagePath, System.Guid.NewGuid());
                 using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(path)))
@@ -143,9 +150,9 @@ namespace Immersal.Samples.Mapping
                     mappingUIManager.SetProgress(0);
                     mappingUIManager.ShowProgressBar();
                 };
-                j.OnSuccess += (SDKImageResult result) =>
+                j.OnResult += (SDKResultBase r) =>
                 {
-                    if (result.error == "none")
+                    if (r is SDKImageResult result && result.error == "none")
                     {
                         float et = Time.realtimeSinceStartup - uploadStartTime;
                         Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
@@ -153,18 +160,18 @@ namespace Immersal.Samples.Mapping
 
                     mappingUIManager.HideProgressBar();
                 };
-                j.OnProgress += (float progress) =>
+                j.Progress.ProgressChanged += (s, progress) =>
                 {
                     int value = (int)(100f * progress);
                     //Debug.Log(string.Format("Upload progress: {0}%", value));
                     mappingUIManager.SetProgress(value);
                 };
-                j.OnError += (UnityWebRequest request) =>
+                j.OnError += (HttpResponseMessage response) =>
                 {
                     mappingUIManager.HideProgressBar();
                 };
 
-                m_Jobs.Add(j);
+                m_Jobs.Add(j.RunJobAsync());
                 image.Dispose();
 
                 float elapsedTime = Time.realtimeSinceStartup - captureStartTime;
@@ -176,82 +183,119 @@ namespace Immersal.Samples.Mapping
             captureButton.interactable = true;
         }
 
-        public override void Localize()
+        public void TryLocalize()
         {
+            if (mapperSettings.useServerLocalizer)
+            {
+                LocalizeServer();
+            }
+            else
+            {
+                Localize();
+            }
+        }
+
+        public override async void Localize()
+        {
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+#else
             XRCpuImage image;
+#endif
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
+#if PLATFORM_LUMIN
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+#else
             if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
             {
-                CoroutineJobLocalize j = new CoroutineJobLocalize();
+                Vector4 intrinsics;
                 Camera cam = this.mainCamera;
                 Vector3 camPos = cam.transform.position;
                 Quaternion camRot = cam.transform.rotation;
-                j.intrinsics = ARHelper.GetIntrinsics();
-                j.width = image.width;
-                j.height = image.height;
-                j.rotation = camRot;
-                j.position = camPos;
-                j.OnSuccess += (int mapId, Vector3 position, Quaternion rotation) =>
+                int param1 = mapperSettings.param1;
+                int param2 = mapperSettings.param2;
+                float param3 = mapperSettings.param3;
+                float param4 = mapperSettings.param4;
+                int method = mapperSettings.localizer;
+
+                ARHelper.GetIntrinsics(out intrinsics);
+                ARHelper.GetPlaneDataFast(ref m_PixelBuffer, image);
+
+                if (m_PixelBuffer != IntPtr.Zero)
                 {
-                    this.stats.locSucc++;
+                    Vector3 position = Vector3.zero;
+                    Quaternion rotation = Quaternion.identity;
 
-                    Debug.Log("*************************** Localization Succeeded ***************************");
-                    Matrix4x4 cloudSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
-                    Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                    Debug.Log("id " + mapId + "\n" +
-                            "fc 4x4\n" + cloudSpace + "\n" +
-                            "ft 4x4\n" + trackerSpace);
-
-                    Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
-
-                    LocalizerPose lastLocalizedPose;
-                    LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, position, rotation, m.inverse);
-                    this.lastLocalizedPose = lastLocalizedPose;
-
-                    foreach (PointCloudRenderer p in this.pcr.Values)
+                    Task<int> t = Task.Run(() =>
                     {
-                        if (p.mapId == mapId)
+                        return Immersal.Core.LocalizeImage(out position, out rotation, image.width, image.height, ref intrinsics, m_PixelBuffer, param1, param2, param3, param4, method);
+                    });
+
+                    await t;
+
+                    int mapHandle = t.Result;
+
+                    if (mapHandle >= 0)
+                    {
+                        this.stats.locSucc++;
+
+                        Debug.Log("*************************** Localization Succeeded ***************************");
+                        Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", param1, param2, param3, param4));
+                        Matrix4x4 cloudSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
+                        Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+                        Debug.Log("handle " + mapHandle + "\n" +
+                                "fc 4x4\n" + cloudSpace + "\n" +
+                                "ft 4x4\n" + trackerSpace);
+
+                        Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
+
+                        LocalizerPose lastLocalizedPose;
+                        LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapHandle, position, rotation, m.inverse);
+                        this.lastLocalizedPose = lastLocalizedPose;
+
+                        foreach (PointCloudRenderer p in this.pcr.Values)
                         {
-                            p.go.transform.position = m.GetColumn(3);
-                            p.go.transform.rotation = m.rotation;
-                            break;
+                            if (p.mapHandle == mapHandle)
+                            {
+                                p.go.transform.position = m.GetColumn(3);
+                                p.go.transform.rotation = m.rotation;
+                                break;
+                            }
                         }
                     }
-                };
-                j.OnFail += () =>
-                {
-                    this.stats.locFail++;
-                    Debug.Log("*************************** Localization Failed ***************************");
-                };
+                    else
+                    {
+                        this.stats.locFail++;
+                        Debug.Log("*************************** Localization Failed ***************************");
+                    }
+                    
+                }
 
-                ARHelper.GetPlaneData(out j.pixels, image);
-                m_Jobs.Add(j);
                 image.Dispose();
             }
         }
 
-        public override void LocalizeServer()
+        public override async void LocalizeServer()
         {
             bool rgb = false;   
 
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+            if (cameraSubsystem.TryGetLatestImage(out image))
+#else
             XRCpuImage image;
             if (cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
             {
-                CoroutineJobLocalizeServer j = new CoroutineJobLocalizeServer();
+                JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
-                if (gpsOn)
-                {
-                    j.useGPS = true;
-                    j.latitude = m_Latitude;
-                    j.longitude = m_Longitude;
-                    j.radius = DefaultRadius;
-                }
-                else
+                if (mapperSettings.serverLocalizationWithIds)
                 {
                     int n = pcr.Count;
 
@@ -264,91 +308,108 @@ namespace Immersal.Samples.Mapping
                         j.mapIds[count++].id = id;
                     }
                 }
+                else
+                {
+                    j.useGPS = true;
+                    j.latitude = m_Latitude;
+                    j.longitude = m_Longitude;
+                    j.radius = DefaultRadius;
+                }
 
+                byte[] pixels;
                 Camera cam = this.mainCamera;
                 Vector3 camPos = cam.transform.position;
                 Quaternion camRot = cam.transform.rotation;
-                j.host = this;
+                int channels = 1;
+                int width = image.width;
+                int height = image.height;
+
                 j.rotation = camRot;
                 j.position = camPos;
-                j.intrinsics = ARHelper.GetIntrinsics();
-                j.width = image.width;
-                j.height = image.height;
+                j.param1 = mapperSettings.param1;
+                j.param2 = mapperSettings.param2;
+                j.param3 = mapperSettings.param3;
+                j.param4 = mapperSettings.param4;
+
+                ARHelper.GetIntrinsics(out j.intrinsics);
 
                 if (rgb)
                 {
-                    ARHelper.GetPlaneDataRGB(out j.pixels, image);
-                    j.channels = 3;
+                    ARHelper.GetPlaneDataRGB(out pixels, image);
+                    channels = 3;
                 }
                 else
                 {
-                    ARHelper.GetPlaneData(out j.pixels, image);
-                    j.channels = 1;
+                    ARHelper.GetPlaneData(out pixels, image);
                 }
 
-                j.OnResult += (SDKLocalizeResult result) =>
+                Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
                 {
-                    /*if (result.error == "none")
-                    {*/
-                        if (result.success)
+                    byte[] capture = new byte[channels * width * height + 1024];
+                    icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    Array.Resize(ref capture, info.captureSize);
+                    return (capture, info);
+                });
+
+                await t;
+
+                j.image = t.Result.Item1;
+
+                j.OnResult += (SDKResultBase r) =>
+                {
+                    if (r is SDKLocalizeResult result && result.success)
+                    {
+                        Matrix4x4 m = Matrix4x4.identity;
+                        Matrix4x4 cloudSpace = Matrix4x4.identity;
+                        cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
+                        cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
+                        cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
+                        Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+                        this.stats.locSucc++;
+
+                        Debug.Log("*************************** On-Server Localization Succeeded ***************************");
+                        Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", j.param1, j.param2, j.param3, j.param4));
+                        Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
+                                "ft 4x4\n" + trackerSpace);
+
+                        m = trackerSpace * (cloudSpace.inverse);
+
+                        foreach (KeyValuePair<int, PointCloudRenderer> p in this.pcr)
                         {
-                            Matrix4x4 m = Matrix4x4.identity;
-                            Matrix4x4 cloudSpace = Matrix4x4.identity;
-                            cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
-                            cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
-                            cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
-                            Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                            this.stats.locSucc++;
-
-                            Debug.Log("*************************** On-Server Localization Succeeded ***************************");
-                            Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
-                                    "ft 4x4\n" + trackerSpace);
-
-                            m = trackerSpace * (cloudSpace.inverse);
-
-                            foreach (KeyValuePair<int, PointCloudRenderer> p in this.pcr)
+                            if (p.Key == result.map)
                             {
-                                if (p.Key == result.map)
-                                {
-                                    p.Value.go.transform.position = m.GetColumn(3);
-                                    p.Value.go.transform.rotation = m.rotation;
-                                    break;
-                                }
+                                p.Value.go.transform.position = m.GetColumn(3);
+                                p.Value.go.transform.rotation = m.rotation;
+                                break;
                             }
-
-                            CoroutineJobEcef je = new CoroutineJobEcef();
-                            je.host = this;
-                            je.id = result.map;
-                            je.OnSuccess += (SDKEcefResult result2) =>
-                            {
-                                if (result2.error == "none")
-                                {
-                                    Debug.Log(result2.ecef);
-                                    LocalizerPose lastLocalizedPose;
-                                    LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
-                                    this.lastLocalizedPose = lastLocalizedPose;
-                                }
-                                else
-                                {
-                                    Debug.LogError(result2.error);
-                                }
-                            };
-
-                            m_Jobs.Add(je);
                         }
-                        else
+
+                        JobEcefAsync je = new JobEcefAsync();
+                        je.id = result.map;
+                        je.OnResult += (SDKResultBase r2) =>
                         {
-                            this.stats.locFail++;
-                            Debug.Log("*************************** On-Server Localization Failed ***************************");
-                        }
-                    /*}
+                            if (r2 is SDKEcefResult result2 && result2.error == "none")
+                            {
+                                LocalizerPose lastLocalizedPose;
+                                LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
+                                this.lastLocalizedPose = lastLocalizedPose;
+                            }
+                            else
+                            {
+                                Debug.LogError(r2.error);
+                            }
+                        };
+
+                        m_Jobs.Add(je.RunJobAsync());
+                    }
                     else
                     {
-                        Debug.LogError(result.error);
-                    }*/
+                        this.stats.locFail++;
+                        Debug.Log("*************************** On-Server Localization Failed ***************************");
+                    }
                 };
 
-                m_Jobs.Add(j);
+                m_Jobs.Add(j.RunJobAsync());
                 image.Dispose();
             }
         }

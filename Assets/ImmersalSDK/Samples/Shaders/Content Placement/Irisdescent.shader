@@ -18,7 +18,7 @@
 	{
 		Tags
 		{
-			"LightMode" = "ForwardBase"
+			"LightMode" = "UniversalForward"
 		}
 
 		LOD 100
