@@ -65,11 +65,19 @@ namespace Immersal.Samples.Mapping
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+#else
             XRCpuImage image;
+#endif
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
+#if PLATFORM_LUMIN
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+#else
             if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
             {
                 JobCaptureAsync j = new JobCaptureAsync();
                 j.run = (int)(m_ImageRun & 0xEFFFFFFF);
@@ -189,11 +197,19 @@ namespace Immersal.Samples.Mapping
 
         public override async void Localize()
         {
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+#else
             XRCpuImage image;
+#endif
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
+#if PLATFORM_LUMIN
+            if (cameraSubsystem != null && cameraSubsystem.TryGetLatestImage(out image))
+#else
             if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
             {
                 Vector4 intrinsics;
                 Camera cam = this.mainCamera;
@@ -269,8 +285,13 @@ namespace Immersal.Samples.Mapping
             ARCameraManager cameraManager = m_Sdk.cameraManager;
             var cameraSubsystem = cameraManager.subsystem;
 
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+            if (cameraSubsystem.TryGetLatestImage(out image))
+#else
             XRCpuImage image;
             if (cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
             {
                 JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 

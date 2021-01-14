@@ -50,7 +50,7 @@ namespace Immersal.Samples
 
         void Start()
         {
-            GetMaps();
+            Invoke("GetMaps", 0.5f);
         }
 
         void Update()

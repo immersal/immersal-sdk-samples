@@ -27,6 +27,7 @@ namespace Immersal.Samples.Mapping
         public GameObject loginPanel;
         public TMP_InputField emailField;
         public TMP_InputField passwordField;
+        public TMP_InputField serverField;
         public TextMeshProUGUI loginErrorText;
         public float fadeOutTime = 1f;
         public event LoginEvent OnLogin = null;
@@ -76,34 +77,19 @@ namespace Immersal.Samples.Mapping
             m_Sdk = ImmersalSDK.Instance;
             m_CanvasGroup = loginPanel.GetComponent<CanvasGroup>();
 
-            LoadSettingsFromPrefs();
-
             Invoke("FillFields", 0.1f);
-        }
-
-        private void LoadSettingsFromPrefs()
-        {
-            string dataPath = Path.Combine(Application.persistentDataPath, "settings.json");
-
-            try
-            {
-                MapperSettings.MapperSettingsFile loadFile = JsonUtility.FromJson<MapperSettings.MapperSettingsFile>(File.ReadAllText(dataPath));
-
-                if (loadFile.serverUrl != null)
-                {
-                    m_Sdk.localizationServer = loadFile.serverUrl;
-                }
-            }
-            catch (FileNotFoundException e)
-            {
-                Debug.Log(e.Message + "\nsettings.json file not found");
-            }
         }
 
         void FillFields()
         {
             emailField.text = PlayerPrefs.GetString("login", "");
             passwordField.text = PlayerPrefs.GetString("password", "");
+            serverField.text = PlayerPrefs.GetString("server", ImmersalSDK.DefaultServer);
+
+            if (serverField.text != ImmersalSDK.DefaultServer)
+            {
+                m_Sdk.localizationServer = serverField.text;
+            }
         }
 
         public void OnLoginClick()

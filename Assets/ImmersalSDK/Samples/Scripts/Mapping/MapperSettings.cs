@@ -35,7 +35,6 @@ namespace Immersal.Samples.Mapping
         public bool serverLocalizationWithIds { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
         public int windowSize { get; private set; } = 0;
-        public string serverUrl { get; private set; } = "https://api.immersal.com";
         public int param1 { get; private set; } = 0;
         public int param2 { get; private set; } = 12;
         public float param3 { get; private set; } = 0f;
@@ -71,8 +70,6 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private TMP_InputField m_WindowSizeInput = null;
         [SerializeField]
-        private TMP_InputField m_ServerUrlInput = null;
-        [SerializeField]
         private TMP_InputField m_Param1Input = null;
         [SerializeField]
         private TMP_InputField m_Param2Input = null;
@@ -101,7 +98,6 @@ namespace Immersal.Samples.Mapping
             public bool serverLocalizationWithIds;
             public bool preservePoses;
             public int windowSize;
-            public string serverUrl;
             public int param1;
             public int param2;
             public float param3;
@@ -199,12 +195,6 @@ namespace Immersal.Samples.Mapping
             param1 = a;
             SaveSettingsToPrefs();
         }
-        public void SetServerUrl(string value)
-        {
-            serverUrl = value;
-            UpdateServerUrl();
-            SaveSettingsToPrefs();
-        }
 
         public void SetParam1(string value)
         {
@@ -290,12 +280,7 @@ namespace Immersal.Samples.Mapping
                 preservePoses = loadFile.preservePoses;
                 m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
                 windowSize = loadFile.windowSize;
-                if (loadFile.serverUrl != null)
-                {
-                    m_ServerUrlInput.SetTextWithoutNotify(loadFile.serverUrl.ToString());
-                    serverUrl = loadFile.serverUrl;
-                    UpdateServerUrl();
-                }
+
                 m_Param1Input.SetTextWithoutNotify(loadFile.param1.ToString());
                 param1 = loadFile.param1;
                 m_Param2Input.SetTextWithoutNotify(loadFile.param2.ToString());
@@ -311,11 +296,6 @@ namespace Immersal.Samples.Mapping
             }
 
             SaveSettingsToPrefs();
-        }
-
-        private void UpdateServerUrl()
-        {
-            ImmersalSDK.Instance.localizationServer = serverUrl;
         }
 
         public void SaveSettingsToPrefs()
@@ -337,7 +317,6 @@ namespace Immersal.Samples.Mapping
             saveFile.serverLocalizationWithIds = serverLocalizationWithIds;
             saveFile.preservePoses = preservePoses;
             saveFile.windowSize = windowSize;
-            saveFile.serverUrl = serverUrl;
             saveFile.param1 = param1;
             saveFile.param2 = param2;
             saveFile.param3 = param3;
@@ -363,9 +342,6 @@ namespace Immersal.Samples.Mapping
             listOnlyNearbyMaps = false;
             m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(false);
             downsampleWhenLocalizing = false;
-            m_ServerUrlInput.SetTextWithoutNotify("https://api.immersal.com");
-            serverUrl = "https://api.immersal.com";
-            UpdateServerUrl();
             m_Param1Input.SetTextWithoutNotify(0.ToString());
             param1 = 0;
             m_Param2Input.SetTextWithoutNotify(12.ToString());
