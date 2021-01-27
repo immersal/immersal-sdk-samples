@@ -110,6 +110,8 @@ namespace Immersal.AR.MagicLeap
 	        base.Start();
 
 			m_Sdk.Localizer = instance;
+
+			Immersal.Core.SetInteger("NumThreads", 1);
 	        
 	        if (m_cameraDataProvider == null)
 	        {
