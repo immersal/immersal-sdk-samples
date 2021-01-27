@@ -40,6 +40,7 @@ sysinfo.txt
 Packages/packages-lock.json
 Assets/TextMesh Pro*
 Assets/ImmersalSDK/Core*
+Assets/ImmersalSDK/Samples*
 Assets/HuaweiARUnitySDK*
 UserSettings/EditorUserSettings.asset
 Logs/
