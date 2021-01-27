@@ -51,7 +51,6 @@ namespace Immersal.Samples.Mapping
         [HideInInspector]
         public LocalizerPose lastLocalizedPose = default;
 
-        protected bool m_RgbCapture = false;
         protected int m_ImageIndex = 0;
         protected uint m_ImageRun = 0;
         protected bool m_SessionFirstImage = true;
@@ -338,11 +337,6 @@ namespace Immersal.Samples.Mapping
             m_SessionFirstImage = true;
 
             return m_Bank;
-        }
-
-        public void ToggleRGBCapture(Toggle toggle)
-        {
-            m_RgbCapture = toggle.isOn;
         }
 
         public void ToggleVisualization(Toggle toggle)
@@ -785,7 +779,6 @@ namespace Immersal.Samples.Mapping
                 activeMaps.Add(id);
             }
 
-            j.activeMaps = activeMaps;
             j.OnResult += (SDKResultBase r) =>
             {
                 if (r is SDKJobsResult result && result.error == "none")

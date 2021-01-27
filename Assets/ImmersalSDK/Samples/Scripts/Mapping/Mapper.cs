@@ -111,7 +111,7 @@ namespace Immersal.Samples.Mapping
                 byte[] pixels;
                 int channels = 1;
 
-                if (m_RgbCapture)
+                if (mapperSettings.captureRgb)
                 {
                     ARHelper.GetPlaneDataRGB(out pixels, image);
                     channels = 3;
@@ -406,6 +406,128 @@ namespace Immersal.Samples.Mapping
                     {
                         this.stats.locFail++;
                         Debug.Log("*************************** On-Server Localization Failed ***************************");
+                    }
+                };
+
+                m_Jobs.Add(j.RunJobAsync());
+                image.Dispose();
+            }
+        }
+
+        public void GetNearByMaps()
+        {
+            JobListJobsAsync j = new JobListJobsAsync();
+
+            j.useGPS = true;
+            j.useToken = false; // list all public maps
+            j.latitude = m_Latitude;
+            j.longitude = m_Longitude;
+            j.radius = DefaultRadius;
+
+            j.OnResult += (SDKResultBase r) =>
+            {
+                if (r is SDKJobsResult result && result.error == "none")
+                {
+                    SDKMapId[] mapIds = new SDKMapId[result.jobs.Length];
+                    for (int i = 0; i < result.jobs.Length; i++)
+                    {
+                        mapIds[i] = new SDKMapId();
+                        mapIds[i].id = result.jobs[i].id;
+                        Debug.Log(string.Format("Found public map: {0}", + mapIds[i].id));
+                    }
+
+                    LocalizeGeoPose(mapIds);
+                }
+            };
+
+            m_Jobs.Add(j.RunJobAsync());
+        }
+
+        public async void LocalizeGeoPose(SDKMapId[] mapIds)
+        {
+            ARCameraManager cameraManager = m_Sdk.cameraManager;
+            var cameraSubsystem = cameraManager.subsystem;
+
+#if PLATFORM_LUMIN
+            XRCameraImage image;
+            if (cameraSubsystem.TryGetLatestImage(out image))
+#else
+            XRCpuImage image;
+            if (cameraSubsystem.TryAcquireLatestCpuImage(out image))
+#endif
+            {
+                JobGeoPoseAsync j = new JobGeoPoseAsync();
+
+                byte[] pixels;
+                Camera cam = this.mainCamera;
+                Vector3 camPos = cam.transform.position;
+                Quaternion camRot = cam.transform.rotation;
+                int channels = 1;
+                int width = image.width;
+                int height = image.height;
+
+                j.mapIds = mapIds;
+                j.param1 = mapperSettings.param1;
+                j.param2 = mapperSettings.param2;
+                j.param3 = mapperSettings.param3;
+                j.param4 = mapperSettings.param4;
+
+                ARHelper.GetIntrinsics(out j.intrinsics);
+                ARHelper.GetPlaneData(out pixels, image);
+
+                Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
+                {
+                    byte[] capture = new byte[channels * width * height + 1024];
+                    icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    Array.Resize(ref capture, info.captureSize);
+                    return (capture, info);
+                });
+
+                await t;
+
+                j.image = t.Result.Item1;
+
+                j.OnResult += (SDKResultBase r) =>
+                {
+                    if (r is SDKGeoPoseResult result && result.success)
+                    {
+                        this.stats.locSucc++;
+                        
+                        double latitude = result.latitude;
+                        double longitude = result.longitude;
+                        double ellipsoidHeight = result.ellipsoidHeight;
+                        Quaternion rot = new Quaternion(result.quaternion[0], result.quaternion[1], result.quaternion[2], result.quaternion[3]);
+                        Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
+
+                        /*Matrix4x4 m = Matrix4x4.identity;
+                        Matrix4x4 cloudSpace = Matrix4x4.identity;
+                        cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
+                        cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
+                        cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
+                        Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+                        this.stats.locSucc++;
+
+                        Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
+                        Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", j.param1, j.param2, j.param3, j.param4));
+                        Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
+                                "ft 4x4\n" + trackerSpace);
+
+                        m = trackerSpace * (cloudSpace.inverse);
+
+                        foreach (KeyValuePair<int, PointCloudRenderer> p in this.pcr)
+                        {
+                            if (p.Key == result.map)
+                            {
+                                p.Value.go.transform.position = m.GetColumn(3);
+                                p.Value.go.transform.rotation = m.rotation;
+                                break;
+                            }
+                        }*/
+                    }
+                    else
+                    {
+                        this.stats.locFail++;
+                        Debug.Log("*************************** GeoPose Localization Failed ***************************");
                     }
                 };
 
