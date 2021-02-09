@@ -11,12 +11,11 @@ Contact sdk@immersal.com for licensing requests.
 
 using UnityEngine;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NRKernal;
 using Immersal.REST;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Immersal.AR.Nreal
 {
@@ -29,7 +28,7 @@ namespace Immersal.AR.Nreal
 
 		private static NRLocalizer instance = null;
 
-		private bool m_HasTexture = false;
+        private NRRGBCamTextureYUV YuvCamTexture { get; set; }
 
 		public static NRLocalizer Instance
 		{
@@ -63,41 +62,43 @@ namespace Immersal.AR.Nreal
 			}
 		}
 
+        public override void OnEnable()
+        {
+            base.OnEnable();
+			m_Cam = GameObject.Find("CenterCamera").GetComponent<Camera>();
+        }
+
         public override void Start()
         {
 			base.Start();
 
 			m_Sdk.Localizer = instance;
+            YuvCamTexture = new NRRGBCamTextureYUV();
+			YuvCamTexture.OnUpdate += OnCaptureUpdate;
 
 			if (autoStart)
 			{
-				StartCamera();
+	            YuvCamTexture.Play();
 			}
         }
 
-		public void StartCamera()
-		{
-			NRYuvCamera.OnCaptureUpdate += OnCaptureUpdate;
-			NRYuvCamera.Play();
-		}
-
-		public void StopCamera()
-		{
-			if (NRYuvCamera.IsRGBCamPlaying)
-				NRYuvCamera.Stop();
-		}
-
         public override void StartLocalizing()
         {
-			StartCamera();
+            YuvCamTexture.Play();
             base.StartLocalizing();
         }
 
 		public override void StopLocalizing()
 		{
 			base.StopLocalizing();
-			StopCamera();
+			YuvCamTexture.Stop();
 		}
+
+        public override void Pause()
+        {
+            base.Pause();
+			YuvCamTexture.Pause();
+        }
 
 		protected override void Update()
 		{
@@ -106,9 +107,16 @@ namespace Immersal.AR.Nreal
             base.Update();
 		}
 
+        public override void OnDestroy()
+        {
+            YuvCamTexture.Stop();
+			YuvCamTexture.OnUpdate -= OnCaptureUpdate;
+			base.OnDestroy();
+        }
+
         public override async void Localize()
 		{
-			while (!m_HasTexture)
+			while (!YuvCamTexture.DidUpdateThisFrame)
 			{
 				await Task.Yield();
 			}
@@ -119,8 +127,8 @@ namespace Immersal.AR.Nreal
 				Vector4 intrinsics;
 				Vector3 camPos = m_Cam.transform.position;
 				Quaternion camRot = m_Cam.transform.rotation;
-				int width = NRYuvCamera.Resolution.width;
-				int height = NRYuvCamera.Resolution.height;
+				int width = YuvCamTexture.Width;
+				int height = YuvCamTexture.Height;
 				Vector3 pos = Vector3.zero;
 				Quaternion rot = Quaternion.identity;
 				GetIntrinsics(out intrinsics, width, height);
@@ -188,14 +196,12 @@ namespace Immersal.AR.Nreal
 				}
 			}
 
-			m_HasTexture = false;
-
 			base.Localize();
 		}
 
         public override async void LocalizeServer(SDKMapId[] mapIds)
         {
-			while (!m_HasTexture)
+			while (!YuvCamTexture.DidUpdateThisFrame)
 			{
 				await Task.Yield();
 			}
@@ -206,19 +212,15 @@ namespace Immersal.AR.Nreal
 
                 JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
-                byte[] pixels;
-                Camera cam = Camera.main;
-                Vector3 camPos = cam.transform.position;
-                Quaternion camRot = cam.transform.rotation;
+                Vector3 camPos = m_Cam.transform.position;
+                Quaternion camRot = m_Cam.transform.rotation;
 				Vector4 intrinsics;
                 int channels = 1;
-				int width = NRYuvCamera.Resolution.width;
-				int height = NRYuvCamera.Resolution.height;
+				int width = YuvCamTexture.Width;
+				int height = YuvCamTexture.Height;
+                byte[] pixels = YuvCamTexture.GetTexture().YBuf;
 
 				GetIntrinsics(out intrinsics, width, height);
-
-				pixels = new byte[width * height];
-				Marshal.Copy(m_PixelBuffer, pixels, 0, pixels.Length);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -311,12 +313,19 @@ namespace Immersal.AR.Nreal
 			base.LocalizeServer(mapIds);
         }
 
-		private void OnCaptureUpdate(IntPtr buffer)
-		{
-			m_PixelBuffer = buffer;
-			if (m_PixelBuffer != IntPtr.Zero)
-				m_HasTexture = true;
-		}
+        private void OnCaptureUpdate(NRRGBCamTextureYUV.YUVTextureFrame frame)
+        {
+			if (m_PixelBuffer == IntPtr.Zero)
+			{
+				unsafe
+				{
+					ulong handle;
+					byte* ptr = (byte*)UnsafeUtility.PinGCArrayAndGetDataAddress(frame.YBuf, out handle);
+					m_PixelBuffer = (IntPtr)ptr;
+					UnsafeUtility.ReleaseGCObject(handle);
+				}
+			}
+        }
 
         private void GetIntrinsics(out Vector4 intrinsics, float width, float height)
         {
@@ -334,8 +343,7 @@ namespace Immersal.AR.Nreal
                 intrinsics.x = intrinsics.y = fy;
                 intrinsics.z = cy;
                 intrinsics.w = cx;
-
-				/*intrinsics.x = 1198.24f;
+/*				intrinsics.x = 1198.24f;
 				intrinsics.y = 1195.96f;
 				intrinsics.z = 648.262f;
 				intrinsics.w = 369.875f;*/
