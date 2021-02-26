@@ -90,9 +90,9 @@ namespace Immersal.Samples
         public void GetMaps()
         {
             JobListJobsAsync j = new JobListJobsAsync();
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKJobsResult result) =>
             {
-                if (r is SDKJobsResult result && result.error == "none" && result.count > 0)
+                if (result.count > 0)
                 {
                     List<string> names = new List<string>();
 
@@ -116,15 +116,12 @@ namespace Immersal.Samples
         {
             JobLoadMapAsync j = new JobLoadMapAsync();
             j.id = jobId;
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKMapResult result) =>
             {
-                if (r is SDKMapResult result && result.error == "none")
-                {
-                    byte[] mapData = Convert.FromBase64String(result.b64);
-                    Debug.Log(string.Format("Load map {0} ({1} bytes)", jobId, mapData.Length));
+                byte[] mapData = Convert.FromBase64String(result.b64);
+                Debug.Log(string.Format("Load map {0} ({1} bytes)", jobId, mapData.Length));
 
-                    this.m_ARMap.LoadMap(mapData);
-                }
+                this.m_ARMap.LoadMap(mapData);
             };
 
             m_Jobs.Add(j.RunJobAsync());

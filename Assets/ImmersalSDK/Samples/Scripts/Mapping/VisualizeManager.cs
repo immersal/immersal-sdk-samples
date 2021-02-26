@@ -48,7 +48,7 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private GameObject m_OptionsScrollList = null;
 
-        private SDKJob m_ActiveFunctionJob = null;
+        private SDKJob m_ActiveFunctionJob = default;
 
         private enum UIState { Default, MapList, Options};
         private UIState uiState = UIState.Default;
@@ -81,7 +81,7 @@ namespace Immersal.Samples.Mapping
 
         public void OnListItemDelete()
         {
-            if (m_ActiveFunctionJob != null)
+            if (m_ActiveFunctionJob.id > 0)
             {
                 OnItemDeleted?.Invoke(m_ActiveFunctionJob);
             }
@@ -89,7 +89,7 @@ namespace Immersal.Samples.Mapping
 
         public void OnListItemRestore()
         {
-            if (m_ActiveFunctionJob != null)
+            if (m_ActiveFunctionJob.id > 0)
             {
                 OnItemRestored?.Invoke(m_ActiveFunctionJob);
             }

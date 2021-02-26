@@ -22,7 +22,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 		public enum MapState { Queued, Processing, Sparse, Done, Failed };
 		public MapState mapState = MapState.Done;
 
-		private SDKJob m_Data = null;
+		private SDKJob m_Data = default;
 
 		[SerializeField]
 		private VisualizeManager visualizeManager = null;

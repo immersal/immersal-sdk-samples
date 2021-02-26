@@ -114,38 +114,27 @@ namespace Immersal.Samples.Mapping
             {
                 loginErrorText.gameObject.SetActive(false);
             };
-            j.OnError += (HttpResponseMessage response) =>
+            j.OnError += (e) =>
             {
-                if ((long)response.StatusCode == (long)HttpStatusCode.BadRequest)
+                if (e == "auth")
                 {
                     loginErrorText.text = "Login failed, please try again";
                     loginErrorText.gameObject.SetActive(true);
                 }
             };
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKLoginResult result) =>
             {
-                if (r is SDKLoginResult result)
-                {
-                    if (result.error == "none")
-                    {
-                        PlayerPrefs.SetString("login", j.username);
-                        PlayerPrefs.SetString("password", j.password);
-                        PlayerPrefs.SetString("token", result.token);
-                        PlayerPrefs.SetString("server", serverField.text);
-                        m_Sdk.developerToken = result.token;
+                PlayerPrefs.SetString("login", j.username);
+                PlayerPrefs.SetString("password", j.password);
+                PlayerPrefs.SetString("token", result.token);
+                PlayerPrefs.SetString("server", serverField.text);
+                m_Sdk.developerToken = result.token;
 
-                        loginErrorText.gameObject.SetActive(false);
-                        
-                        FadeOut();
+                loginErrorText.gameObject.SetActive(false);
+                
+                FadeOut();
 
-                        OnLogin?.Invoke();
-                    }
-                    else if (result.error == "auth")
-                    {
-                        loginErrorText.text = "Login failed, please try again";
-                        loginErrorText.gameObject.SetActive(true);
-                    }
-                }
+                OnLogin?.Invoke();
             };
 
             await j.RunJobAsync();

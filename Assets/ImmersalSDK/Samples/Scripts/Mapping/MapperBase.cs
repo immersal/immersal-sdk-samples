@@ -69,6 +69,7 @@ namespace Immersal.Samples.Mapping
         protected float m_VBearing = 0f;
         protected bool m_bCaptureRunning = false;
 		protected IntPtr m_PixelBuffer = IntPtr.Zero;
+        protected bool m_UseGeoPose = false;
 
         private int m_Bank = 0;
         private AudioSource m_CameraShutterClick;
@@ -395,12 +396,9 @@ namespace Immersal.Samples.Mapping
         async void StatusPoll()
         {
             JobStatusAsync j = new JobStatusAsync();
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKStatusResult result) =>
             {
-                if (r is SDKStatusResult result && result.error == "none")
-                {
-                    this.stats.imageCount = result.imageCount;
-                }
+                this.stats.imageCount = result.imageCount;
             };
 
             await j.RunJobAsync();
@@ -428,60 +426,43 @@ namespace Immersal.Samples.Mapping
             return stats;
         }
 
-        Matrix4x4 Rot(double angle, int axis)
+        Matrix4x4 RotX(double angle)
         {
-            float cang = (float)System.Math.Cos(angle * System.Math.PI / 180.0);
-            float sang = (float)System.Math.Sin(angle * System.Math.PI / 180.0);
+            float c = (float)System.Math.Cos(angle * System.Math.PI / 180.0);
+            float s = (float)System.Math.Sin(angle * System.Math.PI / 180.0);
 
-            Matrix4x4 R = Matrix4x4.identity;
+            Matrix4x4 r = Matrix4x4.identity;
 
-            if (axis == 1)
-            {
-                R.m00 = 1;
-                R.m01 = 0;
-                R.m02 = 0;
-                R.m10 = 0;
-                R.m20 = 0;
-                R.m11 = cang;
-                R.m22 = cang;
-                R.m12 = sang;
-                R.m21 = -sang;
-            }
-            else if (axis == 2)
-            {
-                R.m01 = 0;
-                R.m10 = 0;
-                R.m11 = 1;
-                R.m12 = 0;
-                R.m21 = 0;
-                R.m00 = cang;
-                R.m22 = cang;
-                R.m02 = -sang;
-                R.m20 = sang;
-            }
-            else if (axis == 3)
-            {
-                R.m20 = 0;
-                R.m21 = 0;
-                R.m22 = 1;
-                R.m02 = 0;
-                R.m12 = 0;
-                R.m00 = cang;
-                R.m11 = cang;
-                R.m10 = -sang;
-                R.m01 = sang;
-            }
+            r.m11 = c;
+            r.m22 = c;
+            r.m12 = s;
+            r.m21 = -s;
 
-            return R;
+            return r;
         }
 
-        Matrix4x4 Rot3d(double reflat, double reflon)
+        Matrix4x4 RotZ(double angle)
         {
-            Matrix4x4 R1 = Rot(90 + reflon, 3);
-            Matrix4x4 R2 = Rot(90 - reflat, 1);
-            return R2 * R1;
+            float c = (float)System.Math.Cos(angle * System.Math.PI / 180.0);
+            float s = (float)System.Math.Sin(angle * System.Math.PI / 180.0);
+
+            Matrix4x4 r = Matrix4x4.identity;
+
+            r.m00 = c;
+            r.m11 = c;
+            r.m10 = -s;
+            r.m01 = s;
+
+            return r;
         }
 
+        Matrix4x4 Rot3d(double lat, double lon)
+        {
+            Matrix4x4 rz = RotZ(90 + lon);
+            Matrix4x4 rx = RotX(90 - lat);
+            return rx * rz;
+        }
+                
         Vector2 CompassDir(Camera cam, Matrix4x4 trackerToMap, double[] mapToEcef)
         {
             Vector3 a = trackerToMap.MultiplyPoint(cam.transform.position);
@@ -571,12 +552,9 @@ namespace Immersal.Samples.Mapping
         {
             JobDeleteMapAsync j = new JobDeleteMapAsync();
             j.id = jobId;
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKDeleteMapResult result) =>
             {
-                if (r is SDKDeleteMapResult result && result.error == "none")
-                {
-                    Debug.Log(string.Format("Map {0} deleted successfully.", jobId));
-                }
+                Debug.Log(string.Format("Map {0} deleted successfully.", jobId));
             };
 
             m_Jobs.Add(j.RunJobAsync());
@@ -586,12 +564,9 @@ namespace Immersal.Samples.Mapping
         {
             JobRestoreMapImagesAsync j = new JobRestoreMapImagesAsync();
             j.id = jobId;
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKRestoreMapImagesResult result) =>
             {
-                if (r is SDKRestoreMapImagesResult result && result.error == "none")
-                {
-                    Debug.Log(string.Format("Successfully restored images for map {0}", jobId));
-                }
+                Debug.Log(string.Format("Successfully restored images for map {0}", jobId));
             };
 
             m_Jobs.Add(j.RunJobAsync());
@@ -603,12 +578,9 @@ namespace Immersal.Samples.Mapping
         {
             JobClearAsync j = new JobClearAsync();
             j.anchor = deleteAnchor;
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKClearResult result) =>
             {
-                if (r is SDKClearResult result && result.error == "none")
-                {
-                    Debug.Log("Workspace cleared successfully");
-                }
+                Debug.Log("Workspace cleared successfully");
             };
 
             m_Jobs.Add(j.RunJobAsync());
@@ -623,12 +595,9 @@ namespace Immersal.Samples.Mapping
             j.featureCount = mapperSettings.mapDetailLevel;
             j.preservePoses = mapperSettings.preservePoses;
             j.windowSize = mapperSettings.windowSize;
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKConstructResult result) =>
             {
-                if (r is SDKConstructResult result && result.error == "none")
-                {
-                    Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
-                }
+                Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
             };
 
             m_Jobs.Add(j.RunJobAsync());
@@ -699,14 +668,11 @@ namespace Immersal.Samples.Mapping
                 mappingUIManager.SetProgress(0);
                 mappingUIManager.ShowProgressBar();
             };
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKMapResult result) =>
             {
-                if (r is SDKMapResult result && result.error == "none")
-                {
-                    byte[] mapData = Convert.FromBase64String(result.b64);
-                    Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", jobId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
-                    CompleteMapLoad(jobId, mapData);
-                }
+                byte[] mapData = Convert.FromBase64String(result.b64);
+                Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", jobId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
+                CompleteMapLoad(jobId, mapData);
 
                 mappingUIManager.HideProgressBar();
             };
@@ -715,7 +681,7 @@ namespace Immersal.Samples.Mapping
                 int value = (int)(100f * progress);
                 mappingUIManager.SetProgress(value);
             };
-            j.OnError += (HttpResponseMessage response) =>
+            j.OnError += (e) =>
             {
                 mappingUIManager.HideProgressBar();
             };
@@ -779,12 +745,9 @@ namespace Immersal.Samples.Mapping
                 activeMaps.Add(id);
             }
 
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKJobsResult result) =>
             {
-                if (r is SDKJobsResult result && result.error == "none")
-                {
-                    this.visualizeManager.SetMapListData(result.jobs, activeMaps);
-                }
+                this.visualizeManager.SetMapListData(result.jobs, activeMaps);
             };
 
             m_Jobs.Add(j.RunJobAsync());

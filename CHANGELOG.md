@@ -4,6 +4,21 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.11.4] - 2021-02-26
+### Changed
+- Core: Moved the point cloud shader resource to core from samples
+- Core: Android plugin; removed armeabi-v7a support
+- Core: Simplified REST API, more robust error handling
+- Samples: Mapping App; "Use tracker poses" moved under Developer Settings
+
+### Fixed
+- Core: Fixed rotation mapping in `RotMapToEcef()` and `RotEcefToMap()`.
+- Core: `ARLocalizer` now correctly fetches ECEF when the on-server localizer is used
+- Core: `RESTJobsAsync`; added `useToken` in `JobLoadMapAsync` and `JobEcefAsync` to work with public maps
+
+### Added
+- Samples: `Mapper` had an unfinished `LocalizeGeoPose()` function, it has now been properly implemented. It is still an experimental feature and can be tested setting `m_UseGeoPose` to `true` in `MapperBase` (and switching to the on-server localizer in Mapper). This feature will be better supported in the upcoming v1.12 SDK release.
+
 ## [1.11.3] - 2021-01-20
 ### Changed
 - Core: Fixed a minor compatibility problem with the latest GitHub samples

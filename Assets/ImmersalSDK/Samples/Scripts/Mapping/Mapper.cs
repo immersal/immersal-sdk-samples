@@ -150,13 +150,10 @@ namespace Immersal.Samples.Mapping
                     mappingUIManager.SetProgress(0);
                     mappingUIManager.ShowProgressBar();
                 };
-                j.OnResult += (SDKResultBase r) =>
+                j.OnResult += (SDKImageResult result) =>
                 {
-                    if (r is SDKImageResult result && result.error == "none")
-                    {
-                        float et = Time.realtimeSinceStartup - uploadStartTime;
-                        Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
-                    }
+                    float et = Time.realtimeSinceStartup - uploadStartTime;
+                    Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
 
                     mappingUIManager.HideProgressBar();
                 };
@@ -166,7 +163,7 @@ namespace Immersal.Samples.Mapping
                     //Debug.Log(string.Format("Upload progress: {0}%", value));
                     mappingUIManager.SetProgress(value);
                 };
-                j.OnError += (HttpResponseMessage response) =>
+                j.OnError += (e) =>
                 {
                     mappingUIManager.HideProgressBar();
                 };
@@ -187,7 +184,23 @@ namespace Immersal.Samples.Mapping
         {
             if (mapperSettings.useServerLocalizer)
             {
-                LocalizeServer();
+                if (m_UseGeoPose)
+                {
+                    int n = pcr.Count;
+                    SDKMapId[] mapIds = new SDKMapId[n];
+
+                    int count = 0;
+                    foreach (int id in pcr.Keys)
+                    {
+                        mapIds[count] = new SDKMapId();
+                        mapIds[count++].id = id;
+                    }
+                    LocalizeGeoPose(mapIds);
+                }
+                else
+                {
+                    LocalizeServer();
+                }
             }
             else
             {
@@ -355,9 +368,9 @@ namespace Immersal.Samples.Mapping
 
                 j.image = t.Result.Item1;
 
-                j.OnResult += (SDKResultBase r) =>
+                j.OnResult += (SDKLocalizeResult result) =>
                 {
-                    if (r is SDKLocalizeResult result && result.success)
+                    if (result.success)
                     {
                         Matrix4x4 m = Matrix4x4.identity;
                         Matrix4x4 cloudSpace = Matrix4x4.identity;
@@ -386,18 +399,11 @@ namespace Immersal.Samples.Mapping
 
                         JobEcefAsync je = new JobEcefAsync();
                         je.id = result.map;
-                        je.OnResult += (SDKResultBase r2) =>
+                        je.OnResult += (SDKEcefResult result2) =>
                         {
-                            if (r2 is SDKEcefResult result2 && result2.error == "none")
-                            {
-                                LocalizerPose lastLocalizedPose;
-                                LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
-                                this.lastLocalizedPose = lastLocalizedPose;
-                            }
-                            else
-                            {
-                                Debug.LogError(r2.error);
-                            }
+                            LocalizerPose lastLocalizedPose;
+                            LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
+                            this.lastLocalizedPose = lastLocalizedPose;
                         };
 
                         m_Jobs.Add(je.RunJobAsync());
@@ -424,20 +430,17 @@ namespace Immersal.Samples.Mapping
             j.longitude = m_Longitude;
             j.radius = DefaultRadius;
 
-            j.OnResult += (SDKResultBase r) =>
+            j.OnResult += (SDKJobsResult result) =>
             {
-                if (r is SDKJobsResult result && result.error == "none")
+                SDKMapId[] mapIds = new SDKMapId[result.jobs.Length];
+                for (int i = 0; i < result.jobs.Length; i++)
                 {
-                    SDKMapId[] mapIds = new SDKMapId[result.jobs.Length];
-                    for (int i = 0; i < result.jobs.Length; i++)
-                    {
-                        mapIds[i] = new SDKMapId();
-                        mapIds[i].id = result.jobs[i].id;
-                        Debug.Log(string.Format("Found public map: {0}", + mapIds[i].id));
-                    }
-
-                    LocalizeGeoPose(mapIds);
+                    mapIds[i] = new SDKMapId();
+                    mapIds[i].id = result.jobs[i].id;
+                    Debug.Log(string.Format("Found public map: {0}", + mapIds[i].id));
                 }
+
+                LocalizeGeoPose(mapIds);
             };
 
             m_Jobs.Add(j.RunJobAsync());
@@ -487,42 +490,54 @@ namespace Immersal.Samples.Mapping
 
                 j.image = t.Result.Item1;
 
-                j.OnResult += (SDKResultBase r) =>
+                j.OnResult += (SDKGeoPoseResult result) =>
                 {
-                    if (r is SDKGeoPoseResult result && result.success)
+                    if (result.success)
                     {
+                        Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
                         this.stats.locSucc++;
                         
                         double latitude = result.latitude;
                         double longitude = result.longitude;
                         double ellipsoidHeight = result.ellipsoidHeight;
-                        Quaternion rot = new Quaternion(result.quaternion[0], result.quaternion[1], result.quaternion[2], result.quaternion[3]);
+                        Quaternion rot = new Quaternion(result.quaternion[1], result.quaternion[2], result.quaternion[3], result.quaternion[0]);
                         Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
 
-                        /*Matrix4x4 m = Matrix4x4.identity;
-                        Matrix4x4 cloudSpace = Matrix4x4.identity;
-                        cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
-                        cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
-                        cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
-                        Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                        this.stats.locSucc++;
+                        double[] ecef = new double[3];
+                        double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
+                        Core.PosWgs84ToEcef(ecef, wgs84);
 
-                        Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
-                        Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", j.param1, j.param2, j.param3, j.param4));
-                        Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
-                                "ft 4x4\n" + trackerSpace);
-
-                        m = trackerSpace * (cloudSpace.inverse);
-
-                        foreach (KeyValuePair<int, PointCloudRenderer> p in this.pcr)
+                        JobEcefAsync je = new JobEcefAsync();
+                        int mapId = mapIds[0].id;
+                        je.id = mapId;
+                        je.OnResult += (SDKEcefResult result2) =>
                         {
-                            if (p.Key == result.map)
+                            double[] mapToEcef = result2.ecef;
+                            Vector3 mapPos;
+                            Quaternion mapRot;
+                            Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
+                            Core.RotEcefToMap(out mapRot, rot, mapToEcef);
+
+                            Matrix4x4 cloudSpace = Matrix4x4.TRS(mapPos, mapRot, Vector3.one);
+                            Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+                            Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
+
+                            foreach (KeyValuePair<int, PointCloudRenderer> p in this.pcr)
                             {
-                                p.Value.go.transform.position = m.GetColumn(3);
-                                p.Value.go.transform.rotation = m.rotation;
-                                break;
+                                if (p.Key == mapId)
+                                {
+                                    p.Value.go.transform.position = m.GetColumn(3);
+                                    p.Value.go.transform.rotation = m.rotation;
+                                    break;
+                                }
                             }
-                        }*/
+
+                            LocalizerPose lastLocalizedPose;
+                            LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
+                            this.lastLocalizedPose = lastLocalizedPose;
+                        };
+
+                        m_Jobs.Add(je.RunJobAsync());
                     }
                     else
                     {

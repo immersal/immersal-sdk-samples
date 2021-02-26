@@ -11,7 +11,6 @@ Contact sdk@immersal.com for licensing requests.
 
 using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,7 +20,7 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 1;
+        public const int VERSION = 2;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -246,10 +245,10 @@ namespace Immersal.Samples.Mapping
                 MapperSettingsFile loadFile = JsonUtility.FromJson<MapperSettingsFile>(File.ReadAllText(dataPath));
 
                 // set defaults for old file versions
-                if (loadFile.version == 0)
+                if (loadFile.version < 2)
                 {
-                    loadFile.downsampleWhenLocalizing = downsampleWhenLocalizing;
-                    loadFile.localizer = localizer;
+                    ResetDeveloperSettings();
+                    return;
                 }
 
                 m_GpsCaptureToggle.isOn = loadFile.useGps;
@@ -342,6 +341,8 @@ namespace Immersal.Samples.Mapping
             listOnlyNearbyMaps = false;
             m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(false);
             downsampleWhenLocalizing = false;
+            m_PreservePosesToggle.SetIsOnWithoutNotify(false);
+            preservePoses = false;
             m_Param1Input.SetTextWithoutNotify(0.ToString());
             param1 = 0;
             m_Param2Input.SetTextWithoutNotify(12.ToString());
