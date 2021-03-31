@@ -126,13 +126,10 @@ namespace Immersal.Samples.Mapping
                     mappingUIManager.SetProgress(0);
                     mappingUIManager.ShowProgressBar();
                 };
-                j.OnResult += (SDKResultBase r) =>
+                j.OnResult += (SDKImageResult result) =>
                 {
-                    if (r is SDKImageResult result && result.error == "none")
-                    {
-                        float et = Time.realtimeSinceStartup - uploadStartTime;
-                        Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
-                    }
+                    float et = Time.realtimeSinceStartup - uploadStartTime;
+                    Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
 
                     mappingUIManager.HideProgressBar();
                 };
@@ -142,7 +139,7 @@ namespace Immersal.Samples.Mapping
                     //Debug.Log(string.Format("Upload progress: {0}%", value));
                     mappingUIManager.SetProgress(value);
                 };
-                j.OnError += (HttpResponseMessage response) =>
+                j.OnError += (e) =>
                 {
                     mappingUIManager.HideProgressBar();
                 };
@@ -302,9 +299,9 @@ namespace Immersal.Samples.Mapping
 
                 j.image = t.Result.Item1;
 
-                j.OnResult += (SDKResultBase r) =>
+                j.OnResult += (SDKLocalizeResult result) =>
                 {
-                    if (r is SDKLocalizeResult result && result.success)
+                    if (result.success)
                     {
                         Matrix4x4 m = Matrix4x4.identity;
                         Matrix4x4 cloudSpace = Matrix4x4.identity;
@@ -333,18 +330,11 @@ namespace Immersal.Samples.Mapping
 
                         JobEcefAsync je = new JobEcefAsync();
                         je.id = result.map;
-                        je.OnResult += (SDKResultBase r2) =>
+                        je.OnResult += (SDKEcefResult result2) =>
                         {
-                            if (r2 is SDKEcefResult result2 && result2.error == "none")
-                            {
-                                LocalizerPose lastLocalizedPose;
-                                LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
-                                this.lastLocalizedPose = lastLocalizedPose;
-                            }
-                            else
-                            {
-                                Debug.LogError(r2.error);
-                            }
+                            LocalizerPose lastLocalizedPose;
+                            LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
+                            this.lastLocalizedPose = lastLocalizedPose;
                         };
 
                         m_Jobs.Add(je.RunJobAsync());

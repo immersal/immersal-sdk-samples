@@ -111,11 +111,11 @@ namespace Immersal.AR
 				j.intrinsics = intrinsics;
 				j.mapIds = mapIds;
 
-                j.OnResult += (SDKResultBase r) =>
+                j.OnResult += async (SDKLocalizeResult result) =>
                 {
 					float elapsedTime = Time.realtimeSinceStartup - startTime;
 
-					if (r is SDKLocalizeResult result && result.success)
+					if (result.success)
 					{
 						Debug.Log("*************************** On-Server Localization Succeeded ***************************");
 						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
@@ -159,9 +159,16 @@ namespace Immersal.AR
 							else
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-							LocalizerPose localizerPose;
-							GetLocalizerPose(out localizerPose, mapServerId, pos, rot, m.inverse);
-							OnPoseFound?.Invoke(localizerPose);
+							JobEcefAsync je = new JobEcefAsync();
+							je.id = mapServerId;
+							je.OnResult += (SDKEcefResult result2) =>
+							{
+								LocalizerPose localizerPose;
+								LocalizerBase.GetLocalizerPose(out localizerPose, mapServerId, pos, rot, m.inverse, result2.ecef);
+								OnPoseFound?.Invoke(localizerPose);
+							};
+
+							await je.RunJobAsync();
 
 							if (ARSpace.mapHandleToMap.ContainsKey(mapServerId))
 							{
