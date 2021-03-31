@@ -36,15 +36,19 @@
 
         private void Log()
         {
-            if (app)
+            if (app != null)
             {
                 app.LogHWAR(errorMessage);
             }
+            Debug.Log(errorMessage);
         }
 
         bool installRequested = false;
         void Init()
         {
+            if (ImmersalSDK.isHWAR)
+                return;
+            
             //If you do not want to switch engines, AREnginesSelector is useless.
             // You just need to use AREnginesApk.Instance.requestInstall() and the default engine
             // is Huawei AR Engine.
@@ -54,13 +58,10 @@
                 AREnginesSelector.Instance.SetAREngine(AREnginesType.HUAWEI_AR_ENGINE);
                 ImmersalSDK.isHWAR = true;
 
-                if (app)
-                {
-                    errorMessage = "Your device supports AR!";
-                    Log();
-                    errorMessage = "Starting AR session...";
-                    Log();
-                }
+                errorMessage = "Your device supports AR!";
+                Log();
+                errorMessage = "Starting AR session...";
+                Log();
             }
             else
             {
