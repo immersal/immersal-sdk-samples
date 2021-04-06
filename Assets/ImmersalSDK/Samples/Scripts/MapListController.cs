@@ -36,7 +36,7 @@ namespace Immersal.Samples
         {
             m_Dropdown = GetComponent<TMP_Dropdown>();
             m_Dropdown.ClearOptions();
-            if (m_ARMap.mapFile != null)
+            if (m_ARMap?.mapFile != null)
             {
                 m_Dropdown.AddOptions( new List<string>() { string.Format("<{0}>", m_ARMap.mapFile.name) });
                 m_EmbeddedMap = m_ARMap.mapFile;
@@ -67,8 +67,6 @@ namespace Immersal.Samples
 
         public void OnValueChanged(TMP_Dropdown dropdown)
         {
-            m_ARMap.FreeMap();
-
             int value = dropdown.value - 1;
 
             // use embedded map
@@ -82,7 +80,7 @@ namespace Immersal.Samples
                 if (value >= 0)
                 {
                     SDKJob map = m_Maps[value];
-                    LoadMap(map.id);
+                    LoadMap(map);
                 }
             }
         }
@@ -90,6 +88,7 @@ namespace Immersal.Samples
         public void GetMaps()
         {
             JobListJobsAsync j = new JobListJobsAsync();
+            j.token = ImmersalSDK.Instance.developerToken;
             j.OnResult += (SDKJobsResult result) =>
             {
                 if (result.count > 0)
@@ -98,7 +97,7 @@ namespace Immersal.Samples
 
                     foreach (SDKJob job in result.jobs)
                     {
-                        if (job.status == "sparse" || job.status == "done")
+                        if (job.type != (int)SDKJobType.Alignment && (job.status == SDKJobState.Sparse || job.status == SDKJobState.Done))
                         {
                             this.m_Maps.Add(job);
                             names.Add(job.name);
@@ -112,16 +111,30 @@ namespace Immersal.Samples
             m_Jobs.Add(j.RunJobAsync());
         }
 
-        public void LoadMap(int jobId)
+        public void ClearMaps()
+        {
+            ARMap[] arMaps = GameObject.FindObjectsOfType<ARMap>();
+            foreach (ARMap arMap in arMaps)
+            {
+                arMap.FreeMap(true);
+            }
+
+            m_Dropdown.SetValueWithoutNotify(0);
+        }
+
+        public void LoadMap(SDKJob job)
         {
             JobLoadMapAsync j = new JobLoadMapAsync();
-            j.id = jobId;
+            j.id = job.id;
             j.OnResult += (SDKMapResult result) =>
             {
                 byte[] mapData = Convert.FromBase64String(result.b64);
-                Debug.Log(string.Format("Load map {0} ({1} bytes)", jobId, mapData.Length));
+                Debug.Log(string.Format("Load map {0} ({1} bytes)", job.id, mapData.Length));
 
-                this.m_ARMap.LoadMap(mapData);
+                Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
+                ARMap.RenderMode renderMode = m_ARMap?.renderMode ?? ARMap.RenderMode.EditorAndRuntime;
+
+                ARSpace.LoadAndInstantiateARMap(null, result, mapData, renderMode, pointCloudColor);
             };
 
             m_Jobs.Add(j.RunJobAsync());

@@ -10,6 +10,7 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using UnityEngine;
+using Immersal.AR;
 using TMPro;
 
 namespace Immersal.Samples.Mapping
@@ -19,6 +20,7 @@ namespace Immersal.Samples.Mapping
     {
         private enum DebugMode {imageCount, inQueue, posesFound};
         private TextMeshProUGUI textMeshProUGUI;
+        private ImmersalSDK m_Sdk;
 
         [SerializeField]
         private DebugMode debugMode = DebugMode.imageCount;
@@ -30,25 +32,27 @@ namespace Immersal.Samples.Mapping
         void Start ()
         {
             textMeshProUGUI = GetComponent<TextMeshProUGUI>();
-            this.mapper = UnityEngine.Object.FindObjectOfType<MapperBase>();
+            m_Sdk = ImmersalSDK.Instance;
+            mapper = UnityEngine.Object.FindObjectOfType<MapperBase>();
         }
         
         void Update ()
         {
-            if (mapper != null && textMeshProUGUI != null)
+            if (mapper != null && textMeshProUGUI != null && m_Sdk != null)
             {
-                MapperStats s = mapper.Stats();
+                MapperStats ms = mapper.stats;
+                LocalizerStats ls = m_Sdk.Localizer.stats;
 
                 switch (debugMode)
                 {
                     case DebugMode.imageCount:
-                        textMeshProUGUI.text = string.Format("{0} {1}", textAppend, s.imageCount);
+                        textMeshProUGUI.text = string.Format("{0} {1}", textAppend, ms.imageCount);
                         break;
                     case DebugMode.inQueue:
-                        textMeshProUGUI.text = string.Format("{0} {1}", textAppend, s.queueLen);
+                        textMeshProUGUI.text = string.Format("{0} {1}", textAppend, ms.queueLen);
                         break;
                     case DebugMode.posesFound:
-                        textMeshProUGUI.text = string.Format("{0} {1}/{2}", textAppend, s.locSucc, s.locSucc + s.locFail);
+                        textMeshProUGUI.text = string.Format("{0} {1}/{2}", textAppend, ls.localizationSuccessCount, ls.localizationAttemptCount);
                         break;
                 }
             }

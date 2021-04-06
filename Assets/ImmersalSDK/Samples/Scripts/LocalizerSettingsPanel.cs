@@ -18,40 +18,40 @@ namespace Immersal.Samples
     {
         public void AutoStart(bool value)
         {
-            ARLocalizer.Instance.autoStart = value;
+            ImmersalSDK.Instance.Localizer.autoStart = value;
         }
 
         public void Downsample(bool value)
         {
-            ARLocalizer.Instance.downsample = value;
+            ImmersalSDK.Instance.downsample = value;
         }
 
         public void UseFiltering(bool value)
         {
-            ARLocalizer.Instance.useFiltering = value;
+            ImmersalSDK.Instance.Localizer.useFiltering = value;
         }
 
         public void Pause()
         {
-            ARLocalizer.Instance.Pause();
+            ImmersalSDK.Instance.Localizer.Pause();
         }
 
         public void Resume()
         {
-            ARLocalizer.Instance.Resume();
+            ImmersalSDK.Instance.Localizer.Resume();
         }
 
         public void StopLocalizing()
         {
-            ARLocalizer.Instance.StopLocalizing();
+            ImmersalSDK.Instance.Localizer.StopLocalizing();
         }
         public void StartLocalizing()
         {
-            ARLocalizer.Instance.StartLocalizing();
+            ImmersalSDK.Instance.Localizer.StartLocalizing();
         }
         public void Localize()
         {
-            ARLocalizer.Instance.Localize();
+            ImmersalSDK.Instance.Localizer.Localize();
         }
 
         public void ClosePanel()

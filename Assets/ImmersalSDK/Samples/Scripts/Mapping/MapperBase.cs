@@ -13,7 +13,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,8 +20,6 @@ using Immersal.AR;
 using Immersal.REST;
 using Immersal.Samples.Util;
 using UnityEngine.Events;
-using UnityEngine.Networking;
-using TMPro;
 #if PLATFORM_ANDROID
 using UnityEngine.Android;
 #endif
@@ -37,10 +34,6 @@ namespace Immersal.Samples.Mapping
         public UnityEvent onFailedToConnect = null;
 
         [HideInInspector]
-        public MapperStats stats = new MapperStats();
-        [HideInInspector]
-        public Dictionary<int, PointCloudRenderer> pcr = new Dictionary<int, PointCloudRenderer>();
-        [HideInInspector]
         public MappingUIManager mappingUIManager;
         [HideInInspector]
         public MapperSettings mapperSettings;
@@ -48,8 +41,9 @@ namespace Immersal.Samples.Mapping
         public WorkspaceManager workspaceManager;
         [HideInInspector]
         public VisualizeManager visualizeManager;
-        [HideInInspector]
+
         public LocalizerPose lastLocalizedPose = default;
+        public MapperStats stats { get; protected set; } = new MapperStats();
 
         protected int m_ImageIndex = 0;
         protected uint m_ImageRun = 0;
@@ -118,8 +112,6 @@ namespace Immersal.Samples.Mapping
         #region Abstract methods
 
         protected abstract void Capture(bool anchor);
-        public abstract void Localize();
-        public abstract void LocalizeServer();
 
         #endregion
 
@@ -129,8 +121,6 @@ namespace Immersal.Samples.Mapping
         {
             stats.queueLen = 0;
             stats.imageCount = 0;
-            stats.locFail = 0;
-            stats.locSucc = 0;
 
             DirectoryInfo dataDir = new DirectoryInfo(tempImagePath);
             if (dataDir.Exists)
@@ -342,17 +332,37 @@ namespace Immersal.Samples.Mapping
 
         public void ToggleVisualization(Toggle toggle)
         {
-            PointCloudRenderer.visible = toggle.isOn;
+            ARMap.pointCloudVisible = toggle.isOn;
         }
 
         public void ToggleVisualization(bool active)
         {
-            PointCloudRenderer.visible = active;
+            ARMap.pointCloudVisible = active;
+        }
+
+        public void ToggleRenderPointsAs3D(Toggle toggle)
+        {
+            ARMap.renderAs3dPoints = toggle.isOn;
+        }
+
+        public void ToggleRenderPointsAs3D(bool renderAs3D)
+        {
+            ARMap.renderAs3dPoints = renderAs3D;
+        }
+
+        public void SetPointSize(Slider slider)
+        {
+            ARMap.pointSize = Mathf.Max(0f, slider.value);
+        }
+
+        public void SetPointSize(float pointSize)
+        {
+            ARMap.pointSize = Mathf.Max(0f, pointSize);
         }
 
         private void OnItemSelected(SDKJob job)
         {
-            LoadMap(job.id);
+            LoadMap(job);
         }
 
         private void OnItemDeleted(SDKJob job)
@@ -421,11 +431,6 @@ namespace Immersal.Samples.Mapping
             m_JobLock = 0;
         }
 
-        public MapperStats Stats()
-        {
-            return stats;
-        }
-
         Matrix4x4 RotX(double angle)
         {
             float c = (float)System.Math.Cos(angle * System.Math.PI / 180.0);
@@ -462,7 +467,7 @@ namespace Immersal.Samples.Mapping
             Matrix4x4 rx = RotX(90 - lat);
             return rx * rz;
         }
-                
+
         Vector2 CompassDir(Camera cam, Matrix4x4 trackerToMap, double[] mapToEcef)
         {
             Vector3 a = trackerToMap.MultiplyPoint(cam.transform.position);
@@ -640,28 +645,17 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        public async void LoadMap(int jobId)
+        public void LoadMap(SDKJob job)
         {
-            if (pcr.ContainsKey(jobId))
+            if (ARSpace.mapIdToMap.ContainsKey(job.id))
             {
-                Task<int> t0 = Task.Run(() =>
-                {
-                    return Immersal.Core.FreeMap(pcr[jobId].mapHandle);
-                });
-
-                await t0;
-
-                if (t0.Result == 1)
-                {
-                    PointCloudRenderer p = pcr[jobId];
-                    p.ClearCloud();
-                    pcr.Remove(jobId);
-                }
+                ARMap arMap = ARSpace.mapIdToMap[job.id];
+                arMap.FreeMap(true);
                 return;
             }
 
             JobLoadMapAsync j = new JobLoadMapAsync();
-            j.id = jobId;
+            j.id = job.id;
 
             j.OnStart += () =>
             {
@@ -671,9 +665,30 @@ namespace Immersal.Samples.Mapping
             j.OnResult += (SDKMapResult result) =>
             {
                 byte[] mapData = Convert.FromBase64String(result.b64);
-                Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", jobId, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
-                CompleteMapLoad(jobId, mapData);
+                Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", job.id, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
+    			Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
 
+                Transform root = null;
+                if (!mapperSettings.useDifferentARSpaces)
+                {
+                    ARSpace[] arSpaces = GameObject.FindObjectsOfType<ARSpace>();
+                    foreach (ARSpace space in arSpaces)
+                    {
+                        if (space.gameObject.name == "ARSpaceForAll")
+                        {
+                            root = space.transform;
+                        }
+                    }
+                }
+
+                bool applyAlignment = !mapperSettings.useDifferentARSpaces;
+
+                ARSpace.LoadAndInstantiateARMap(root, result, mapData, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
+
+                m_Sdk.Localizer.stats.localizationAttemptCount = 0;
+                m_Sdk.Localizer.stats.localizationSuccessCount = 0;
+
+                VisualizeManager.loadJobs.Remove(job.id);
                 mappingUIManager.HideProgressBar();
             };
             j.Progress.ProgressChanged += (s, progress) =>
@@ -689,44 +704,6 @@ namespace Immersal.Samples.Mapping
             m_Jobs.Add(j.RunJobAsync());
         }
 
-        async void CompleteMapLoad(int jobId, byte[] mapData)
-        {
-            Vector3[] vector3Array = new Vector3[ARMap.MAX_VERTICES];
-
-            Task<int> t0 = Task.Run(() =>
-            {
-                return Immersal.Core.LoadMap(mapData);
-            });
-
-            await t0;
-
-            int mapHandle = t0.Result;
-
-            if (mapHandle >= 0)
-            {
-                Task<int> t1 = Task.Run(() =>
-                {
-                    return Immersal.Core.GetPointCloud(mapHandle, vector3Array);
-                });
-
-                await t1;
-
-                int num = t1.Result;
-
-                PointCloudRenderer renderer = gameObject.AddComponent<PointCloudRenderer>();
-                renderer.CreateCloud(vector3Array, num);
-                renderer.mapHandle = mapHandle;
-                if (!pcr.ContainsKey(jobId)) {
-                    pcr.Add(jobId, renderer);
-                }
-            }
-
-            stats.locFail = 0;
-            stats.locSucc = 0;
-
-            VisualizeManager.loadJobs.Remove(jobId);
-        }
-
         public void Jobs()
         {
             JobListJobsAsync j = new JobListJobsAsync();
@@ -740,14 +717,23 @@ namespace Immersal.Samples.Mapping
                 j.radius = DefaultRadius;
             }
 
-            foreach (int id in pcr.Keys)
+            foreach (int id in ARSpace.mapIdToMap.Keys)
             {
                 activeMaps.Add(id);
             }
 
             j.OnResult += (SDKJobsResult result) =>
             {
-                this.visualizeManager.SetMapListData(result.jobs, activeMaps);
+                List<SDKJob> jobList = new List<SDKJob>();
+                foreach (SDKJob job in result.jobs)
+                {
+                    if (job.type != (int)SDKJobType.Alignment)
+                    {
+                        jobList.Add(job);
+                    }
+                }
+
+                this.visualizeManager.SetMapListData(jobList.ToArray(), activeMaps);
             };
 
             m_Jobs.Add(j.RunJobAsync());
@@ -764,7 +750,5 @@ namespace Immersal.Samples.Mapping
     {
         public int queueLen;
         public int imageCount;
-        public int locFail;
-        public int locSucc;
     }
 }

@@ -4,6 +4,35 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2021-03-31
+### Changed
+- SDK uses `mapId` everywhere instead of `mapHandle`
+- Cloud Service: Map alignment stored in the new metadata as a Vector3(tx, ty, tz) and Quaternion(qw, qx, qy, qz). Old ecef endpoint will be deprecated later
+- Cloud Service: Default map alignment based on captured GPS coordinates and stored in ECEF coordinates
+- Cloud Service: Faster map stitching
+- Core: Added Geo Pose localizer to `ARLocalizer`
+- Core: Removed old v1.10 localizer from the plugin to make it smaller
+- Core: Made `CaptureImage()` faster - the image connectivity is not tested if not specified, was useless for on-server localization anyway
+- Core: Removed old pointcloud3d shader and support for it in scripts
+- Samples: Unified `Mapper` to use `ARLocalizer`, `ARMaps` and `ARSpace` like the rest of the samples
+- Samples: Unified `MapDownloadSample`, which also now supports loading multiple maps
+
+### Fixed
+- SDK: Lots of clean up and minor fixes
+- Magic Leap: fixed compiling when using Unity 2020.2, AR Foundation 4 and ML XR Plugin 6
+
+### Added
+- Cloud Service: New map metadata stored with all new maps
+- Cloud Service: New REST API endpoints to get and set metadata and reset map alignment in metadata
+- Cloud Service: New Align Maps feature aligns maps and updates their metadata. Similar to stitching maps but with no new map as output
+- Cloud Service: Coverage .json log file for map stiching and alignment jobs
+- Core: New pointcloudDisk shader with adjustable point size and 2D/3D modes
+- Core: Added a helper function `LoadAndInstantiateARMap()` in `ARSpace` for easier runtime map initialization
+- Core: `LoadMapAsync()` now fetches the map metadata
+- Core: `ARMap` functionality to load/save/reset map alignment metadata
+- Core: New `AR Map Downloader` tool to automatically download and set up maps in scenes
+- Samples: Added "Check image connectivity" toggle to `Mapper` workspace settings
+
 ## [1.11.4] - 2021-02-26
 ### Changed
 - Core: Moved the point cloud shader resource to core from samples

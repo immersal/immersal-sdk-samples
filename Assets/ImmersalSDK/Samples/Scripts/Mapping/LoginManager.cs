@@ -12,8 +12,6 @@ Contact sdk@immersal.com for licensing requests.
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Http;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;

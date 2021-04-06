@@ -20,11 +20,14 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 2;
+        public const int VERSION = 5;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
+        public bool checkConnectivity { get; private set; } = true;
         public bool showPointClouds { get; private set; } = true;
+        public bool renderPointsAs3D { get; private set; } = true;
+        public float pointSize { get; private set; } = 0.33f;
         public bool useServerLocalizer { get; private set; } = false;
         public bool listOnlyNearbyMaps { get; private set; } = false;
         public bool downsampleWhenLocalizing { get; private set; } = false;
@@ -32,6 +35,7 @@ namespace Immersal.Samples.Mapping
         public int localizer { get; private set; } = 1;
         public int mapDetailLevel { get; private set; } = 1024;
         public bool serverLocalizationWithIds { get; private set; } = true;
+        public bool useDifferentARSpaces { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
         public int windowSize { get; private set; } = 0;
         public int param1 { get; private set; } = 0;
@@ -44,12 +48,18 @@ namespace Immersal.Samples.Mapping
         private Toggle m_GpsCaptureToggle = null;
         [SerializeField]
         private Toggle m_RgbCaptureToggle = null;
+        [SerializeField]
+        private Toggle m_CheckConnectivityToggle = null;
 
         // visualize mode settings
         [SerializeField]
         private Toggle m_ShowPointCloudsToggle = null;
         [SerializeField]
         private Toggle m_OnServerLocalizationToggle = null;
+        [SerializeField]
+        private Toggle m_RenderPointsAs3DToggle = null;
+        [SerializeField]
+        private Slider m_PointSizeSlider = null;
         [SerializeField]
         private Toggle m_ListOnlyNearbyMapsToggle = null;
         [SerializeField]
@@ -64,6 +74,8 @@ namespace Immersal.Samples.Mapping
         private TMP_InputField m_MapDetailLevelInput = null;
         [SerializeField]
         private Toggle m_ServerLocalizationWithIdsToggle = null;
+        [SerializeField]
+        private Toggle m_UseDifferentARSpacesToggle = null;
         [SerializeField]
         private Toggle m_PreservePosesToggle = null;
         [SerializeField]
@@ -85,16 +97,20 @@ namespace Immersal.Samples.Mapping
             public int version;
             public bool useGps;
             public bool captureRgb;
+            public bool checkConnectivity;
 
             public bool showPointClouds;
             public bool useServerLocalizer;
             public bool listOnlyNearbyMaps;
             public bool downsampleWhenLocalizing;
+            public bool renderPointsAs3D;
+            public float pointSize;
 
             public int resolution;
             public int localizer;
             public int mapDetailLevel;
             public bool serverLocalizationWithIds;
+            public bool useDifferentARSpaces;
             public bool preservePoses;
             public int windowSize;
             public int param1;
@@ -105,9 +121,11 @@ namespace Immersal.Samples.Mapping
         
         void Awake()
         {
+            /*
             m_LocalizerDropdown.ClearOptions();
             m_LocalizerDropdown.AddOptions( new List<string>() { "v1.10", "v1.11" });
             m_LocalizerDropdown.SetValueWithoutNotify(localizer);
+            */
         }
 
         public void SetUseGPS(bool value)
@@ -121,11 +139,31 @@ namespace Immersal.Samples.Mapping
             captureRgb = value;
             SaveSettingsToPrefs();
         }
+
+        public void SetConnectivityCheck(bool value)
+        {
+            checkConnectivity = value;
+            SaveSettingsToPrefs();
+        }
+
         public void SetShowPointClouds(bool value)
         {
             showPointClouds = value;
             SaveSettingsToPrefs();
         }
+
+        public void SetRenderPointsAs3D(bool value)
+        {
+            renderPointsAs3D = value;
+            SaveSettingsToPrefs();
+        }
+
+        public void SetPointSize(float value)
+        {
+            pointSize = value;
+            SaveSettingsToPrefs();
+        }
+
         public void SetUseServerLocalizer(bool value)
         {
             useServerLocalizer = value;
@@ -180,6 +218,12 @@ namespace Immersal.Samples.Mapping
             SaveSettingsToPrefs();
         }
 
+        public void SetUseDifferentARSpaces(bool value)
+        {
+            useDifferentARSpaces = value;
+            SaveSettingsToPrefs();
+        }
+
         public void SetPreservePoses(bool value)
         {
             preservePoses = value;
@@ -191,11 +235,11 @@ namespace Immersal.Samples.Mapping
             int a;
             int.TryParse(value, out a);
 
-            param1 = a;
+            windowSize = a;
             SaveSettingsToPrefs();
         }
 
-        public void SetParam1(string value)
+/*        public void SetParam1(string value)
         {
             int a;
             int.TryParse(value, out a);
@@ -229,7 +273,7 @@ namespace Immersal.Samples.Mapping
 
             param4 = a;
             SaveSettingsToPrefs();
-        }
+        }*/
 
         private void Start()
         {
@@ -245,7 +289,7 @@ namespace Immersal.Samples.Mapping
                 MapperSettingsFile loadFile = JsonUtility.FromJson<MapperSettingsFile>(File.ReadAllText(dataPath));
 
                 // set defaults for old file versions
-                if (loadFile.version < 2)
+                if (loadFile.version < VERSION)
                 {
                     ResetDeveloperSettings();
                     return;
@@ -255,9 +299,15 @@ namespace Immersal.Samples.Mapping
                 useGps = loadFile.useGps;
                 m_RgbCaptureToggle.SetIsOnWithoutNotify(loadFile.captureRgb);
                 captureRgb = loadFile.captureRgb;
+                m_CheckConnectivityToggle.SetIsOnWithoutNotify(loadFile.checkConnectivity);
+                checkConnectivity = loadFile.checkConnectivity;
 
                 m_ShowPointCloudsToggle.SetIsOnWithoutNotify(loadFile.showPointClouds);
                 showPointClouds = loadFile.showPointClouds;
+                m_RenderPointsAs3DToggle.SetIsOnWithoutNotify(loadFile.renderPointsAs3D);
+                renderPointsAs3D = loadFile.renderPointsAs3D;
+                m_PointSizeSlider.SetValueWithoutNotify(loadFile.pointSize);
+                pointSize = loadFile.pointSize;
                 m_OnServerLocalizationToggle.SetIsOnWithoutNotify(loadFile.useServerLocalizer);
                 useServerLocalizer = loadFile.useServerLocalizer;
                 m_ListOnlyNearbyMapsToggle.SetIsOnWithoutNotify(loadFile.listOnlyNearbyMaps);
@@ -265,8 +315,8 @@ namespace Immersal.Samples.Mapping
 
                 m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(loadFile.downsampleWhenLocalizing);
                 downsampleWhenLocalizing = loadFile.downsampleWhenLocalizing;
-                localizer = loadFile.localizer;
-                m_LocalizerDropdown.value = localizer;
+                //localizer = loadFile.localizer;
+                //m_LocalizerDropdown.value = localizer;
 
                 //m_ResolutionDropdown.value = loadFile.resolution;
                 //resolution = loadFile.resolution;
@@ -275,19 +325,21 @@ namespace Immersal.Samples.Mapping
                 mapDetailLevel = loadFile.mapDetailLevel;
                 m_ServerLocalizationWithIdsToggle.SetIsOnWithoutNotify(loadFile.serverLocalizationWithIds);
                 serverLocalizationWithIds = loadFile.serverLocalizationWithIds;
+                m_UseDifferentARSpacesToggle.SetIsOnWithoutNotify(loadFile.useDifferentARSpaces);
+                useDifferentARSpaces = loadFile.useDifferentARSpaces;
                 m_PreservePosesToggle.SetIsOnWithoutNotify(loadFile.preservePoses);
                 preservePoses = loadFile.preservePoses;
                 m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
                 windowSize = loadFile.windowSize;
 
-                m_Param1Input.SetTextWithoutNotify(loadFile.param1.ToString());
+                /*m_Param1Input.SetTextWithoutNotify(loadFile.param1.ToString());
                 param1 = loadFile.param1;
                 m_Param2Input.SetTextWithoutNotify(loadFile.param2.ToString());
                 param2 = loadFile.param2;
                 m_Param3Input.SetTextWithoutNotify(loadFile.param3.ToString());
                 param3 = loadFile.param3;
                 m_Param4Input.SetTextWithoutNotify(loadFile.param4.ToString());
-                param4 = loadFile.param4;
+                param4 = loadFile.param4;*/
             }
             catch (FileNotFoundException e)
             {
@@ -304,16 +356,20 @@ namespace Immersal.Samples.Mapping
             saveFile.version = VERSION;
             saveFile.useGps = useGps;
             saveFile.captureRgb = captureRgb;
+            saveFile.checkConnectivity = checkConnectivity;
 
             saveFile.showPointClouds = showPointClouds;
             saveFile.useServerLocalizer = useServerLocalizer;
             saveFile.listOnlyNearbyMaps = listOnlyNearbyMaps;
             saveFile.downsampleWhenLocalizing = downsampleWhenLocalizing;
+            saveFile.renderPointsAs3D = renderPointsAs3D;
+            saveFile.pointSize = pointSize;
 
             saveFile.resolution = resolution;
             saveFile.localizer = localizer;
             saveFile.mapDetailLevel = mapDetailLevel;
             saveFile.serverLocalizationWithIds = serverLocalizationWithIds;
+            saveFile.useDifferentARSpaces = useDifferentARSpaces;
             saveFile.preservePoses = preservePoses;
             saveFile.windowSize = windowSize;
             saveFile.param1 = param1;
@@ -331,8 +387,8 @@ namespace Immersal.Samples.Mapping
         {
             m_ResolutionDropdown.SetValueWithoutNotify(0);
             resolution = 0;
-            m_LocalizerDropdown.SetValueWithoutNotify(1);
-            localizer = 1;
+            //m_LocalizerDropdown.SetValueWithoutNotify(1);
+            //localizer = 1;
             m_MapDetailLevelInput.SetTextWithoutNotify(1024.ToString());
             mapDetailLevel = 1024;
             m_ServerLocalizationWithIdsToggle.SetIsOnWithoutNotify(true);
@@ -341,16 +397,18 @@ namespace Immersal.Samples.Mapping
             listOnlyNearbyMaps = false;
             m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(false);
             downsampleWhenLocalizing = false;
+            m_UseDifferentARSpacesToggle.SetIsOnWithoutNotify(true);
+            useDifferentARSpaces = true;
             m_PreservePosesToggle.SetIsOnWithoutNotify(false);
             preservePoses = false;
-            m_Param1Input.SetTextWithoutNotify(0.ToString());
+            /*m_Param1Input.SetTextWithoutNotify(0.ToString());
             param1 = 0;
             m_Param2Input.SetTextWithoutNotify(12.ToString());
             param2 = 12;
             m_Param3Input.SetTextWithoutNotify(0f.ToString());
             param3 = 0f;
             m_Param4Input.SetTextWithoutNotify(2f.ToString());
-            param4 = 2f;
+            param4 = 2f;*/
 
             SaveSettingsToPrefs();
         }

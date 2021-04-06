@@ -19,11 +19,6 @@ namespace Immersal.Samples.Mapping.ScrollList
 {
 	public class ScrollListItem : MonoBehaviour
 	{
-		public enum MapState { Queued, Processing, Sparse, Done, Failed };
-		public MapState mapState = MapState.Done;
-
-		private SDKJob m_Data = default;
-
 		[SerializeField]
 		private VisualizeManager visualizeManager = null;
 		[SerializeField]
@@ -43,6 +38,8 @@ namespace Immersal.Samples.Mapping.ScrollList
 		private TextMeshProUGUI dateField = null;
 		[SerializeField]
 		private Toggle toggle = null;
+		
+		private SDKJob m_Data = default;
 
 		public SDKJob data
 		{
@@ -50,19 +47,6 @@ namespace Immersal.Samples.Mapping.ScrollList
 			set
 			{
 				m_Data = value;
-				switch (m_Data.status)
-				{
-					case "done":
-					mapState = MapState.Done; break;
-					case "sparse":
-					mapState = MapState.Sparse; break;
-					case "processing":
-					mapState = MapState.Processing; break;
-					case "failed":
-					mapState = MapState.Failed; break;
-					case "pending":
-					mapState = MapState.Queued; break;
-				}
 
 				SetName();
 				SetDate();
@@ -82,7 +66,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 
 		private void SelectListItem()
 		{
-			if (visualizeManager != null && (mapState == MapState.Sparse || mapState == MapState.Done))
+			if (visualizeManager != null && (m_Data.status == SDKJobState.Sparse || m_Data.status == SDKJobState.Done))
 			{
 				if (VisualizeManager.loadJobs.Contains(data.id))
 				{
@@ -152,15 +136,15 @@ namespace Immersal.Samples.Mapping.ScrollList
 		{
 			if (iconField != null)
 			{
-				switch (mapState)
+				switch (m_Data.status)
 				{
-					case MapState.Queued:
+					case SDKJobState.Pending:
 						iconField.sprite = sprite_queued;
 						break;
-					case MapState.Processing:
+					case SDKJobState.Processing:
 						iconField.sprite = sprite_processing;
 						break;
-					case MapState.Failed:
+					case SDKJobState.Failed:
 						iconField.sprite = sprite_failed;
 						break;
 					default:	// Sparse & Done
