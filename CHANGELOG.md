@@ -4,6 +4,13 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2021-04-06
+### Changed
+- Updated project to work with Immersal SDK 1.12.0
+
+### Added
+- GeoPose localize function
+
 ## [1.11.3] - 2021-02-09
 ### Changed
 - Updated to NRSDK 1.5.7 (REQUIRED, also make sure your Nreal firmware is 407 or newer)
