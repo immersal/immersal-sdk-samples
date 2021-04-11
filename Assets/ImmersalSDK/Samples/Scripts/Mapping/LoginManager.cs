@@ -100,6 +100,12 @@ namespace Immersal.Samples.Mapping
 
         public void OnServerEndEdit(string s)
         {
+            if(s.Length == 0)
+            {
+                s = ImmersalSDK.DefaultServer;
+                serverField.text = s;
+            }
+
             m_Sdk.localizationServer = s;
         }
 

@@ -20,7 +20,7 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 5;
+        public const int VERSION = 6;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -38,10 +38,6 @@ namespace Immersal.Samples.Mapping
         public bool useDifferentARSpaces { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
         public int windowSize { get; private set; } = 0;
-        public int param1 { get; private set; } = 0;
-        public int param2 { get; private set; } = 12;
-        public float param3 { get; private set; } = 0f;
-        public float param4 { get; private set; } = 2f;
 
         // workspace mode settings
         [SerializeField]
@@ -81,13 +77,6 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private TMP_InputField m_WindowSizeInput = null;
         [SerializeField]
-        private TMP_InputField m_Param1Input = null;
-        [SerializeField]
-        private TMP_InputField m_Param2Input = null;
-        [SerializeField]
-        private TMP_InputField m_Param3Input = null;
-        [SerializeField]
-        private TMP_InputField m_Param4Input = null;
 
         private string m_Filename = "settings.json";
 
@@ -113,10 +102,6 @@ namespace Immersal.Samples.Mapping
             public bool useDifferentARSpaces;
             public bool preservePoses;
             public int windowSize;
-            public int param1;
-            public int param2;
-            public float param3;
-            public float param4;
         }
         
         void Awake()
@@ -239,42 +224,6 @@ namespace Immersal.Samples.Mapping
             SaveSettingsToPrefs();
         }
 
-/*        public void SetParam1(string value)
-        {
-            int a;
-            int.TryParse(value, out a);
-
-            param1 = a;
-            SaveSettingsToPrefs();
-        }
-
-        public void SetParam2(string value)
-        {
-            int a;
-            int.TryParse(value, out a);
-
-            param2 = a;
-            SaveSettingsToPrefs();
-        }
-
-        public void SetParam3(string value)
-        {
-            float a;
-            float.TryParse(value, out a);
-
-            param3 = a;
-            SaveSettingsToPrefs();
-        }
-
-        public void SetParam4(string value)
-        {
-            float a;
-            float.TryParse(value, out a);
-
-            param4 = a;
-            SaveSettingsToPrefs();
-        }*/
-
         private void Start()
         {
             LoadSettingsFromPrefs();
@@ -306,8 +255,10 @@ namespace Immersal.Samples.Mapping
                 showPointClouds = loadFile.showPointClouds;
                 m_RenderPointsAs3DToggle.SetIsOnWithoutNotify(loadFile.renderPointsAs3D);
                 renderPointsAs3D = loadFile.renderPointsAs3D;
+                Immersal.AR.ARMap.renderAs3dPoints = renderPointsAs3D;
                 m_PointSizeSlider.SetValueWithoutNotify(loadFile.pointSize);
                 pointSize = loadFile.pointSize;
+                Immersal.AR.ARMap.pointSize = pointSize;
                 m_OnServerLocalizationToggle.SetIsOnWithoutNotify(loadFile.useServerLocalizer);
                 useServerLocalizer = loadFile.useServerLocalizer;
                 m_ListOnlyNearbyMapsToggle.SetIsOnWithoutNotify(loadFile.listOnlyNearbyMaps);
@@ -315,11 +266,6 @@ namespace Immersal.Samples.Mapping
 
                 m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(loadFile.downsampleWhenLocalizing);
                 downsampleWhenLocalizing = loadFile.downsampleWhenLocalizing;
-                //localizer = loadFile.localizer;
-                //m_LocalizerDropdown.value = localizer;
-
-                //m_ResolutionDropdown.value = loadFile.resolution;
-                //resolution = loadFile.resolution;
 
                 m_MapDetailLevelInput.SetTextWithoutNotify(loadFile.mapDetailLevel.ToString());
                 mapDetailLevel = loadFile.mapDetailLevel;
@@ -331,15 +277,6 @@ namespace Immersal.Samples.Mapping
                 preservePoses = loadFile.preservePoses;
                 m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
                 windowSize = loadFile.windowSize;
-
-                /*m_Param1Input.SetTextWithoutNotify(loadFile.param1.ToString());
-                param1 = loadFile.param1;
-                m_Param2Input.SetTextWithoutNotify(loadFile.param2.ToString());
-                param2 = loadFile.param2;
-                m_Param3Input.SetTextWithoutNotify(loadFile.param3.ToString());
-                param3 = loadFile.param3;
-                m_Param4Input.SetTextWithoutNotify(loadFile.param4.ToString());
-                param4 = loadFile.param4;*/
             }
             catch (FileNotFoundException e)
             {
@@ -372,10 +309,6 @@ namespace Immersal.Samples.Mapping
             saveFile.useDifferentARSpaces = useDifferentARSpaces;
             saveFile.preservePoses = preservePoses;
             saveFile.windowSize = windowSize;
-            saveFile.param1 = param1;
-            saveFile.param2 = param2;
-            saveFile.param3 = param3;
-            saveFile.param4 = param4;
 
             string jsonstring = JsonUtility.ToJson(saveFile, true);
             string dataPath = Path.Combine(Application.persistentDataPath, m_Filename);
@@ -401,14 +334,6 @@ namespace Immersal.Samples.Mapping
             useDifferentARSpaces = true;
             m_PreservePosesToggle.SetIsOnWithoutNotify(false);
             preservePoses = false;
-            /*m_Param1Input.SetTextWithoutNotify(0.ToString());
-            param1 = 0;
-            m_Param2Input.SetTextWithoutNotify(12.ToString());
-            param2 = 12;
-            m_Param3Input.SetTextWithoutNotify(0f.ToString());
-            param3 = 0f;
-            m_Param4Input.SetTextWithoutNotify(2f.ToString());
-            param4 = 2f;*/
 
             SaveSettingsToPrefs();
         }
