@@ -68,7 +68,7 @@ namespace Immersal.AR.Nreal
 			base.Start();
 
 			m_Sdk.Localizer = instance;
-            YuvCamTexture = new NRRGBCamTextureYUV();
+			YuvCamTexture = new NRRGBCamTextureYUV();
 			YuvCamTexture.OnUpdate += OnCaptureUpdate;
 
 			if (autoStart)
@@ -126,7 +126,7 @@ namespace Immersal.AR.Nreal
 				int height = YuvCamTexture.Height;
 				Vector3 pos = Vector3.zero;
 				Quaternion rot = Quaternion.identity;
-				GetIntrinsics(out intrinsics, width, height);
+				GetIntrinsics(out intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -176,7 +176,7 @@ namespace Immersal.AR.Nreal
 					Vector3 euler = m.rotation.eulerAngles;
 
 					LocalizerPose localizerPose;
-					GetLocalizerPose(out localizerPose, mapHandle, pos, rot, m.inverse);
+					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
 					OnPoseFound?.Invoke(localizerPose);
 
 					ARMap map = ARSpace.mapIdToMap[mapId];
@@ -212,7 +212,7 @@ namespace Immersal.AR.Nreal
 				int height = YuvCamTexture.Height;
                 byte[] pixels = YuvCamTexture.GetTexture().YBuf;
 
-				GetIntrinsics(out intrinsics, width, height);
+				GetIntrinsics(out intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -335,7 +335,7 @@ namespace Immersal.AR.Nreal
 				int height = YuvCamTexture.Height;
                 byte[] pixels = YuvCamTexture.GetTexture().YBuf;
 
-				GetIntrinsics(out intrinsics, width, height);
+				GetIntrinsics(out intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -463,27 +463,14 @@ namespace Immersal.AR.Nreal
 			}
         }
 
-        private void GetIntrinsics(out Vector4 intrinsics, float width, float height)
+        private void GetIntrinsics(out Vector4 intrinsics)
         {
-            bool result = false;
             intrinsics = Vector4.zero;
-            EyeProjectMatrixData data = NRFrame.GetEyeProjectMatrix(out result, m_Cam.nearClipPlane, m_Cam.farClipPlane);
-
-            if (result)
-            {
-                Matrix4x4 proj = data.RGBEyeMatrix;
-                float fy = 0.5f * proj.m00 * width;
-                float cx = 0.5f * (proj.m02 + 1.0f) * height;
-                float cy = 0.5f * (proj.m12 + 1.0f) * width;
-				cx -= 50f;	// adjust
-                intrinsics.x = intrinsics.y = fy;
-                intrinsics.z = cy;
-                intrinsics.w = cx;
-/*				intrinsics.x = 1198.24f;
-				intrinsics.y = 1195.96f;
-				intrinsics.z = 648.262f;
-				intrinsics.w = 369.875f;*/
-            }
+			NativeMat3f m = NRFrame.GetRGBCameraIntrinsicMatrix();
+			intrinsics.x = m.column0.X;
+			intrinsics.y = m.column1.Y;
+			intrinsics.z = m.column2.X;
+			intrinsics.w = m.column2.Y;
         }
 	}
 }
