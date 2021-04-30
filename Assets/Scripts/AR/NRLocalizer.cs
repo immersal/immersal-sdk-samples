@@ -57,12 +57,6 @@ namespace Immersal.AR.Nreal
 			}
 		}
 
-        public override void OnEnable()
-        {
-            base.OnEnable();
-			m_Cam = GameObject.Find("CenterCamera").GetComponent<Camera>();
-        }
-
         public override void Start()
         {
 			base.Start();
@@ -119,9 +113,12 @@ namespace Immersal.AR.Nreal
 			if (m_PixelBuffer != IntPtr.Zero)
 			{
 				stats.localizationAttemptCount++;
+
 				Vector4 intrinsics;
-				Vector3 camPos = m_Cam.transform.position;
-				Quaternion camRot = m_Cam.transform.rotation;
+				Pose headPose = NRFrame.HeadPose;
+				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePos;
+				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
+				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
 				int width = YuvCamTexture.Width;
 				int height = YuvCamTexture.Height;
 				Vector3 pos = Vector3.zero;
@@ -204,9 +201,11 @@ namespace Immersal.AR.Nreal
 
                 JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
-                Vector3 camPos = m_Cam.transform.position;
-                Quaternion camRot = m_Cam.transform.rotation;
 				Vector4 intrinsics;
+				Pose headPose = NRFrame.HeadPose;
+				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePos;
+				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
+				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
                 int channels = 1;
 				int width = YuvCamTexture.Width;
 				int height = YuvCamTexture.Height;
@@ -327,9 +326,11 @@ namespace Immersal.AR.Nreal
 
                 JobGeoPoseAsync j = new JobGeoPoseAsync();
 
-                Vector3 camPos = m_Cam.transform.position;
-                Quaternion camRot = m_Cam.transform.rotation;
 				Vector4 intrinsics;
+				Pose headPose = NRFrame.HeadPose;
+				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePos;
+				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
+				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
                 int channels = 1;
 				int width = YuvCamTexture.Width;
 				int height = YuvCamTexture.Height;
