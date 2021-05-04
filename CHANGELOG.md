@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Support for RGB video capturing while localizing. This has the following prerequisites:
   * Disable Multithreaded Rendering in Android build settings
   * In the `ImmersalSDK.prefab`, disable 'Use YUV' in `NRLocalizer`
-  * Enable the 'Canvas' and 'VideoCapture' prefabs in the sample scene
+  * Enable the 'Canvas' and 'VideoCapture' GameObjects in the sample scene
 
 ## [1.12.0] - 2021-04-06
 ### Changed
