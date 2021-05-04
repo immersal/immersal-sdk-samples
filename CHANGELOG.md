@@ -4,6 +4,17 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2021-05-04
+### Changed
+- `NRLocalizer.cs`: Better way for acquiring RGB camera position and intrinsics. Should result in more accurate localization.
+- Project settings: Disabled URP for now, as the Nreal logo asset used in the project doesn't support it (URP can still be used of course).
+
+### Added
+- Support for RGB video capturing while localizing. This has the following prerequisites:
+  * Disable Multithreaded Rendering in Android build settings
+  * In the `ImmersalSDK.prefab`, disable 'Use YUV' in `NRLocalizer`
+  * Enable the 'Canvas' and 'VideoCapture' prefabs in the sample scene
+
 ## [1.12.0] - 2021-04-06
 ### Changed
 - Updated project to work with Immersal SDK 1.12.0
