@@ -107,6 +107,7 @@ namespace Immersal.AR.MagicLeap
 			m_Sdk.Localizer = instance;
 
 			Immersal.Core.SetInteger("NumThreads", 1);
+			//Immersal.Core.SetInteger("ImageCompressionLevel", 0);
 	        
 	        if (m_cameraDataProvider == null)
 	        {
@@ -183,10 +184,12 @@ namespace Immersal.AR.MagicLeap
 				int mapId = ARMap.MapHandleToId(mapHandle);
 				float elapsedTime = Time.realtimeSinceStartup - startTime;
 
-				if (mapId > 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
+				if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 				{
 					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 					stats.localizationSuccessCount++;
+
+					ARMap map = ARSpace.mapIdToMap[mapId];
 
 					if (mapId != lastLocalizedMapId)
 					{
@@ -217,10 +220,8 @@ namespace Immersal.AR.MagicLeap
 					LocalizerPose localizerPose;
 					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
 					this.lastLocalizedPose = localizerPose;
-					OnPoseFound?.Invoke(localizerPose);
-
-					ARMap map = ARSpace.mapIdToMap[mapId];
 					map.NotifySuccessfulLocalization(mapId);
+					OnPoseFound?.Invoke(localizerPose);
 				}
 				else
 				{
@@ -298,7 +299,7 @@ namespace Immersal.AR.MagicLeap
 					startTime = Time.realtimeSinceStartup;
 				};
 
-				j.OnResult += async (SDKLocalizeResult result) =>
+				j.OnResult += (SDKLocalizeResult result) =>
 				{
 					float elapsedTime = Time.realtimeSinceStartup - startTime;
 
@@ -311,6 +312,8 @@ namespace Immersal.AR.MagicLeap
 						
 						if (mapId > 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
 						{
+							ARMap map = ARSpace.mapIdToMap[mapId];
+
 							if (mapId != lastLocalizedMapId)
 							{
 								if (resetOnMapChange)
@@ -319,7 +322,6 @@ namespace Immersal.AR.MagicLeap
 								}
 								
 								lastLocalizedMapId = mapId;
-
 								OnMapChanged?.Invoke(mapId);
 							}
 
@@ -347,32 +349,18 @@ namespace Immersal.AR.MagicLeap
 							else
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 							
-							JobEcefAsync je = new JobEcefAsync();
-							je.id = mapId;
-							je.OnResult += (SDKEcefResult result2) =>
-							{
-								LocalizerPose localizerPose;
-								LocalizerBase.GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse, result2.ecef);
-								this.lastLocalizedPose = localizerPose;
-								OnPoseFound?.Invoke(localizerPose);
-							};
-
-							await je.RunJobAsync();
-
-							if (ARSpace.mapIdToMap.ContainsKey(mapId))
-							{
-								ARMap map = ARSpace.mapIdToMap[mapId];
-								map.NotifySuccessfulLocalization(mapId);
-							}
-						}
-						else
-						{
-							Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+							double[] ecef = map.MapToEcefGet();
+							LocalizerPose localizerPose;
+							LocalizerBase.GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse, ecef);
+							this.lastLocalizedPose = localizerPose;
+							map.NotifySuccessfulLocalization(mapId);
+							OnPoseFound?.Invoke(localizerPose);
 						}
 					}
 					else
 					{
 						Debug.Log("*************************** On-Server Localization Failed ***************************");
+						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 					}
 				};
 
@@ -449,14 +437,16 @@ namespace Immersal.AR.MagicLeap
 					startTime = Time.realtimeSinceStartup;
 				};
 
-                j.OnResult += async (SDKGeoPoseResult result) =>
+                j.OnResult += (SDKGeoPoseResult result) =>
                 {
+					float elapsedTime = Time.realtimeSinceStartup - startTime;
+
                     if (result.success)
                     {
                         Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
+						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 
                         int mapId = result.map;
-						                        
                         double latitude = result.latitude;
                         double longitude = result.longitude;
                         double ellipsoidHeight = result.ellipsoidHeight;
@@ -467,75 +457,52 @@ namespace Immersal.AR.MagicLeap
                         double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
                         Core.PosWgs84ToEcef(ecef, wgs84);
 
-                        JobEcefAsync je = new JobEcefAsync();
-                        je.id = mapId;
-
-						ARMap map = null;
 						if (ARSpace.mapIdToMap.ContainsKey(mapId))
 						{
-							map = ARSpace.mapIdToMap[mapId];
-                        	je.useToken = map.privacy == "0" ? true : false;
-						}
+							ARMap map = ARSpace.mapIdToMap[mapId];
 
-                        je.OnResult += (SDKEcefResult result2) =>
-                        {
-							float elapsedTime = Time.realtimeSinceStartup - startTime;
-
-							if (mapId > 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
+							if (mapId != lastLocalizedMapId)
 							{
-								if (mapId != lastLocalizedMapId)
+								if (resetOnMapChange)
 								{
-									if (resetOnMapChange)
-									{
-										Reset();
-									}
-									
-									lastLocalizedMapId = mapId;
-
-									OnMapChanged?.Invoke(mapId);
+									Reset();
 								}
-
-								MapOffset mo = ARSpace.mapIdToOffset[mapId];
-								stats.localizationSuccessCount++;
-
-								double[] mapToEcef = result2.ecef;
-								Vector3 mapPos;
-								Quaternion mapRot;
-								Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
-								Core.RotEcefToMap(out mapRot, rot, mapToEcef);
-
-								Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
-								Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
-								Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, mapRot, Vector3.one);
-								Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-								Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
 								
-								if (useFiltering)
-									mo.space.filter.RefinePose(m);
-								else
-									ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
-
-								LocalizerPose localizerPose;
-								LocalizerBase.GetLocalizerPose(out localizerPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
-								this.lastLocalizedPose = localizerPose;
-								OnPoseFound?.Invoke(localizerPose);
-
-								if (map != null)
-								{
-									map.NotifySuccessfulLocalization(mapId);
-								}
+								lastLocalizedMapId = mapId;
+								OnMapChanged?.Invoke(mapId);
 							}
+
+							MapOffset mo = ARSpace.mapIdToOffset[mapId];
+							stats.localizationSuccessCount++;
+
+							double[] mapToEcef = map.MapToEcefGet();
+							Vector3 mapPos;
+							Quaternion mapRot;
+							Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
+							Core.RotEcefToMap(out mapRot, rot, mapToEcef);
+
+							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+							Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
+							Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, mapRot, Vector3.one);
+							Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+							Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
+							
+							if (useFiltering)
+								mo.space.filter.RefinePose(m);
 							else
-							{
-								Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
-							}
-                        };
+								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-                        await je.RunJobAsync();
+							LocalizerPose localizerPose;
+							LocalizerBase.GetLocalizerPose(out localizerPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
+							this.lastLocalizedPose = localizerPose;
+							map.NotifySuccessfulLocalization(mapId);
+							OnPoseFound?.Invoke(localizerPose);
+						}
                     }
                     else
                     {
                         Debug.Log("*************************** GeoPose Localization Failed ***************************");
+						Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
                     }
                 };
 
