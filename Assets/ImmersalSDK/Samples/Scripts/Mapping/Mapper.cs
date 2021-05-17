@@ -61,6 +61,11 @@ namespace Immersal.Samples.Mapping
         {
             await Task.Delay(250);
 
+            if(this.stats.imageCount + this.stats.queueLen >= this.stats.imageMax)
+            {
+                ImageLimitExceeded();
+            }
+
             m_bCaptureRunning = true;
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
@@ -80,7 +85,7 @@ namespace Immersal.Samples.Mapping
 #endif
             {
                 JobCaptureAsync j = new JobCaptureAsync();
-                j.run = (int)(m_ImageRun & 0xEFFFFFFF);
+                j.run = (int)(m_ImageRun & 0x7FFFFFFF);
                 j.index = m_ImageIndex++;
                 j.anchor = anchor;
 
@@ -121,7 +126,7 @@ namespace Immersal.Samples.Mapping
                     ARHelper.GetPlaneData(out pixels, image);
                 }
 
-                byte[] capture = new byte[channels * width * height + 1024];
+                byte[] capture = new byte[channels * width * height + 8192];
                 int useMatching = mapperSettings.checkConnectivity ? 1 : 0;
 
                 Task<icvCaptureInfo> captureTask = Task.Run(() =>

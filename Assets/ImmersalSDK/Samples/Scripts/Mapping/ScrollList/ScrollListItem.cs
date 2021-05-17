@@ -118,7 +118,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 		{
 			if (nameField != null)
 			{
-				nameField.text = string.Format("{0}: {1}", m_Data.bank, m_Data.name);
+				nameField.text = m_Data.name;
 			}
 		}
 

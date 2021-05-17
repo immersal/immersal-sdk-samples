@@ -20,7 +20,7 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 6;
+        public const int VERSION = 7;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -30,6 +30,7 @@ namespace Immersal.Samples.Mapping
         public float pointSize { get; private set; } = 0.33f;
         public bool useServerLocalizer { get; private set; } = false;
         public bool listOnlyNearbyMaps { get; private set; } = false;
+        public bool transformRootToOrigin { get; private set; } = true;
         public bool downsampleWhenLocalizing { get; private set; } = false;
         public int resolution { get; private set; } = 0;
         public int localizer { get; private set; } = 1;
@@ -60,6 +61,8 @@ namespace Immersal.Samples.Mapping
         private Toggle m_ListOnlyNearbyMapsToggle = null;
         [SerializeField]
         private Toggle m_DownsampleWhenLocalizingToggle = null;
+        [SerializeField]
+        private Toggle m_TransformRootToOrigin = null;
 
         // developer settings
         [SerializeField]
@@ -91,6 +94,7 @@ namespace Immersal.Samples.Mapping
             public bool showPointClouds;
             public bool useServerLocalizer;
             public bool listOnlyNearbyMaps;
+            public bool transformRootToOrigin;
             public bool downsampleWhenLocalizing;
             public bool renderPointsAs3D;
             public float pointSize;
@@ -160,6 +164,11 @@ namespace Immersal.Samples.Mapping
             listOnlyNearbyMaps = value;
             SaveSettingsToPrefs();
         }
+        public void SetTransformRootToOrigin(bool value)
+        {
+            transformRootToOrigin = value;
+            SaveSettingsToPrefs();
+        }
 
         public void SetDownsampleWhenLocalizing(bool value)
         {
@@ -170,7 +179,7 @@ namespace Immersal.Samples.Mapping
             }
             else
             {
-                Immersal.Core.SetInteger("LocalizationMaxPixels", int.MaxValue);
+                Immersal.Core.SetInteger("LocalizationMaxPixels", 0);
             }
 
             SaveSettingsToPrefs();
@@ -263,6 +272,8 @@ namespace Immersal.Samples.Mapping
                 useServerLocalizer = loadFile.useServerLocalizer;
                 m_ListOnlyNearbyMapsToggle.SetIsOnWithoutNotify(loadFile.listOnlyNearbyMaps);
                 listOnlyNearbyMaps = loadFile.listOnlyNearbyMaps;
+                m_TransformRootToOrigin.SetIsOnWithoutNotify(loadFile.transformRootToOrigin);
+                transformRootToOrigin = loadFile.transformRootToOrigin;
 
                 m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(loadFile.downsampleWhenLocalizing);
                 downsampleWhenLocalizing = loadFile.downsampleWhenLocalizing;
@@ -298,6 +309,7 @@ namespace Immersal.Samples.Mapping
             saveFile.showPointClouds = showPointClouds;
             saveFile.useServerLocalizer = useServerLocalizer;
             saveFile.listOnlyNearbyMaps = listOnlyNearbyMaps;
+            saveFile.transformRootToOrigin = transformRootToOrigin;
             saveFile.downsampleWhenLocalizing = downsampleWhenLocalizing;
             saveFile.renderPointsAs3D = renderPointsAs3D;
             saveFile.pointSize = pointSize;

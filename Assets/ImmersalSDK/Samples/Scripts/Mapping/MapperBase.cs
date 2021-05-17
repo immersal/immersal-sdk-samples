@@ -32,6 +32,7 @@ namespace Immersal.Samples.Mapping
 
         public UnityEvent onConnect = null;
         public UnityEvent onFailedToConnect = null;
+        public UnityEvent onImageLimitExceeded = null;
 
         [HideInInspector]
         public MappingUIManager mappingUIManager;
@@ -65,7 +66,6 @@ namespace Immersal.Samples.Mapping
 		protected IntPtr m_PixelBuffer = IntPtr.Zero;
         protected bool m_UseGeoPose = false;
 
-        private int m_Bank = 0;
         private AudioSource m_CameraShutterClick;
         private IEnumerator m_UpdateJobList;
         private Camera m_MainCamera = null;
@@ -94,11 +94,6 @@ namespace Immersal.Samples.Mapping
             #else
             get { return Input.location.status == LocationServiceStatus.Running; }
             #endif
-        }
-
-        public int currentBank
-        {
-            get { return m_Bank; }
         }
 
         public string tempImagePath
@@ -322,14 +317,6 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        public int SwitchBank(int max_banks)
-        {
-            m_Bank = (m_Bank + 1) % max_banks;
-            m_SessionFirstImage = true;
-
-            return m_Bank;
-        }
-
         public void ToggleVisualization(Toggle toggle)
         {
             ARMap.pointCloudVisible = toggle.isOn;
@@ -409,6 +396,7 @@ namespace Immersal.Samples.Mapping
             j.OnResult += (SDKStatusResult result) =>
             {
                 this.stats.imageCount = result.imageCount;
+                this.stats.imageMax = result.imageMax;
             };
 
             await j.RunJobAsync();
@@ -625,6 +613,14 @@ namespace Immersal.Samples.Mapping
             });
         }
 
+        public void ImageLimitExceeded()
+        {
+            Dispatch.Dispatch(() => {
+                Debug.Log("Account image limit exceeded, aborting image capture");
+                this.onImageLimitExceeded?.Invoke();
+            });
+        }
+
         public void Capture()
         {
             if (!m_bCaptureRunning)
@@ -654,8 +650,9 @@ namespace Immersal.Samples.Mapping
                 return;
             }
 
-            JobLoadMapAsync j = new JobLoadMapAsync();
+            JobLoadMapBinaryAsync j = new JobLoadMapBinaryAsync();
             j.id = job.id;
+            j.sha256_al = job.sha256_al;
 
             j.OnStart += () =>
             {
@@ -664,8 +661,7 @@ namespace Immersal.Samples.Mapping
             };
             j.OnResult += (SDKMapResult result) =>
             {
-                byte[] mapData = Convert.FromBase64String(result.b64);
-                Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", job.id, mapData.Length, CryptoUtil.SHA256(mapData), result.sha256_al));
+                Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", job.id, result.mapData.Length, CryptoUtil.SHA256(result.mapData), result.sha256_al));
     			Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
 
                 Transform root = null;
@@ -683,7 +679,8 @@ namespace Immersal.Samples.Mapping
 
                 bool applyAlignment = !mapperSettings.useDifferentARSpaces;
 
-                ARSpace.LoadAndInstantiateARMap(root, result, mapData, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
+                ARSpace.LoadAndInstantiateARMap(root, result, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
+                //ARSpace.LoadAndInstantiateARMap(root, job, result.mapData, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
 
                 m_Sdk.Localizer.stats.localizationAttemptCount = 0;
                 m_Sdk.Localizer.stats.localizationSuccessCount = 0;
@@ -750,5 +747,6 @@ namespace Immersal.Samples.Mapping
     {
         public int queueLen;
         public int imageCount;
+        public int imageMax;
     }
 }

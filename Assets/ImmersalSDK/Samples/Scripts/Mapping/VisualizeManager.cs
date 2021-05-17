@@ -47,10 +47,12 @@ namespace Immersal.Samples.Mapping
         private GameObject m_PromptRestoreMap = null;
         [SerializeField]
         private GameObject m_OptionsScrollList = null;
+        [SerializeField]
+        private GameObject m_AlignMapsPrompt = null;
 
         private SDKJob m_ActiveFunctionJob = default;
 
-        private enum UIState { Default, MapList, Options};
+        private enum UIState { Default, MapList, Options, AlignMaps};
         private UIState uiState = UIState.Default;
 
         // for delete / restore
@@ -110,6 +112,19 @@ namespace Immersal.Samples.Mapping
             ChangeState(uiState);
         }
 
+        public void AlignMapsPrompt()
+        {
+            if (uiState == UIState.AlignMaps)
+            {
+                uiState = UIState.Default;
+            }
+            else
+            {
+                uiState = UIState.AlignMaps;
+            }
+            ChangeState(uiState);
+        }
+
         public void DefaultView()
         {
             uiState = UIState.Default;
@@ -140,6 +155,7 @@ namespace Immersal.Samples.Mapping
                     m_MapDownloadButton.Activate();
                     m_MapDownloadList.SetActive(false);
                     m_OptionsScrollList.SetActive(false);
+                    m_AlignMapsPrompt.SetActive(false);
                     break;
                 case UIState.MapList:
                     m_InfoPanel.Disable();
@@ -148,6 +164,7 @@ namespace Immersal.Samples.Mapping
                     m_MapDownloadButton.Activate();
                     m_MapDownloadList.SetActive(true);
                     m_OptionsScrollList.SetActive(false);
+                    m_AlignMapsPrompt.SetActive(false);
                     break;
                 case UIState.Options:
                     m_InfoPanel.Disable();
@@ -156,6 +173,16 @@ namespace Immersal.Samples.Mapping
                     m_MapDownloadButton.Disable();
                     m_MapDownloadList.SetActive(false);
                     m_OptionsScrollList.SetActive(true);
+                    m_AlignMapsPrompt.SetActive(false);
+                    break;
+                case UIState.AlignMaps:
+                    m_InfoPanel.Disable();
+                    localizeButton.Disable();
+                    m_OptionsButton.Activate();
+                    m_MapDownloadButton.Disable();
+                    m_MapDownloadList.SetActive(false);
+                    m_OptionsScrollList.SetActive(false);
+                    m_AlignMapsPrompt.SetActive(true);
                     break;
                 default:
                     break;

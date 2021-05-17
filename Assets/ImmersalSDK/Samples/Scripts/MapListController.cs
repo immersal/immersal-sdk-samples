@@ -9,8 +9,6 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -124,17 +122,16 @@ namespace Immersal.Samples
 
         public void LoadMap(SDKJob job)
         {
-            JobLoadMapAsync j = new JobLoadMapAsync();
+            JobLoadMapBinaryAsync j = new JobLoadMapBinaryAsync();
             j.id = job.id;
             j.OnResult += (SDKMapResult result) =>
             {
-                byte[] mapData = Convert.FromBase64String(result.b64);
-                Debug.Log(string.Format("Load map {0} ({1} bytes)", job.id, mapData.Length));
+                Debug.Log(string.Format("Load map {0} ({1} bytes)", job.id, result.mapData.Length));
 
                 Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
                 ARMap.RenderMode renderMode = m_ARMap?.renderMode ?? ARMap.RenderMode.EditorAndRuntime;
 
-                ARSpace.LoadAndInstantiateARMap(null, result, mapData, renderMode, pointCloudColor);
+                ARSpace.LoadAndInstantiateARMap(null, result, renderMode, pointCloudColor);
             };
 
             m_Jobs.Add(j.RunJobAsync());

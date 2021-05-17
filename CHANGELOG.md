@@ -4,6 +4,27 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2021-05-17
+### Added
+- Core: Plugin image compression level (0..9)
+- Core: ARSpace; LoadAndInstantiateARMap() improvements, overloaded version for on-server localizer use cases
+- Samples: Mapper; added image limit warning
+- Samples: Mapper; tracker alignment support
+- Developer Portal: Metadata download
+
+### Changed
+- Core: Removed 'bank' and other unused stuff for the REST API
+- Core: OnPoseFound/Lost events are now public
+- Core: Removed MapToEcecGet(), now uses map metadata instead
+- Samples: Now uses a binary endpoint for loading the map data instead of Base64
+- Developer Portal: allow max. 8 jobs for alignment/stitching
+- Developer Portal: email address changed to user ID
+
+### Fixed
+- Core: REST; Map load workaround for pre 1.12 servers
+- Core: ARMap; fixed point cloud shader slowness with multiple points
+- Bug fixes and general SDK clean up
+
 ## [1.12.1] - 2021-04-11
 ### Fixed
 - Core: Updated point cloud shader to fix errors on some Android devices
