@@ -10,11 +10,8 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 using UnityEngine;
-using UnityEditor;
-using UnityEngine.Networking;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine.UI;
 using Immersal.REST;
 using Immersal.AR;
@@ -95,7 +92,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
 			ScrollToTop();
 		}
 
-        public void SubmitAlignment()
+        public async void SubmitAlignment()
         {
             if(mapperSettings == null)
             {
@@ -122,7 +119,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
                         if(transformRootToOrigin)
                         {
                             Matrix4x4 offset = worldSpaceRoot.inverse * worldSpaceTransform;
-                            StartCoroutine(MapAlignmentSave(entry.Value.mapId, offset));
+                            await MapAlignmentSave(entry.Value.mapId, offset);
                         }
                         else
                         {
@@ -137,7 +134,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
                             ARHelper.SwitchHandedness(out a, b);
 
                             Matrix4x4 offset = a * worldSpaceRoot.inverse * worldSpaceTransform;
-                            StartCoroutine(MapAlignmentSave(entry.Value.mapId, offset));
+                            await MapAlignmentSave(entry.Value.mapId, offset);
                         }
                     }
                     else
@@ -146,26 +143,26 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
                         {
                             // set root to origin
                             Matrix4x4 identity = Matrix4x4.identity;
-                            StartCoroutine(MapAlignmentSave(entry.Value.mapId, identity));
+                            await MapAlignmentSave(entry.Value.mapId, identity);
                         }
                         else
                         {
                             // or keep the root transform
-                            // StartCoroutine(MapAlignmentSave(entry.Value.mapId, worldSpaceRoot));
+                            // await MapAlignmentSave(entry.Value.mapId, worldSpaceRoot);
                         }
                     }
                 }
+
+                m_VisualizeManager?.DefaultView();
+                Immersal.Samples.Mapping.NotificationManager.Instance.GenerateSuccess("Map Alignments Saved");
             }
         }
 
-        private IEnumerator MapAlignmentSave(int mapId, Matrix4x4 m)
+        private async Task MapAlignmentSave(int mapId, Matrix4x4 m)
         {
             //
             // Updates map metadata to the Cloud Service and reloads to keep local files in sync
             //
-
-            ImmersalSDK m_Sdk = ImmersalSDK.Instance;
-
             Vector3 pos = m.GetColumn(3);
             Quaternion rot = m.rotation;
             float scl = (m.lossyScale.x + m.lossyScale.y + m.lossyScale.z) / 3f; // Only uniform scale metadata is supported
@@ -179,51 +176,29 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
             rot = a.rotation;
 
             // Update map alignment metadata to Immersal Cloud Service
-            SDKMapAlignmentSetRequest r = new SDKMapAlignmentSetRequest();
-            r.token = m_Sdk.developerToken;
-            r.id = mapId;
-            r.tx = pos.x;
-            r.ty = pos.y;
-            r.tz = pos.z;
-            r.qx = rot.x;
-            r.qy = rot.y;
-            r.qz = rot.z;
-            r.qw = rot.w;
-            r.scale = scl;
+            JobMapAlignmentSetAsync j = new JobMapAlignmentSetAsync();
+            j.id = mapId;
+            j.tx = pos.x;
+            j.ty = pos.y;
+            j.tz = pos.z;
+            j.qx = rot.x;
+            j.qy = rot.y;
+            j.qz = rot.z;
+            j.qw = rot.w;
+            j.scale = scl;
 
-            string jsonString = JsonUtility.ToJson(r);
-            UnityWebRequest request = UnityWebRequest.Put(string.Format(ImmersalHttp.URL_FORMAT, ImmersalSDK.DefaultServer, SDKMapAlignmentSetRequest.endpoint), jsonString);
-            request.method = UnityWebRequest.kHttpVerbPOST;
-            request.useHttpContinue = false;
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("Accept", "application/json");
-            request.SendWebRequest();
-
-            while (!request.isDone)
+            j.OnResult += (SDKMapAlignmentSetResult result) =>
             {
-                if(m_VisualizeManager != null)
-                {
-                    m_VisualizeManager.DefaultView();
-                }
-                Immersal.Samples.Mapping.NotificationManager.Instance.GenerateSuccess("Map Alignment Saved");
+                Debug.Log(string.Format("Alignment for map {0} saved", mapId));
+            };
 
-                yield return null;
-            }
-
-            if (request.isNetworkError || request.isHttpError)
+            j.OnError += (e) =>
             {
                 Immersal.Samples.Mapping.NotificationManager.Instance.GenerateError("Network Error");
-                Debug.Log(string.Format("Failed to save alignment for map id {0}\n{1}", mapId, request.error));
-            }
-            else
-            {
-                // SDKMapAlignmentSetResult result = JsonUtility.FromJson<SDKMapAlignmentSetResult>(request.downloadHandler.text);
-                // if (result.error == "none")
-                // {
-                //     // Reload the metadata from Immersal Cloud Service to keep local files in sync
-                //     EditorCoroutineUtility.StartCoroutine(MapAlignmentLoad(), this);
-                // }
-            }
+                Debug.Log(string.Format("Failed to save alignment for map id {0}\n{1}", mapId, e));
+            };
+
+            await j.RunJobAsync();
         }
 	}
 }
