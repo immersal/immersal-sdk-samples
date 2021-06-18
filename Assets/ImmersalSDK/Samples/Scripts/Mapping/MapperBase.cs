@@ -43,7 +43,6 @@ namespace Immersal.Samples.Mapping
         [HideInInspector]
         public VisualizeManager visualizeManager;
 
-        public LocalizerPose lastLocalizedPose = default;
         public MapperStats stats { get; protected set; } = new MapperStats();
 
         protected int m_ImageIndex = 0;
@@ -462,9 +461,9 @@ namespace Immersal.Samples.Mapping
             Vector3 b = trackerToMap.MultiplyPoint(cam.transform.position + cam.transform.forward);
 
             double[] aEcef = new double[3];
-            int ra = Immersal.Core.PosMapToEcef(aEcef, a, lastLocalizedPose.mapToEcef);
+            int ra = Immersal.Core.PosMapToEcef(aEcef, a, m_Sdk.Localizer.lastLocalizedPose.mapToEcef);
             double[] bEcef = new double[3];
-            int rb = Immersal.Core.PosMapToEcef(bEcef, b, lastLocalizedPose.mapToEcef);
+            int rb = Immersal.Core.PosMapToEcef(bEcef, b, m_Sdk.Localizer.lastLocalizedPose.mapToEcef);
 
             double[] wgs84 = new double[3];
             int rw = Immersal.Core.PosMapToWgs84(wgs84, a, mapToEcef);
@@ -505,9 +504,11 @@ namespace Immersal.Samples.Mapping
                 mappingUIManager.locationText.text = txt;
             }
 
-            if (lastLocalizedPose.valid)
+            LocalizerPose localizerPose = m_Sdk.Localizer.lastLocalizedPose;
+
+            if (localizerPose.valid)
             {
-                Vector2 cd = CompassDir(mainCamera, lastLocalizedPose.matrix, lastLocalizedPose.mapToEcef);
+                Vector2 cd = CompassDir(mainCamera, localizerPose.matrix, localizerPose.mapToEcef);
                 float bearing = Mathf.Atan2(-cd.x, cd.y) * (180f / (float)Math.PI);
                 if(bearing >= 0f)
                 {
@@ -519,17 +520,17 @@ namespace Immersal.Samples.Mapping
                 }
 
                 Matrix4x4 trackerSpace = Matrix4x4.TRS(mainCamera.transform.position, mainCamera.transform.rotation, Vector3.one);
-                Matrix4x4 m = lastLocalizedPose.matrix * trackerSpace;
+                Matrix4x4 m = localizerPose.matrix * trackerSpace;
                 Vector3 pos = m.GetColumn(3);
 
                 double[] wgs84 = new double[3];
-                int r = Immersal.Core.PosMapToWgs84(wgs84, pos, lastLocalizedPose.mapToEcef);
+                int r = Immersal.Core.PosMapToWgs84(wgs84, pos, localizerPose.mapToEcef);
                 m_VLatitude = wgs84[0];
                 m_VLongitude = wgs84[1];
                 m_VAltitude = wgs84[2];
 
-                lastLocalizedPose.lastUpdatedPose.position = pos;
-                lastLocalizedPose.lastUpdatedPose.rotation = m.rotation;
+                localizerPose.lastUpdatedPose.position = pos;
+                localizerPose.lastUpdatedPose.rotation = m.rotation;
             }
 
             string txt2 = string.Format("VLat: {0}, VLon: {1}, VAlt: {2}, VBRG: {3}", 

@@ -37,25 +37,11 @@ namespace Immersal.Samples.Navigation
             this.neighbours = neighbours;
         }
 
-        public float FCost
-        {
-            get
-            {
-                return GCost + HCost;
-            }
-        }
-        public float HCost
-        {
-            get; set;
-        }
-        public float GCost
-        {
-            get; set;
-        }
         public float Cost
         {
             get; set;
         }
+
         public Node Parent
         {
             get; set;
@@ -339,16 +325,6 @@ namespace Immersal.Samples.Navigation
             // Add in and out Nodes for Main Camera and Navigation Target (start position and end position)
             //
 
-            //Node nodeIn = new Node(startPosition);
-            //nodeIn.nodeName = "GRAPH IN";
-            //GetClosestNode(ref nodeIn, ref graph);
-            //graph[nodeIn] = nodeIn.neighbours;
-
-            //Node nodeOut = new Node(endPosition);
-            //nodeOut.nodeName = "GRAPH OUT";
-            //GetClosestNode(ref nodeOut, ref graph);
-            //graph[nodeOut] = nodeOut.neighbours;
-
             Node startNode = new Node(startPosition + new Vector3(0f, startYOffset, 0f));
             startNode.nodeName = "GRAPH - START NODE";
             Node inNode = new Node();
@@ -361,13 +337,7 @@ namespace Immersal.Samples.Navigation
             outNode.nodeName = "GRAPH - OUT NODE";
             EdgeToNearestPointInGraph(ref endNode, ref outNode, ref graph);
 
-            //DebugGraph(graph);
-
-            //
-            // Find the path by traversing the graph with A*
-            //
-
-            pathPositions = AStar(startNode, endNode, graph);
+            pathPositions = GetPathPositions(startNode, endNode, graph);
 
             if (pathPositions.Count < 2)
             {
@@ -376,22 +346,6 @@ namespace Immersal.Samples.Navigation
             }
 
             return pathPositions;
-        }
-
-        private void DebugGraph(Dictionary<Node, List<Node>> graph)
-        {
-            foreach (KeyValuePair<Node, List<Node>> g in graph)
-            {
-                string debug = "KEY: ";
-                debug += g.Key.nodeName + "\n" + "VALUES: ";
-
-                foreach (Node v in g.Value)
-                {
-                    debug += v.nodeName + ", ";
-                }
-
-                Debug.Log(debug);
-            }
         }
 
         private void GetClosestNode(ref Node searchNode, ref Dictionary<Node, List<Node>> graph)
@@ -486,50 +440,47 @@ namespace Immersal.Samples.Navigation
             graph[searchNode] = searchNode.neighbours;
         }
 
-        public List<Vector3> AStar(Node startNode, Node endNode, Dictionary<Node, List<Node>> graph)
+        public List<Vector3> GetPathPositions(Node startNode, Node endNode, Dictionary<Node, List<Node>> graph)
         {
             List<Vector3> pathPositions = new List<Vector3>();
-            List<Node> openSet = new List<Node>();
-            openSet.Add(startNode);
+            List<Node> openList = new List<Node>();
+            List<Node> closedList = new List<Node>();
+            
+            openList.Add(startNode);
 
-            List<Node> closedSet = new List<Node>();
-
-            while (openSet.Count > 0)
+            while (openList.Count > 0)
             {
-                Node currentNode = openSet[0];
-                for (int i = 1; i < openSet.Count; i++)
+                Node currNode = openList[0];
+                for (int i = 1; i < openList.Count; i++)
                 {
-                    if (openSet[i].FCost < currentNode.FCost
-                        || (openSet[i].FCost.Equals(currentNode.FCost)
-                            && openSet[i].HCost < currentNode.HCost))
+                    if (openList[i].Cost < currNode.Cost)
                     {
-                        currentNode = openSet[i];
+                        currNode = openList[i];
                     }
                 }
 
-                openSet.Remove(currentNode);
-                closedSet.Add(currentNode);
+                openList.Remove(currNode);
+                closedList.Add(currNode);
 
-                if (currentNode == endNode)
+                if (currNode == endNode)
                 {
-                    pathPositions = RetracePath(startNode, endNode);
+                    pathPositions = NodesToPathPositions(startNode, endNode);
                     return pathPositions;
                 }
 
-                foreach (Node connection in graph[currentNode])
+                foreach (Node n in graph[currNode])
                 {
-                    if (!closedSet.Contains(connection))
+                    if (!closedList.Contains(n))
                     {
-                        float costToConnection = currentNode.GCost + connection.Cost;
-
-                        if (costToConnection < connection.GCost || !openSet.Contains(connection))
+                        float totalCost = currNode.Cost + n.Cost;
+                        if (totalCost < n.Cost || !openList.Contains(n))
                         {
-                            connection.GCost = costToConnection;
-                            connection.Parent = currentNode;
+                            n.Cost = totalCost;
+                            n.Parent = currNode;
 
-                            if (!openSet.Contains(connection))
+                            if (!openList.Contains(n))
                             {
-                                openSet.Add(connection);
+                                openList.Add(n);
                             }
                         }
                     }
@@ -539,24 +490,19 @@ namespace Immersal.Samples.Navigation
             return pathPositions;
         }
 
-        private static List<Vector3> RetracePath(Node startNode, Node endNode)
+        private List<Vector3> NodesToPathPositions(Node startNode, Node endNode)
         {
-            List<Node> path = new List<Node>();
-            Node currentNode = endNode;
-
-            while (currentNode != startNode)
-            {
-                path.Add(currentNode);
-                currentNode = currentNode.Parent;
-            }
-            path.Add(startNode);
-            path.Reverse();
-
             List<Vector3> pathPositions = new List<Vector3>();
-            foreach (Node node in path)
+            Node currNode = endNode;
+
+            while (currNode != startNode)
             {
-                pathPositions.Add(node.position);
+                pathPositions.Add(currNode.position);
+                currNode = currNode.Parent;
             }
+            
+            pathPositions.Add(startNode.position);
+            pathPositions.Reverse();
 
             return pathPositions;
         }
