@@ -20,11 +20,6 @@ namespace Immersal.AR
 {
     public class HWARLocalizer : LocalizerBase
 	{
-		public event MapChanged OnMapChanged = null;
-		public event PoseFound OnPoseFound = null;
-		public delegate void MapChanged(int newMapHandle);
-		public delegate void PoseFound(LocalizerPose newPose);
-
 		private static HWARLocalizer instance = null;
 
 		protected override void Update()
@@ -84,9 +79,8 @@ namespace Immersal.AR
                 JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
                 byte[] pixels;
-                Camera cam = Camera.main;
-                Vector3 camPos = cam.transform.position;
-                Quaternion camRot = cam.transform.rotation;
+                Vector3 camPos = m_Cam.transform.position;
+                Quaternion camRot = m_Cam.transform.rotation;
 				Vector4 intrinsics;
                 int channels = 1;
                 int width = image.Width;
@@ -99,7 +93,7 @@ namespace Immersal.AR
 
                 Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
                 {
-                    byte[] capture = new byte[channels * width * height + 1024];
+                    byte[] capture = new byte[channels * width * height + 8192];
                     icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                     Array.Resize(ref capture, info.captureSize);
                     return (capture, info);
@@ -111,7 +105,7 @@ namespace Immersal.AR
 				j.intrinsics = intrinsics;
 				j.mapIds = mapIds;
 
-                j.OnResult += async (SDKLocalizeResult result) =>
+                j.OnResult += (SDKLocalizeResult result) =>
                 {
 					float elapsedTime = Time.realtimeSinceStartup - startTime;
 
@@ -120,23 +114,24 @@ namespace Immersal.AR
 						Debug.Log("*************************** On-Server Localization Succeeded ***************************");
 						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 
-						int mapServerId = result.map;
+						int mapId = result.map;
 
-						if (mapServerId > 0 && ARSpace.mapHandleToOffset.ContainsKey(mapServerId))
+						if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 						{
-							if (mapServerId != lastLocalizedMapHandle)
+							ARMap map = ARSpace.mapIdToMap[mapId];
+
+							if (mapId != lastLocalizedMapId)
 							{
 								if (resetOnMapChange)
 								{
 									Reset();
 								}
 								
-								lastLocalizedMapHandle = mapServerId;
-
-								OnMapChanged?.Invoke(mapServerId);
+								lastLocalizedMapId = mapId;
+								OnMapChanged?.Invoke(mapId);
 							}
 
-							MapOffset mo = ARSpace.mapHandleToOffset[mapServerId];
+							MapOffset mo = ARSpace.mapIdToOffset[mapId];
 							stats.localizationSuccessCount++;
 							
 							Matrix4x4 responseMatrix = Matrix4x4.identity;
@@ -159,31 +154,16 @@ namespace Immersal.AR
 							else
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-							JobEcefAsync je = new JobEcefAsync();
-							je.id = mapServerId;
-							je.OnResult += (SDKEcefResult result2) =>
-							{
-								LocalizerPose localizerPose;
-								LocalizerBase.GetLocalizerPose(out localizerPose, mapServerId, pos, rot, m.inverse, result2.ecef);
-								OnPoseFound?.Invoke(localizerPose);
-							};
-
-							await je.RunJobAsync();
-
-							if (ARSpace.mapHandleToMap.ContainsKey(mapServerId))
-							{
-								ARMap map = ARSpace.mapHandleToMap[mapServerId];
-								map.NotifySuccessfulLocalization(mapServerId);
-							}
-						}
-						else
-						{
-							Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+							double[] ecef = map.MapToEcefGet();
+							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse, ecef);
+							map.NotifySuccessfulLocalization(mapId);
+							OnPoseFound?.Invoke(lastLocalizedPose);
 						}
 					}
 					else
 					{
 						Debug.Log("*************************** On-Server Localization Failed ***************************");
+						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 					}
                 };
 
@@ -193,6 +173,119 @@ namespace Immersal.AR
             }
 
 			base.LocalizeServer(mapIds);
+        }
+
+        public override async void LocalizeGeoPose(SDKMapId[] mapIds)
+        {
+			ARCameraImageBytes image = null;
+			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
+
+			if (image != null && image.IsAvailable)
+            {
+				stats.localizationAttemptCount++;
+
+                JobGeoPoseAsync j = new JobGeoPoseAsync();
+
+                byte[] pixels;
+                Vector3 camPos = m_Cam.transform.position;
+                Quaternion camRot = m_Cam.transform.rotation;
+				Vector4 intrinsics;
+                int channels = 1;
+                int width = image.Width;
+                int height = image.Height;
+
+                j.mapIds = mapIds;
+
+                HWARHelper.GetIntrinsics(out intrinsics, isHD, width, height);
+				HWARHelper.GetPlaneData(out pixels, image);
+
+				float startTime = Time.realtimeSinceStartup;
+
+                Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
+                {
+                    byte[] capture = new byte[channels * width * height + 8192];
+                    icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    Array.Resize(ref capture, info.captureSize);
+                    return (capture, info);
+                });
+
+                await t;
+
+                j.image = t.Result.Item1;
+
+                j.OnResult += (SDKGeoPoseResult result) =>
+                {
+					float elapsedTime = Time.realtimeSinceStartup - startTime;
+
+                    if (result.success)
+                    {
+                        Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
+						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+
+                        int mapId = result.map;
+                        double latitude = result.latitude;
+                        double longitude = result.longitude;
+                        double ellipsoidHeight = result.ellipsoidHeight;
+                        Quaternion rot = new Quaternion(result.quaternion[1], result.quaternion[2], result.quaternion[3], result.quaternion[0]);
+                        Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
+
+                        double[] ecef = new double[3];
+                        double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
+                        Core.PosWgs84ToEcef(ecef, wgs84);
+
+						if (ARSpace.mapIdToMap.ContainsKey(mapId))
+						{
+							ARMap map = ARSpace.mapIdToMap[mapId];
+
+							if (mapId != lastLocalizedMapId)
+							{
+								if (resetOnMapChange)
+								{
+									Reset();
+								}
+								
+								lastLocalizedMapId = mapId;
+
+								OnMapChanged?.Invoke(mapId);
+							}
+
+							MapOffset mo = ARSpace.mapIdToOffset[mapId];
+							stats.localizationSuccessCount++;
+
+							double[] mapToEcef = map.MapToEcefGet();
+							Vector3 mapPos;
+							Quaternion mapRot;
+							Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
+							Core.RotEcefToMap(out mapRot, rot, mapToEcef);
+
+							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+							Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
+							Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, mapRot, Vector3.one);
+							Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+							Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
+							
+							if (useFiltering)
+								mo.space.filter.RefinePose(m);
+							else
+								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+
+							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
+							map.NotifySuccessfulLocalization(mapId);
+							OnPoseFound?.Invoke(lastLocalizedPose);
+						}
+                    }
+                    else
+                    {
+                        Debug.Log("*************************** GeoPose Localization Failed ***************************");
+						Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
+                    }
+                };
+
+                await j.RunJobAsync();
+                image.Dispose();
+            }
+
+			base.LocalizeGeoPose(mapIds);
         }
 
         public override async void Localize()
@@ -210,8 +303,6 @@ namespace Immersal.AR
 				HWARHelper.GetIntrinsics(out intrinsics, isHD, image.Width, image.Height);
 				HWARHelper.GetPlaneDataFast(ref m_PixelBuffer, image);
 
-				image.Dispose();
-
 				if (m_PixelBuffer != IntPtr.Zero)
 				{
 					Vector3 pos = Vector3.zero;
@@ -227,27 +318,29 @@ namespace Immersal.AR
 					await t;
 
 					int mapHandle = t.Result;
+					int mapId = ARMap.MapHandleToId(mapHandle);
 					float elapsedTime = Time.realtimeSinceStartup - startTime;
 
-					if (mapHandle >= 0 && ARSpace.mapHandleToOffset.ContainsKey(mapHandle))
+					if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 					{
 						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 						stats.localizationSuccessCount++;
 
-						if (mapHandle != lastLocalizedMapHandle)
+						ARMap map = ARSpace.mapIdToMap[mapId];
+
+						if (mapId != lastLocalizedMapId)
 						{
 							if (resetOnMapChange)
 							{
 								Reset();
 							}
 							
-							lastLocalizedMapHandle = mapHandle;
-
-							OnMapChanged?.Invoke(mapHandle);
+							lastLocalizedMapId = mapId;
+							OnMapChanged?.Invoke(mapId);
 						}
 
 						HWARHelper.GetRotation(ref rot);
-						MapOffset mo = ARSpace.mapHandleToOffset[mapHandle];
+						MapOffset mo = ARSpace.mapIdToOffset[mapId];
 
 						Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 						Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
@@ -260,21 +353,17 @@ namespace Immersal.AR
 						else
 							ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-						LocalizerPose localizerPose;
-						GetLocalizerPose(out localizerPose, mapHandle, pos, rot, m.inverse);
-						OnPoseFound?.Invoke(localizerPose);
-
-						if (ARSpace.mapHandleToMap.ContainsKey(mapHandle))
-						{
-							ARMap map = ARSpace.mapHandleToMap[mapHandle];
-							map.NotifySuccessfulLocalization(mapHandle);
-						}
+						GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
+						OnPoseFound?.Invoke(lastLocalizedPose);
+						map.NotifySuccessfulLocalization(mapId);
 					}
 					else
 					{
 						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 					}
 				}
+
+				image.Dispose();
 			}
 
 			base.Localize();

@@ -133,8 +133,9 @@ public class AppController : MonoBehaviour
             Debug.Log("Adding ARLocalizer");
         }
 
+        ImmersalSDK.Instance.downsample = true;
+
         m_Localizer.localizationInterval = 1f;
-        m_Localizer.downsample = true;
         m_Localizer.enabled = true;
 
         m_SDKStarted = true;

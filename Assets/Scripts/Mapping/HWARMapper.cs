@@ -53,6 +53,11 @@ namespace Immersal.Samples.Mapping
         {
             await Task.Delay(250);
 
+            if(this.stats.imageCount + this.stats.queueLen >= this.stats.imageMax)
+            {
+                ImageLimitExceeded();
+            }
+
             m_bCaptureRunning = true;
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
@@ -67,7 +72,7 @@ namespace Immersal.Samples.Mapping
                 j.index = m_ImageIndex++;
                 j.anchor = anchor;
 
-                if (gpsOn)
+                if (mapperSettings.useGps)
                 {
                     j.latitude = m_Latitude;
                     j.longitude = m_Longitude;
@@ -92,16 +97,16 @@ namespace Immersal.Samples.Mapping
                 int height = image.Height;
 
                 byte[] pixels;
-                int channels = 0;
+                int channels = 1;
 
                 HWARHelper.GetPlaneData(out pixels, image);
-                channels = 1;
 
-                byte[] capture = new byte[channels * width * height + 1024];
+                byte[] capture = new byte[channels * width * height + 8192];
+                int useMatching = mapperSettings.checkConnectivity ? 1 : 0;
 
                 Task<icvCaptureInfo> captureTask = Task.Run(() =>
                 {
-                    return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels, useMatching);
                 });
 
                 await captureTask;
@@ -115,7 +120,10 @@ namespace Immersal.Samples.Mapping
                 j.imagePath = path;
                 j.encodedImage = "";
 
-                NotifyIfConnected(captureTask.Result);
+                if (mapperSettings.checkConnectivity)
+                {
+                    NotifyIfConnected(captureTask.Result);
+                }
 
                 if (m_SessionFirstImage)
                     m_SessionFirstImage = false;
@@ -160,194 +168,28 @@ namespace Immersal.Samples.Mapping
         {
             if (mapperSettings.useServerLocalizer)
             {
-                LocalizeServer();
-            }
-            else
-            {
-                Localize();
-            }
-        }
+                int n = ARSpace.mapIdToMap.Count;
+                SDKMapId[] mapIds = new SDKMapId[n];
 
-        public override async void Localize()
-        {
-			ARCameraImageBytes image = null;
-            bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
-            {
-                Vector4 intrinsics;
-                Camera cam = this.mainCamera;
-                Vector3 camPos = cam.transform.position;
-                Quaternion camRot = cam.transform.rotation;
-                int param1 = mapperSettings.param1;
-                int param2 = mapperSettings.param2;
-                float param3 = mapperSettings.param3;
-                float param4 = mapperSettings.param4;
-                int method = mapperSettings.localizer;
-
-                HWARHelper.GetIntrinsics(out intrinsics, isHD, image.Width, image.Height);
-                HWARHelper.GetPlaneDataFast(ref m_PixelBuffer, image);
-
-                if (m_PixelBuffer != IntPtr.Zero)
+                int count = 0;
+                foreach (int id in ARSpace.mapIdToMap.Keys)
                 {
-                    Vector3 position = Vector3.zero;
-                    Quaternion rotation = Quaternion.identity;
-
-                    Task<int> t = Task.Run(() =>
-                    {
-                        return Immersal.Core.LocalizeImage(out position, out rotation, image.Width, image.Height, ref intrinsics, m_PixelBuffer, param1, param2, param3, param4, method);
-                    });
-
-                    await t;
-
-                    int mapHandle = t.Result;
-
-                    if (mapHandle >= 0)
-                    {
-                        this.stats.locSucc++;
-
-                        Debug.Log("*************************** Localization Succeeded ***************************");
-                        Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", param1, param2, param3, param4));
-                        Matrix4x4 cloudSpace = Matrix4x4.TRS(position, rotation, Vector3.one);
-                        Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                        Debug.Log("handle " + mapHandle + "\n" +
-                                "fc 4x4\n" + cloudSpace + "\n" +
-                                "ft 4x4\n" + trackerSpace);
-
-                        Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
-
-                        LocalizerPose lastLocalizedPose;
-                        LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapHandle, position, rotation, m.inverse);
-                        this.lastLocalizedPose = lastLocalizedPose;
-
-                        foreach (PointCloudRenderer p in this.pcr.Values)
-                        {
-                            if (p.mapHandle == mapHandle)
-                            {
-                                p.go.transform.position = m.GetColumn(3);
-                                p.go.transform.rotation = m.rotation;
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        this.stats.locFail++;
-                        Debug.Log("*************************** Localization Failed ***************************");
-                    }
-                    
+                    mapIds[count] = new SDKMapId();
+                    mapIds[count++].id = id;
                 }
 
-                image.Dispose();
-            }
-        }
-
-        public override async void LocalizeServer()
-        {
-			ARCameraImageBytes image = null;
-            bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
-            {
-                JobLocalizeServerAsync j = new JobLocalizeServerAsync();
-
-                if (mapperSettings.serverLocalizationWithIds)
+                if (m_UseGeoPose)
                 {
-                    int n = pcr.Count;
-
-                    j.mapIds = new SDKMapId[n];
-
-                    int count = 0;
-                    foreach (int id in pcr.Keys)
-                    {
-                        j.mapIds[count] = new SDKMapId();
-                        j.mapIds[count++].id = id;
-                    }
+                    m_Sdk.Localizer.LocalizeGeoPose(mapIds);
                 }
                 else
                 {
-                    j.useGPS = true;
-                    j.latitude = m_Latitude;
-                    j.longitude = m_Longitude;
-                    j.radius = DefaultRadius;
+                    m_Sdk.Localizer.LocalizeServer(mapIds);
                 }
-
-                byte[] pixels;
-                Camera cam = this.mainCamera;
-                Vector3 camPos = cam.transform.position;
-                Quaternion camRot = cam.transform.rotation;
-                int channels = 1;
-                int width = image.Width, height = image.Height;
-                
-                j.param1 = mapperSettings.param1;
-                j.param2 = mapperSettings.param2;
-                j.param3 = mapperSettings.param3;
-                j.param4 = mapperSettings.param4;
-
-                HWARHelper.GetIntrinsics(out j.intrinsics, isHD, image.Width, image.Height);
-                HWARHelper.GetPlaneData(out pixels, image);
-
-                Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
-                {
-                    byte[] capture = new byte[channels * width * height + 1024];
-                    icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-                    Array.Resize(ref capture, info.captureSize);
-                    return (capture, info);
-                });
-
-                await t;
-
-                j.image = t.Result.Item1;
-
-                j.OnResult += (SDKLocalizeResult result) =>
-                {
-                    if (result.success)
-                    {
-                        Matrix4x4 m = Matrix4x4.identity;
-                        Matrix4x4 cloudSpace = Matrix4x4.identity;
-                        cloudSpace.m00 = result.r00; cloudSpace.m01 = result.r01; cloudSpace.m02 = result.r02; cloudSpace.m03 = result.px;
-                        cloudSpace.m10 = result.r10; cloudSpace.m11 = result.r11; cloudSpace.m12 = result.r12; cloudSpace.m13 = result.py;
-                        cloudSpace.m20 = result.r20; cloudSpace.m21 = result.r21; cloudSpace.m22 = result.r22; cloudSpace.m23 = result.pz;
-                        Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-                        this.stats.locSucc++;
-
-                        Debug.Log("*************************** On-Server Localization Succeeded ***************************");
-                        Debug.Log(string.Format("params: {0}, {1}, {2}, {3}", j.param1, j.param2, j.param3, j.param4));
-                        Debug.Log("fc 4x4\n" + cloudSpace + "\n" +
-                                "ft 4x4\n" + trackerSpace);
-
-                        m = trackerSpace * (cloudSpace.inverse);
-
-                        foreach (KeyValuePair<int, PointCloudRenderer> p in this.pcr)
-                        {
-                            if (p.Key == result.map)
-                            {
-                                p.Value.go.transform.position = m.GetColumn(3);
-                                p.Value.go.transform.rotation = m.rotation;
-                                break;
-                            }
-                        }
-
-                        JobEcefAsync je = new JobEcefAsync();
-                        je.id = result.map;
-                        je.OnResult += (SDKEcefResult result2) =>
-                        {
-                            LocalizerPose lastLocalizedPose;
-                            LocalizerBase.GetLocalizerPose(out lastLocalizedPose, result.map, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, result2.ecef);
-                            this.lastLocalizedPose = lastLocalizedPose;
-                        };
-
-                        m_Jobs.Add(je.RunJobAsync());
-                    }
-                    else
-                    {
-                        this.stats.locFail++;
-                        Debug.Log("*************************** On-Server Localization Failed ***************************");
-                    }
-                };
-
-                m_Jobs.Add(j.RunJobAsync());
-                image.Dispose();
+            }
+            else
+            {
+                m_Sdk.Localizer.Localize();
             }
         }
     }
