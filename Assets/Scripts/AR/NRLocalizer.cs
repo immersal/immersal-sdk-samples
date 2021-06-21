@@ -194,10 +194,9 @@ namespace Immersal.AR.Nreal
 				Vector3 p = m.GetColumn(3);
 				Vector3 euler = m.rotation.eulerAngles;
 
-				LocalizerPose localizerPose;
-				GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
+				GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
 				map.NotifySuccessfulLocalization(mapId);
-				OnPoseFound?.Invoke(localizerPose);
+				OnPoseFound?.Invoke(lastLocalizedPose);
 			}
 			else
 			{
@@ -235,7 +234,7 @@ namespace Immersal.AR.Nreal
 
 			Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
 			{
-				byte[] capture = new byte[channels * width * height + 1024];
+				byte[] capture = new byte[channels * width * height + 8192];
 				icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
 				Array.Resize(ref capture, info.captureSize);
 				return (capture, info);
@@ -297,11 +296,9 @@ namespace Immersal.AR.Nreal
 							ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
 						double[] ecef = map.MapToEcefGet();
-						LocalizerPose localizerPose;
-						LocalizerBase.GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse, ecef);
-						this.lastLocalizedPose = localizerPose;
+						LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse, ecef);
 						map.NotifySuccessfulLocalization(mapId);
-						OnPoseFound?.Invoke(localizerPose);
+						OnPoseFound?.Invoke(lastLocalizedPose);
 					}
 				}
 				else
@@ -411,11 +408,9 @@ namespace Immersal.AR.Nreal
 						else
 							ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-						LocalizerPose localizerPose;
-						LocalizerBase.GetLocalizerPose(out localizerPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
-						this.lastLocalizedPose = localizerPose;
+						LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
 						map.NotifySuccessfulLocalization(mapId);
-						OnPoseFound?.Invoke(localizerPose);
+						OnPoseFound?.Invoke(lastLocalizedPose);
 					}
 				}
 				else
