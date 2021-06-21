@@ -217,11 +217,9 @@ namespace Immersal.AR.MagicLeap
 					else
 						ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-					LocalizerPose localizerPose;
-					GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse);
-					this.lastLocalizedPose = localizerPose;
+					GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
 					map.NotifySuccessfulLocalization(mapId);
-					OnPoseFound?.Invoke(localizerPose);
+					OnPoseFound?.Invoke(lastLocalizedPose);
 				}
 				else
 				{
@@ -350,11 +348,9 @@ namespace Immersal.AR.MagicLeap
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 							
 							double[] ecef = map.MapToEcefGet();
-							LocalizerPose localizerPose;
-							LocalizerBase.GetLocalizerPose(out localizerPose, mapId, pos, rot, m.inverse, ecef);
-							this.lastLocalizedPose = localizerPose;
+							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse, ecef);
 							map.NotifySuccessfulLocalization(mapId);
-							OnPoseFound?.Invoke(localizerPose);
+							OnPoseFound?.Invoke(lastLocalizedPose);
 						}
 					}
 					else
@@ -492,11 +488,9 @@ namespace Immersal.AR.MagicLeap
 							else
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
-							LocalizerPose localizerPose;
-							LocalizerBase.GetLocalizerPose(out localizerPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
-							this.lastLocalizedPose = localizerPose;
+							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
 							map.NotifySuccessfulLocalization(mapId);
-							OnPoseFound?.Invoke(localizerPose);
+							OnPoseFound?.Invoke(lastLocalizedPose);
 						}
                     }
                     else
