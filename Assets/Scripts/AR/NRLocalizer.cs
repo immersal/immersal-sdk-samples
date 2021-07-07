@@ -127,80 +127,86 @@ namespace Immersal.AR.Nreal
 
         public override async void Localize()
 		{
-			if (m_PixelBuffer == IntPtr.Zero)
+			while (!CamTexture.DidUpdateThisFrame)
+ 			{
+				 await Task.Yield();
+ 			}
+
+			if (m_PixelBuffer != IntPtr.Zero)
 			{
-				Debug.Log("No camera pixel buffer, returning...");
-				return;
-			}
+				stats.localizationAttemptCount++;
 
-			stats.localizationAttemptCount++;
+				Vector4 intrinsics;
+				Pose headPose = NRFrame.HeadPose;
+				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePose;
+				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
+				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
+				int width = CamTexture.Width;
+				int height = CamTexture.Height;
+				Vector3 pos = Vector3.zero;
+				Quaternion rot = Quaternion.identity;
+				GetIntrinsics(out intrinsics);
 
-			Vector4 intrinsics;
-			Pose headPose = NRFrame.HeadPose;
-			Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePos;
-			Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
-			Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
-			int width = CamTexture.Width;
-			int height = CamTexture.Height;
-			Vector3 pos = Vector3.zero;
-			Quaternion rot = Quaternion.identity;
-			GetIntrinsics(out intrinsics);
+				float startTime = Time.realtimeSinceStartup;
 
-			float startTime = Time.realtimeSinceStartup;
-
-			Task<int> t = Task.Run(() =>
-			{
-				return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, m_PixelBuffer);
-			});
-
-			await t;
-
-			int mapHandle = t.Result;
-			int mapId = ARMap.MapHandleToId(mapHandle);
-			float elapsedTime = Time.realtimeSinceStartup - startTime;
-
-			if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
-			{
-				Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
-				stats.localizationSuccessCount++;
-
-				ARMap map = ARSpace.mapIdToMap[mapId];
-
-				if (mapId != lastLocalizedMapId)
+				Task<int> t = Task.Run(() =>
 				{
-					if (resetOnMapChange)
+					return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, m_PixelBuffer);
+				});
+
+				await t;
+
+				int mapHandle = t.Result;
+				int mapId = ARMap.MapHandleToId(mapHandle);
+				float elapsedTime = Time.realtimeSinceStartup - startTime;
+
+				if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
+				{
+					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+					stats.localizationSuccessCount++;
+
+					ARMap map = ARSpace.mapIdToMap[mapId];
+
+					if (mapId != lastLocalizedMapId)
 					{
-						Reset();
+						if (resetOnMapChange)
+						{
+							Reset();
+						}
+						
+						lastLocalizedMapId = mapId;
+						OnMapChanged?.Invoke(mapId);
 					}
-					
-					lastLocalizedMapId = mapId;
-					OnMapChanged?.Invoke(mapId);
+				
+					rot *= Quaternion.Euler(0f, 0f, -90.0f);
+					MapOffset mo = ARSpace.mapIdToOffset[mapId];
+
+					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+					Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
+					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
+					Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+					Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+
+					if (useFiltering)
+						mo.space.filter.RefinePose(m);
+					else
+						ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+
+					Vector3 p = m.GetColumn(3);
+					Vector3 euler = m.rotation.eulerAngles;
+
+					GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
+					map.NotifySuccessfulLocalization(mapId);
+					OnPoseFound?.Invoke(lastLocalizedPose);
 				}
-			
-				rot *= Quaternion.Euler(0f, 0f, -90.0f);
-				MapOffset mo = ARSpace.mapIdToOffset[mapId];
-
-				Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
-				Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
-				Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
-				Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-				Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-
-				if (useFiltering)
-					mo.space.filter.RefinePose(m);
 				else
-					ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
-
-				Vector3 p = m.GetColumn(3);
-				Vector3 euler = m.rotation.eulerAngles;
-
-				GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
-				map.NotifySuccessfulLocalization(mapId);
-				OnPoseFound?.Invoke(lastLocalizedPose);
+				{
+					Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+				}
 			}
 			else
 			{
-				Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+				Debug.LogError("No camera pixel buffer");
 			}
 
 			base.Localize();
@@ -208,219 +214,231 @@ namespace Immersal.AR.Nreal
 
         public override async void LocalizeServer(SDKMapId[] mapIds)
         {
-			if (m_PixelBuffer == IntPtr.Zero)
+			while (!CamTexture.DidUpdateThisFrame)
+ 			{
+				 await Task.Yield();
+ 			}
+
+			if (m_PixelBuffer != IntPtr.Zero)
 			{
-				Debug.Log("No camera pixel buffer, returning...");
-				return;
-			}
+				stats.localizationAttemptCount++;
 
-			stats.localizationAttemptCount++;
+				JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
-			JobLocalizeServerAsync j = new JobLocalizeServerAsync();
+				Vector4 intrinsics;
+				Pose headPose = NRFrame.HeadPose;
+				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePose;
+				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
+				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
+				int channels = 1;
+				int width = CamTexture.Width;
+				int height = CamTexture.Height;
+				byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
 
-			Vector4 intrinsics;
-			Pose headPose = NRFrame.HeadPose;
-			Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePos;
-			Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
-			Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
-			int channels = 1;
-			int width = CamTexture.Width;
-			int height = CamTexture.Height;
-			byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
+				GetIntrinsics(out intrinsics);
 
-			GetIntrinsics(out intrinsics);
+				float startTime = Time.realtimeSinceStartup;
 
-			float startTime = Time.realtimeSinceStartup;
-
-			Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
-			{
-				byte[] capture = new byte[channels * width * height + 8192];
-				icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-				Array.Resize(ref capture, info.captureSize);
-				return (capture, info);
-			});
-
-			await t;
-
-			j.image = t.Result.Item1;
-			j.intrinsics = intrinsics;
-			j.mapIds = mapIds;
-
-			j.OnResult += (SDKLocalizeResult result) =>
-			{
-				float elapsedTime = Time.realtimeSinceStartup - startTime;
-
-				if (result.success)
+				Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
 				{
-					Debug.Log("*************************** On-Server Localization Succeeded ***************************");
-					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+					byte[] capture = new byte[channels * width * height + 8192];
+					icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+					Array.Resize(ref capture, info.captureSize);
+					return (capture, info);
+				});
 
-					int mapId = result.map;
+				await t;
 
-					if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
+				j.image = t.Result.Item1;
+				j.intrinsics = intrinsics;
+				j.mapIds = mapIds;
+
+				j.OnResult += (SDKLocalizeResult result) =>
+				{
+					float elapsedTime = Time.realtimeSinceStartup - startTime;
+
+					if (result.success)
 					{
-						ARMap map = ARSpace.mapIdToMap[mapId];
+						Debug.Log("*************************** On-Server Localization Succeeded ***************************");
+						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 
-						if (mapId != lastLocalizedMapId)
+						int mapId = result.map;
+
+						if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 						{
-							if (resetOnMapChange)
+							ARMap map = ARSpace.mapIdToMap[mapId];
+
+							if (mapId != lastLocalizedMapId)
 							{
-								Reset();
+								if (resetOnMapChange)
+								{
+									Reset();
+								}
+								
+								lastLocalizedMapId = mapId;
+								OnMapChanged?.Invoke(mapId);
 							}
+
+							MapOffset mo = ARSpace.mapIdToOffset[mapId];
+							stats.localizationSuccessCount++;
 							
-							lastLocalizedMapId = mapId;
-							OnMapChanged?.Invoke(mapId);
+							Matrix4x4 responseMatrix = Matrix4x4.identity;
+							responseMatrix.m00 = result.r00; responseMatrix.m01 = result.r01; responseMatrix.m02 = result.r02; responseMatrix.m03 = result.px;
+							responseMatrix.m10 = result.r10; responseMatrix.m11 = result.r11; responseMatrix.m12 = result.r12; responseMatrix.m13 = result.py;
+							responseMatrix.m20 = result.r20; responseMatrix.m21 = result.r21; responseMatrix.m22 = result.r22; responseMatrix.m23 = result.pz;
+
+							Vector3 pos  = responseMatrix.GetColumn(3);
+							Quaternion rot = responseMatrix.rotation;
+							rot *= Quaternion.Euler(0f, 0f, -90f);
+
+							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+							Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
+							Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
+							Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+							Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
+
+							if (useFiltering)
+								mo.space.filter.RefinePose(m);
+							else
+								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+
+							double[] ecef = map.MapToEcefGet();
+							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse, ecef);
+							map.NotifySuccessfulLocalization(mapId);
+							OnPoseFound?.Invoke(lastLocalizedPose);
 						}
-
-						MapOffset mo = ARSpace.mapIdToOffset[mapId];
-						stats.localizationSuccessCount++;
-						
-						Matrix4x4 responseMatrix = Matrix4x4.identity;
-						responseMatrix.m00 = result.r00; responseMatrix.m01 = result.r01; responseMatrix.m02 = result.r02; responseMatrix.m03 = result.px;
-						responseMatrix.m10 = result.r10; responseMatrix.m11 = result.r11; responseMatrix.m12 = result.r12; responseMatrix.m13 = result.py;
-						responseMatrix.m20 = result.r20; responseMatrix.m21 = result.r21; responseMatrix.m22 = result.r22; responseMatrix.m23 = result.pz;
-
-						Vector3 pos  = responseMatrix.GetColumn(3);
-						Quaternion rot = responseMatrix.rotation;
-						rot *= Quaternion.Euler(0f, 0f, -90f);
-
-						Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
-						Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
-						Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
-						Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-						Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-
-						if (useFiltering)
-							mo.space.filter.RefinePose(m);
-						else
-							ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
-
-						double[] ecef = map.MapToEcefGet();
-						LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse, ecef);
-						map.NotifySuccessfulLocalization(mapId);
-						OnPoseFound?.Invoke(lastLocalizedPose);
 					}
-				}
-				else
-				{
-					Debug.Log("*************************** On-Server Localization Failed ***************************");
-					Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
-				}
-			};
+					else
+					{
+						Debug.Log("*************************** On-Server Localization Failed ***************************");
+						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+					}
+				};
 
-			await j.RunJobAsync();
+				await j.RunJobAsync();
+			}
+			else
+			{
+				Debug.LogError("No camera pixel buffer");
+			}
 
 			base.LocalizeServer(mapIds);
         }
 
         public override async void LocalizeGeoPose(SDKMapId[] mapIds)
         {
-			if (m_PixelBuffer == IntPtr.Zero)
+			while (!CamTexture.DidUpdateThisFrame)
+ 			{
+				 await Task.Yield();
+ 			}
+
+			if (m_PixelBuffer != IntPtr.Zero)
 			{
-				Debug.Log("No camera pixel buffer, returning...");
-				return;
-			}
+				stats.localizationAttemptCount++;
 
-			stats.localizationAttemptCount++;
+				JobGeoPoseAsync j = new JobGeoPoseAsync();
 
-			JobGeoPoseAsync j = new JobGeoPoseAsync();
+				Vector4 intrinsics;
+				Pose headPose = NRFrame.HeadPose;
+				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePose;
+				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
+				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
+				int channels = 1;
+				int width = CamTexture.Width;
+				int height = CamTexture.Height;
+				byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
 
-			Vector4 intrinsics;
-			Pose headPose = NRFrame.HeadPose;
-			Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePos;
-			Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
-			Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
-			int channels = 1;
-			int width = CamTexture.Width;
-			int height = CamTexture.Height;
-			byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
+				GetIntrinsics(out intrinsics);
 
-			GetIntrinsics(out intrinsics);
+				float startTime = Time.realtimeSinceStartup;
 
-			float startTime = Time.realtimeSinceStartup;
-
-			Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
-			{
-				byte[] capture = new byte[channels * width * height + 8192];
-				icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-				Array.Resize(ref capture, info.captureSize);
-				return (capture, info);
-			});
-
-			await t;
-
-			j.image = t.Result.Item1;
-			j.intrinsics = intrinsics;
-			j.mapIds = mapIds;
-
-			j.OnResult += (SDKGeoPoseResult result) =>
-			{
-				float elapsedTime = Time.realtimeSinceStartup - startTime;
-
-				if (result.success)
+				Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
 				{
-					Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
-					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+					byte[] capture = new byte[channels * width * height + 8192];
+					icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+					Array.Resize(ref capture, info.captureSize);
+					return (capture, info);
+				});
 
-					int mapId = result.map;
-					double latitude = result.latitude;
-					double longitude = result.longitude;
-					double ellipsoidHeight = result.ellipsoidHeight;
-					Quaternion rot = new Quaternion(result.quaternion[1], result.quaternion[2], result.quaternion[3], result.quaternion[0]);
-					Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
+				await t;
 
-					double[] ecef = new double[3];
-					double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
-					Core.PosWgs84ToEcef(ecef, wgs84);
+				j.image = t.Result.Item1;
+				j.intrinsics = intrinsics;
+				j.mapIds = mapIds;
 
-					if (ARSpace.mapIdToMap.ContainsKey(mapId))
+				j.OnResult += (SDKGeoPoseResult result) =>
+				{
+					float elapsedTime = Time.realtimeSinceStartup - startTime;
+
+					if (result.success)
 					{
-						ARMap map = ARSpace.mapIdToMap[mapId];
+						Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
+						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 
-						if (mapId != lastLocalizedMapId)
+						int mapId = result.map;
+						double latitude = result.latitude;
+						double longitude = result.longitude;
+						double ellipsoidHeight = result.ellipsoidHeight;
+						Quaternion rot = new Quaternion(result.quaternion[1], result.quaternion[2], result.quaternion[3], result.quaternion[0]);
+						Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
+
+						double[] ecef = new double[3];
+						double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
+						Core.PosWgs84ToEcef(ecef, wgs84);
+
+						if (ARSpace.mapIdToMap.ContainsKey(mapId))
 						{
-							if (resetOnMapChange)
+							ARMap map = ARSpace.mapIdToMap[mapId];
+
+							if (mapId != lastLocalizedMapId)
 							{
-								Reset();
+								if (resetOnMapChange)
+								{
+									Reset();
+								}
+								
+								lastLocalizedMapId = mapId;
+								OnMapChanged?.Invoke(mapId);
 							}
+
+							MapOffset mo = ARSpace.mapIdToOffset[mapId];
+							stats.localizationSuccessCount++;
+
+							double[] mapToEcef = map.MapToEcefGet();
+							Vector3 mapPos;
+							Quaternion mapRot;
+							Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
+							Core.RotEcefToMap(out mapRot, rot, mapToEcef);
+
+							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
+							Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
+							Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, mapRot, Vector3.one);
+							Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
+							Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
 							
-							lastLocalizedMapId = mapId;
-							OnMapChanged?.Invoke(mapId);
+							if (useFiltering)
+								mo.space.filter.RefinePose(m);
+							else
+								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+
+							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
+							map.NotifySuccessfulLocalization(mapId);
+							OnPoseFound?.Invoke(lastLocalizedPose);
 						}
-
-						MapOffset mo = ARSpace.mapIdToOffset[mapId];
-						stats.localizationSuccessCount++;
-
-						double[] mapToEcef = map.MapToEcefGet();
-						Vector3 mapPos;
-						Quaternion mapRot;
-						Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
-						Core.RotEcefToMap(out mapRot, rot, mapToEcef);
-
-						Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
-						Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
-						Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, mapRot, Vector3.one);
-						Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
-						Matrix4x4 m = trackerSpace*(cloudSpace.inverse);
-						
-						if (useFiltering)
-							mo.space.filter.RefinePose(m);
-						else
-							ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
-
-						LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
-						map.NotifySuccessfulLocalization(mapId);
-						OnPoseFound?.Invoke(lastLocalizedPose);
 					}
-				}
-				else
-				{
-					Debug.Log("*************************** GeoPose Localization Failed ***************************");
-					Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
-				}
-			};
+					else
+					{
+						Debug.Log("*************************** GeoPose Localization Failed ***************************");
+						Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
+					}
+				};
 
-			await j.RunJobAsync();
+				await j.RunJobAsync();
+			}
+			else
+			{
+				Debug.LogError("No camera pixel buffer");
+			}
 
 			base.LocalizeGeoPose(mapIds);
         }
