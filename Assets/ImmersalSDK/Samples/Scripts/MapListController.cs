@@ -26,7 +26,7 @@ namespace Immersal.Samples
 
         private List<SDKJob> m_Maps;
         private TMP_Dropdown m_Dropdown;
-        private List<Task> m_Jobs = new List<Task>();
+        private List<JobAsync> m_Jobs = new List<JobAsync>();
         private int m_JobLock = 0;
         private TextAsset m_EmbeddedMap;
 
@@ -106,7 +106,7 @@ namespace Immersal.Samples
                 }
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
         }
 
         public void ClearMaps()
@@ -134,12 +134,12 @@ namespace Immersal.Samples
                 ARSpace.LoadAndInstantiateARMap(null, result, renderMode, pointCloudColor);
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
         }
 
-        private async void RunJob(Task t)
+        private async void RunJob(JobAsync j)
         {
-            await t;
+            await j.RunJobAsync();
             if (m_Jobs.Count > 0)
                 m_Jobs.RemoveAt(0);
             m_JobLock = 0;

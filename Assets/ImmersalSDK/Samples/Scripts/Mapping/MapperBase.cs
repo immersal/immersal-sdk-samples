@@ -49,7 +49,7 @@ namespace Immersal.Samples.Mapping
         protected uint m_ImageRun = 0;
         protected bool m_SessionFirstImage = true;
         protected bool m_IsTracking = false;
-        protected List<Task> m_Jobs = new List<Task>();
+        protected List<JobAsync> m_Jobs = new List<JobAsync>();
         private int m_JobLock = 0;
         protected ImmersalSDK m_Sdk;
         protected double m_Latitude = 0.0;
@@ -407,9 +407,9 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        private async void RunJob(Task t)
+        private async void RunJob(JobAsync j)
         {
-            await t;
+            await j.RunJobAsync();
 
             if (m_Jobs.Count > 0)
             {
@@ -551,7 +551,7 @@ namespace Immersal.Samples.Mapping
                 Debug.Log(string.Format("Map {0} deleted successfully.", jobId));
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
         }
 
         public void RestoreMapImages(int jobId)
@@ -563,7 +563,7 @@ namespace Immersal.Samples.Mapping
                 Debug.Log(string.Format("Successfully restored images for map {0}", jobId));
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
 
             m_SessionFirstImage = true;
         }
@@ -577,7 +577,7 @@ namespace Immersal.Samples.Mapping
                 Debug.Log("Workspace cleared successfully");
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
 
             m_SessionFirstImage = true;
         }
@@ -594,7 +594,7 @@ namespace Immersal.Samples.Mapping
                 Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
         }
 
         public void NotifyIfConnected(icvCaptureInfo info)
@@ -699,7 +699,7 @@ namespace Immersal.Samples.Mapping
                 mappingUIManager.HideProgressBar();
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
         }
 
         public void Jobs()
@@ -734,7 +734,7 @@ namespace Immersal.Samples.Mapping
                 this.visualizeManager.SetMapListData(jobList.ToArray(), activeMaps);
             };
 
-            m_Jobs.Add(j.RunJobAsync());
+            m_Jobs.Add(j);
         }
 
         public void Logout()

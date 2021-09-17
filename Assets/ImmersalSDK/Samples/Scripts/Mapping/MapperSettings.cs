@@ -20,7 +20,7 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 7;
+        public const int VERSION = 8;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -38,6 +38,7 @@ namespace Immersal.Samples.Mapping
         public bool serverLocalizationWithIds { get; private set; } = true;
         public bool useDifferentARSpaces { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
+        public bool automaticCapture { get; private set; } = false;
         public int windowSize { get; private set; } = 0;
 
         // workspace mode settings
@@ -78,9 +79,14 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private Toggle m_PreservePosesToggle = null;
         [SerializeField]
+        private Toggle m_AutomaticCaptureToggle = null;
+        [SerializeField]
+        private GameObject m_ManualCaptureButton = null;
+        [SerializeField]
+        private GameObject m_AutomaticCaptureButton = null;
+        [SerializeField]
         private TMP_InputField m_WindowSizeInput = null;
         [SerializeField]
-
         private string m_Filename = "settings.json";
 
         [System.Serializable]
@@ -105,6 +111,7 @@ namespace Immersal.Samples.Mapping
             public bool serverLocalizationWithIds;
             public bool useDifferentARSpaces;
             public bool preservePoses;
+            public bool automaticCapture;
             public int windowSize;
         }
         
@@ -224,6 +231,13 @@ namespace Immersal.Samples.Mapping
             SaveSettingsToPrefs();
         }
 
+        public void SetAutomaticCapture(bool value)
+        {
+            automaticCapture = value;
+            EnableAutomaticCaptureButton(automaticCapture);
+            SaveSettingsToPrefs();
+        }
+
         public void SetWindowSize(string value)
         {
             int a;
@@ -236,6 +250,12 @@ namespace Immersal.Samples.Mapping
         private void Start()
         {
             LoadSettingsFromPrefs();
+        }
+
+        private void EnableAutomaticCaptureButton(bool value)
+        {
+            m_ManualCaptureButton.SetActive(!value);
+            m_AutomaticCaptureButton.SetActive(value);
         }
 
         private void LoadSettingsFromPrefs()
@@ -286,6 +306,9 @@ namespace Immersal.Samples.Mapping
                 useDifferentARSpaces = loadFile.useDifferentARSpaces;
                 m_PreservePosesToggle.SetIsOnWithoutNotify(loadFile.preservePoses);
                 preservePoses = loadFile.preservePoses;
+                m_AutomaticCaptureToggle.SetIsOnWithoutNotify(loadFile.automaticCapture);
+                automaticCapture = loadFile.automaticCapture;
+                EnableAutomaticCaptureButton(automaticCapture);
                 m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
                 windowSize = loadFile.windowSize;
             }
@@ -320,6 +343,7 @@ namespace Immersal.Samples.Mapping
             saveFile.serverLocalizationWithIds = serverLocalizationWithIds;
             saveFile.useDifferentARSpaces = useDifferentARSpaces;
             saveFile.preservePoses = preservePoses;
+            saveFile.automaticCapture = automaticCapture;
             saveFile.windowSize = windowSize;
 
             string jsonstring = JsonUtility.ToJson(saveFile, true);
@@ -346,6 +370,9 @@ namespace Immersal.Samples.Mapping
             useDifferentARSpaces = true;
             m_PreservePosesToggle.SetIsOnWithoutNotify(false);
             preservePoses = false;
+            m_AutomaticCaptureToggle.SetIsOnWithoutNotify(false);
+            automaticCapture = false;
+            EnableAutomaticCaptureButton(automaticCapture);
 
             SaveSettingsToPrefs();
         }

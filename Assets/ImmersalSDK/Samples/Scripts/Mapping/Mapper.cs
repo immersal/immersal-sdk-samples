@@ -177,7 +177,7 @@ namespace Immersal.Samples.Mapping
                     mappingUIManager.HideProgressBar();
                 };
 
-                m_Jobs.Add(j.RunJobAsync());
+                m_Jobs.Add(j);
                 image.Dispose();
 
                 float elapsedTime = Time.realtimeSinceStartup - captureStartTime;

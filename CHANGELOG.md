@@ -4,6 +4,18 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2021-09-17
+### Fixed
+- Samples: Job / queue system in Mapper and some other samples was broken, fixed
+
+### Added
+- Graduated Magic Leap plugin in the core SDK
+- Developer Portal: AR viewing mode for Android Chrome (prerequisites: up-to-date Chrome, chrome://flags/#webxr-incubations 'Enabled')
+
+### Changed
+- Core: Recompiled and minified plugins, re-added ARMv7 support for Android (useful for Mono builds)
+- Samples: Updated to Unity 2020.3 LTS
+
 ## [1.13.1] - 2021-06-18
 ### Fixed
 - Mapper: VGPS was not working
