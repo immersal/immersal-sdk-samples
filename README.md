@@ -23,7 +23,7 @@ Also available pre-built on [App Store](https://apps.apple.com/app/immersal-mapp
 
 # Compatibility
 
-- Unity 2019.4 LTS
+- Unity 2020.3 LTS
 - AR Foundation 4
 
 Note: Earlier versions of Unity and AR Foundation will still work with minimal script changes.
