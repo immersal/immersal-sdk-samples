@@ -10,9 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Graduated Magic Leap plugin in the core SDK
-- Developer Portal: AR viewing mode for Android Chrome (prerequisites: up-to-date Chrome, chrome://flags/#webxr-incubations 'Enabled')
+- Developer Portal: WebXR viewing mode for Android Chrome (prerequisites: up-to-date Chrome, chrome://flags/#webxr-incubations 'Enabled')
 
 ### Changed
+- Cloud Service: Faster map construction
 - Core: Recompiled and minified plugins, re-added ARMv7 support for Android (useful for Mono builds)
 - Samples: Updated to Unity 2020.3 LTS
 
