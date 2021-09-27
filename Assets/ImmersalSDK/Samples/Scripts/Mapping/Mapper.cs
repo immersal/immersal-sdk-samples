@@ -1,5 +1,5 @@
 /*===============================================================================
-Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
