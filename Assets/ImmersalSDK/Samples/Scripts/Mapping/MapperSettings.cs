@@ -18,7 +18,7 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 8;
+        public const int VERSION = 9;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -313,6 +313,9 @@ namespace Immersal.Samples.Mapping
             catch (FileNotFoundException e)
             {
                 Debug.Log(e.Message + "\nsettings.json file not found");
+                SaveSettingsToPrefs();
+                LoadSettingsFromPrefs();
+                return;
             }
 
             SaveSettingsToPrefs();
