@@ -770,7 +770,7 @@ PrefabInstance:
     - target: {fileID: 320428771132573975, guid: 981dede10de6142fc9565be4695e2871,
         type: 3}
       propertyPath: m_text
-      value: MappingApp sample v1.14.0
+      value: MappingApp sample v1.14.1
       objectReference: {fileID: 0}
     - target: {fileID: 680941979735979547, guid: 981dede10de6142fc9565be4695e2871,
         type: 3}
