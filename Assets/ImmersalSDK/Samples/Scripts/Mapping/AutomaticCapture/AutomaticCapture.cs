@@ -104,14 +104,12 @@ namespace Immersal.Samples.Mapping
                     j.latitude = j.longitude = j.altitude = 0.0;
                 }
 
-                Quaternion _q = m_MainCamera.transform.rotation;
-                Matrix4x4 rot = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
-                Vector3 _p = m_MainCamera.transform.position;
-                Vector3 pos = new Vector3(_p.x, _p.y, -_p.z);
-                j.rotation = rot;
-                j.position = pos;
-
                 ARHelper.GetIntrinsics(out j.intrinsics);
+                Quaternion rot = m_MainCamera.transform.rotation;
+                Vector3 pos = m_MainCamera.transform.position;
+                ARHelper.GetRotation(ref rot);
+                j.rotation = ARHelper.SwitchHandedness(Matrix4x4.Rotate(rot));
+                j.position = ARHelper.SwitchHandedness(pos);
 
                 int width = image.width;
                 int height = image.height;

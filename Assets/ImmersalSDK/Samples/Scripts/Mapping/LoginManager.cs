@@ -58,6 +58,20 @@ namespace Immersal.Samples.Mapping
 
         void Awake()
         {
+            if(!PlayerPrefs.HasKey("sdkversion"))
+            {
+                PlayerPrefs.DeleteKey("server");
+            }
+            else
+            {
+                if (!PlayerPrefs.GetString("sdkversion").Equals(ImmersalSDK.sdkVersion))
+                {
+                    PlayerPrefs.DeleteKey("server");
+                }
+            }
+            
+            PlayerPrefs.SetString("sdkversion", ImmersalSDK.sdkVersion);
+            
             if (instance == null)
             {
                 instance = this;
@@ -123,6 +137,11 @@ namespace Immersal.Samples.Mapping
                 if (e == "auth")
                 {
                     loginErrorText.text = "Login failed, please try again";
+                    loginErrorText.gameObject.SetActive(true);
+                }
+                else if (e == "conn")
+                {
+                    loginErrorText.text = "Unable to connect - please check server url, network availability and app permissions.";
                     loginErrorText.gameObject.SetActive(true);
                 }
             };

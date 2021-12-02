@@ -356,9 +356,9 @@ namespace Immersal.Samples.Mapping
             DeleteMap(job.id);
         }
 
-        private void OnItemRestored(SDKJob job)
+        private void OnItemRestored(SDKJob job, bool clear)
         {
-            RestoreMapImages(job.id);
+            RestoreMapImages(job.id, clear);
         }
 
         private void OnSelectorOpened()
@@ -461,12 +461,12 @@ namespace Immersal.Samples.Mapping
             Vector3 b = trackerToMap.MultiplyPoint(cam.transform.position + cam.transform.forward);
 
             double[] aEcef = new double[3];
-            int ra = Immersal.Core.PosMapToEcef(aEcef, a, m_Sdk.Localizer.lastLocalizedPose.mapToEcef);
+            int ra = Immersal.Core.PosMapToEcef(aEcef, ARHelper.SwitchHandedness(a), mapToEcef);
             double[] bEcef = new double[3];
-            int rb = Immersal.Core.PosMapToEcef(bEcef, b, m_Sdk.Localizer.lastLocalizedPose.mapToEcef);
+            int rb = Immersal.Core.PosMapToEcef(bEcef, ARHelper.SwitchHandedness(b), mapToEcef);
 
             double[] wgs84 = new double[3];
-            int rw = Immersal.Core.PosMapToWgs84(wgs84, a, mapToEcef);
+            int rw = Immersal.Core.PosMapToWgs84(wgs84, ARHelper.SwitchHandedness(a), mapToEcef);
             Matrix4x4 R = Rot3d(wgs84[0], wgs84[1]);
 
             Vector3 v = new Vector3((float)(bEcef[0] - aEcef[0]), (float)(bEcef[1] - aEcef[1]), (float)(bEcef[2] - aEcef[2]));
@@ -524,7 +524,7 @@ namespace Immersal.Samples.Mapping
                 Vector3 pos = m.GetColumn(3);
 
                 double[] wgs84 = new double[3];
-                int r = Immersal.Core.PosMapToWgs84(wgs84, pos, localizerPose.mapToEcef);
+                int r = Immersal.Core.PosMapToWgs84(wgs84, ARHelper.SwitchHandedness(pos), localizerPose.mapToEcef);
                 m_VLatitude = wgs84[0];
                 m_VLongitude = wgs84[1];
                 m_VAltitude = wgs84[2];
@@ -554,10 +554,11 @@ namespace Immersal.Samples.Mapping
             m_Jobs.Add(j);
         }
 
-        public void RestoreMapImages(int jobId)
+        public void RestoreMapImages(int jobId, bool clear)
         {
             JobRestoreMapImagesAsync j = new JobRestoreMapImagesAsync();
             j.id = jobId;
+            j.clear = clear;
             j.OnResult += (SDKRestoreMapImagesResult result) =>
             {
                 Debug.Log(string.Format("Successfully restored images for map {0}", jobId));

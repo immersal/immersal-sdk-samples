@@ -56,6 +56,11 @@ namespace Immersal.Samples.Mapping
         {
             m_ProgressBar.currentValue = value;
         }
+        
+        public void ShowDebugConsole(bool value)
+        {
+	        DebugConsole.Instance.Show(value);
+        }
 
 		private void ChangeState(UIState state) {
 			switch (state) {

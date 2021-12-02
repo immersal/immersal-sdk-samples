@@ -101,16 +101,14 @@ namespace Immersal.Samples.Mapping
                 }
 
                 Camera cam = this.mainCamera;
-                Quaternion _q = cam.transform.rotation;
-                Matrix4x4 rot = Matrix4x4.Rotate(new Quaternion(_q.x, _q.y, -_q.z, -_q.w));
-                Vector3 _p = cam.transform.position;
-                Vector3 pos = new Vector3(_p.x, _p.y, -_p.z);
-                j.rotation = rot;
-                j.position = pos;
+                ARHelper.GetIntrinsics(out j.intrinsics);
+                Quaternion rot = cam.transform.rotation;
+                Vector3 pos = cam.transform.position;
+                ARHelper.GetRotation(ref rot);
+                j.rotation = ARHelper.SwitchHandedness(Matrix4x4.Rotate(rot));
+                j.position = ARHelper.SwitchHandedness(pos);
 
-				ARHelper.GetIntrinsics(out j.intrinsics);
-
-                int width = image.width;
+                int width = image.width;    
                 int height = image.height;
 
                 byte[] pixels;

@@ -57,7 +57,12 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
                 activeMapsListItem.SetToggleGroup(m_toggleGroup);
                 activeMapsListItem.SetListController(this);
             }
-		}
+            
+            if (items.Count > 0)
+            {
+                items[0].GetComponent<ActiveMapsListItem>().SetStateManually(true);
+            }
+        }
 
 		public void DestroyItems()
         {
@@ -129,9 +134,8 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
 
                             // IMPORTANT
                             // Switch coordinate system handedness back from Immersal Cloud Service's default right-handed system to Unity's left-handed system
-                            Matrix4x4 a;
                             Matrix4x4 b = Matrix4x4.TRS(rootPosMetadata, rootRotMetadata, Vector3.one);
-                            ARHelper.SwitchHandedness(out a, b);
+                            Matrix4x4 a = ARHelper.SwitchHandedness(b);
 
                             Matrix4x4 offset = a * worldSpaceRoot.inverse * worldSpaceTransform;
                             await MapAlignmentSave(entry.Value.mapId, offset);
@@ -169,9 +173,8 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
 
             // IMPORTANT
             // Switching coordinate system handedness from Unity's left-handed system to Immersal Cloud Service's default right-handed system
-            Matrix4x4 a;
             Matrix4x4 b = Matrix4x4.TRS(pos, rot, transform.localScale);
-            ARHelper.SwitchHandedness(out a, b);
+            Matrix4x4 a = ARHelper.SwitchHandedness(b);
             pos = a.GetColumn(3);
             rot = a.rotation;
 

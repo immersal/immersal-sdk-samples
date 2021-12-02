@@ -21,26 +21,43 @@ namespace Immersal.Samples.Mapping.ScrollList
 
 		[SerializeField]
 		private GameObject itemTemplate = null;
+
 		[SerializeField]
 		private Transform contentParent = null;
 		private ScrollRect scrollRect;
 		private List<GameObject> items = new List<GameObject>();
 		private SDKJob[] m_Data;
 		private List<int> m_ActiveMaps;
-
+		
+		[SerializeField]
+		private GameObject loadMoreButton = null;
+		[SerializeField]
+		private int displayedItemCount = 50;
+		
 		public void SetData(SDKJob[] data, List<int> activeMaps)
 		{
+			bool newDataAvailable = false;
+			if (m_Data != null)
+			{
+				newDataAvailable = data.Length > m_Data.Length;
+			}
 			m_Data = data;
 			m_ActiveMaps = activeMaps;
-			GenerateItems();
+			GenerateItems(0, items.Count==0?displayedItemCount:items.Count, false, newDataAvailable);
 		}
 
-		public void GenerateItems() {
-			int newDataLen = m_Data == null ? 0 : m_Data.Length;
-			bool scroll = items.Count != newDataLen;
+		public void LoadMore()
+		{
+			GenerateItems(items.Count, items.Count + displayedItemCount, true);
+		}
 
-			if (!scroll)
+		public void GenerateItems(int from, int to, bool append = false, bool newDataAvailable = false)
+		{
+			to = Mathf.Clamp(to, 1, m_Data.Length);
+			
+			if (to == items.Count && !newDataAvailable)
 			{
+				//update exising items
 				for (int i = 0; i < items.Count; i++)
 				{
 					ScrollListItem scrollListItem = items[i].GetComponent<ScrollListItem>();
@@ -48,29 +65,33 @@ namespace Immersal.Samples.Mapping.ScrollList
 				}
 				return;
 			}
-
-			if (items.Count > 0) {
+			
+			if (items.Count > 0 && !append) {
 				DestroyItems();
 			}
 
 			if (m_Data != null && m_Data.Length > 0)
 			{
-				for (int i = 0; i < m_Data.Length; i++) {
+				for (int i = from; i < to; i++) {
 					SDKJob job = m_Data[i];
 					GameObject item = Instantiate(itemTemplate);
 					items.Add(item);
+					item.name = item.name + "_" + i;
 					item.SetActive(true);
 					item.transform.SetParent(contentParent, false);
-
+			
 					ScrollListItem scrollListItem = item.GetComponent<ScrollListItem>();
 					scrollListItem.PopulateData(job, IsActive(job.id));
 				}
 			}
-
-			if (scroll)
+			
+			if (newDataAvailable) 
 			{
 				ScrollToTop();
 			}
+
+			loadMoreButton.SetActive(m_Data.Length > to);
+			loadMoreButton.transform.SetAsLastSibling();
 		}
 
 		private bool IsActive(int mapId)
@@ -83,11 +104,11 @@ namespace Immersal.Samples.Mapping.ScrollList
 			return false;
 		}
 
-		public void DestroyItems() {
+		public void DestroyItems()
+		{
 			foreach (GameObject item in items) {
 				Destroy(item);
 			}
-
 			items.Clear();
 		}
 
@@ -102,7 +123,6 @@ namespace Immersal.Samples.Mapping.ScrollList
 		}
 
 		private void OnEnable() {
-			GenerateItems();
 			scrollRect = GetComponent<ScrollRect>();
 			ScrollToTop();
 		}

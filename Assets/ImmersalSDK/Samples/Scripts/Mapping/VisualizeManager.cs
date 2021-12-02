@@ -29,7 +29,7 @@ namespace Immersal.Samples.Mapping
         public event SelectorClosed OnSelectorClosed = null;
         public delegate void ItemSelected(SDKJob job);
         public delegate void ItemDeleted(SDKJob job);
-        public delegate void ItemRestored(SDKJob job);
+        public delegate void ItemRestored(SDKJob job, bool clear);
         public delegate void SelectorOpened();
         public delegate void SelectorClosed();
 
@@ -89,11 +89,11 @@ namespace Immersal.Samples.Mapping
             }
         }
 
-        public void OnListItemRestore()
+        public void OnListItemRestore(bool clear)
         {
             if (m_ActiveFunctionJob.id > 0)
             {
-                OnItemRestored?.Invoke(m_ActiveFunctionJob);
+                OnItemRestored?.Invoke(m_ActiveFunctionJob, clear);
             }
         }
 

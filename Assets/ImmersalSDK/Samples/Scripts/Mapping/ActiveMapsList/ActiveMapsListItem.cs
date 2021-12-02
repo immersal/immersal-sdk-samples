@@ -9,11 +9,9 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Immersal.REST;
 
 namespace Immersal.Samples.Mapping.ActiveMapsList
 {
@@ -30,7 +28,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
         public int mapId = -1;
 
         private ActiveMapsListControl m_ActiveMapsListControl = null;
-
+        
 		private void ToggleValueChanged(Toggle t)
 		{
             if(t.isOn && mapId > 0)
@@ -38,6 +36,12 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
                 Debug.Log(string.Format("toggle on: {0}", mapId));
                 m_ActiveMapsListControl.rootMapId = mapId;
             }
+		}
+
+		public void SetStateManually(bool isOn)
+		{
+			toggle.isOn = isOn;
+			ToggleValueChanged(toggle);
 		}
 
         public void SetMapId(int id)
