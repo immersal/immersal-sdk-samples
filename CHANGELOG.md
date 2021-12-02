@@ -4,6 +4,23 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+
+## [1.15.0] - 2021-12-02
+### Added
+- Cloud Service: Restoring map data to the workspace now supports additive restore keeping old data. This allows for easy combination of existing maps.
+- Samples: Added a Debug Console to the Mapper app
+- Samples: Added a warning to the Mapper app login screen if the device has no network connection
+### Fixed
+- Core: Fixed an issue with ARMap where maps were loaded twice
+- Samples: Fixed a bug in the Mapper app when aligning maps without changing the root map
+### Changed
+- Cloud Service: Now uses a right-handed coordinate system
+- Core: Now uses a right-handed coordinate system
+- Core: Core scripts now convert from right-handed coordinate system to Unity's left-handed coordinate system
+- Samples: The Mapper app now only shows the 50 first maps in the Map Download List with an option to load more.
+### Known Issues
+- v1.15.0 support for Nreal, HWAR, Magic Leap, and HoloLens will be updated shortly. These branches have not yet been updated at release.
+
 ## [1.14.1] - 2021-09-29
 ### Fixed
 - Samples: `Mapper`; 'automatic capture' experimental feature was on by default, fixed
