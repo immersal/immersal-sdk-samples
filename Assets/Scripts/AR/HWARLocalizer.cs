@@ -141,7 +141,9 @@ namespace Immersal.AR
 							
 							Vector3 pos = responseMatrix.GetColumn(3);
 							Quaternion rot = responseMatrix.rotation;
-							HWARHelper.GetRotation(ref rot);
+							ARHelper.GetRotation(ref rot);
+							pos = ARHelper.SwitchHandedness(pos);
+							rot = ARHelper.SwitchHandedness(rot);
 
 							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 							Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
@@ -323,10 +325,12 @@ namespace Immersal.AR
 
 					if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 					{
+						ARHelper.GetRotation(ref rot);
+						pos = ARHelper.SwitchHandedness(pos);
+						rot = ARHelper.SwitchHandedness(rot);
+
 						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 						stats.localizationSuccessCount++;
-
-						ARMap map = ARSpace.mapIdToMap[mapId];
 
 						if (mapId != lastLocalizedMapId)
 						{
@@ -338,16 +342,14 @@ namespace Immersal.AR
 							lastLocalizedMapId = mapId;
 							OnMapChanged?.Invoke(mapId);
 						}
-
-						HWARHelper.GetRotation(ref rot);
+						
 						MapOffset mo = ARSpace.mapIdToOffset[mapId];
-
 						Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 						Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
 						Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
 						Matrix4x4 trackerSpace = Matrix4x4.TRS(camPos, camRot, Vector3.one);
 						Matrix4x4 m = trackerSpace * (cloudSpace.inverse);
-
+						
 						if (useFiltering)
 							mo.space.filter.RefinePose(m);
 						else
@@ -355,6 +357,8 @@ namespace Immersal.AR
 
 						GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
 						OnPoseFound?.Invoke(lastLocalizedPose);
+						
+						ARMap map = ARSpace.mapIdToMap[mapId];
 						map.NotifySuccessfulLocalization(mapId);
 					}
 					else
