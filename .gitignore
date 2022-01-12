@@ -42,3 +42,9 @@ Assets/NRSDK*
 Assets/TextMesh Pro*
 Assets/ImmersalSDK/Core*
 Assets/ImmersalSDK/Samples*
+.DS_Store
+.idea/
+Assets/.DS_Store
+Assets/ImmersalSDK/
+Logs/
+UserSettings/

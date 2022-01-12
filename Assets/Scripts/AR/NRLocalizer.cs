@@ -166,7 +166,7 @@ namespace Immersal.AR.Nreal
 					stats.localizationSuccessCount++;
 
 					ARMap map = ARSpace.mapIdToMap[mapId];
-
+					
 					if (mapId != lastLocalizedMapId)
 					{
 						if (resetOnMapChange)
@@ -177,8 +177,12 @@ namespace Immersal.AR.Nreal
 						lastLocalizedMapId = mapId;
 						OnMapChanged?.Invoke(mapId);
 					}
-				
-					rot *= Quaternion.Euler(0f, 0f, -90.0f);
+
+					rot *= Quaternion.Euler(0f, 0f, 180.0f);
+					pos = ARHelper.SwitchHandedness(pos);
+					rot = ARHelper.SwitchHandedness(rot);
+					
+					
 					MapOffset mo = ARSpace.mapIdToOffset[mapId];
 
 					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
@@ -289,8 +293,11 @@ namespace Immersal.AR.Nreal
 
 							Vector3 pos  = responseMatrix.GetColumn(3);
 							Quaternion rot = responseMatrix.rotation;
-							rot *= Quaternion.Euler(0f, 0f, -90f);
-
+							
+							rot *= Quaternion.Euler(0f, 0f, 180.0f);
+							pos = ARHelper.SwitchHandedness(pos);
+							rot = ARHelper.SwitchHandedness(rot);
+							
 							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 							Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
 							Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
@@ -385,31 +392,27 @@ namespace Immersal.AR.Nreal
 						double[] ecef = new double[3];
 						double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
 						Core.PosWgs84ToEcef(ecef, wgs84);
-
 						if (ARSpace.mapIdToMap.ContainsKey(mapId))
 						{
 							ARMap map = ARSpace.mapIdToMap[mapId];
-
 							if (mapId != lastLocalizedMapId)
 							{
 								if (resetOnMapChange)
 								{
 									Reset();
 								}
-								
 								lastLocalizedMapId = mapId;
 								OnMapChanged?.Invoke(mapId);
 							}
 
 							MapOffset mo = ARSpace.mapIdToOffset[mapId];
 							stats.localizationSuccessCount++;
-
 							double[] mapToEcef = map.MapToEcefGet();
 							Vector3 mapPos;
 							Quaternion mapRot;
 							Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
 							Core.RotEcefToMap(out mapRot, rot, mapToEcef);
-
+							
 							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 							Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
 							Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, mapRot, Vector3.one);
@@ -420,7 +423,6 @@ namespace Immersal.AR.Nreal
 								mo.space.filter.RefinePose(m);
 							else
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
-
 							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
 							map.NotifySuccessfulLocalization(mapId);
 							OnPoseFound?.Invoke(lastLocalizedPose);
