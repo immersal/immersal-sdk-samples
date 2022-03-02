@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -9,6 +9,7 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -53,7 +54,7 @@ namespace Immersal.Samples.Mapping
         private SDKJob m_ActiveFunctionJob = default;
 
         private enum UIState { Default, MapList, Options, AlignMaps};
-        private UIState uiState = UIState.Default;
+        private UIState currentUIState = UIState.Default;
 
         // for delete / restore
         public SDKJob activeFunctionJob
@@ -74,6 +75,11 @@ namespace Immersal.Samples.Mapping
         public void ToggleDeletePrompt(bool on)
         {
             m_PromptDeleteMap.SetActive(on);
+        }
+
+        private void OnEnable()
+        {
+            ChangeState(UIState.Default);
         }
 
         public void ToggleRestoreMapImagesPrompt(bool on)
@@ -99,49 +105,43 @@ namespace Immersal.Samples.Mapping
 
         public void MapList()
         {
-            if (uiState == UIState.MapList)
+            if (currentUIState == UIState.MapList)
             {
-                uiState = UIState.Default;
-                OnSelectorClosed?.Invoke();
+                ChangeState(UIState.Default);
             }
             else
             {
-                uiState = UIState.MapList;
-                OnSelectorOpened?.Invoke();
+                ChangeState(UIState.MapList);
             }
-            ChangeState(uiState);
         }
 
         public void AlignMapsPrompt()
         {
-            if (uiState == UIState.AlignMaps)
+            if (currentUIState == UIState.AlignMaps)
             {
-                uiState = UIState.Default;
+                ChangeState(UIState.Default);
             }
             else
             {
-                uiState = UIState.AlignMaps;
+                ChangeState(UIState.AlignMaps);
             }
-            ChangeState(uiState);
         }
 
         public void DefaultView()
         {
-            uiState = UIState.Default;
-            ChangeState(uiState);
+            ChangeState(UIState.Default);
         }
 
         public void Options()
         {
-            if (uiState == UIState.Options)
+            if (currentUIState == UIState.Options)
             {
-                uiState = UIState.Default;
+                ChangeState(UIState.Default);
             }
             else
             {
-                uiState = UIState.Options;
+                ChangeState(UIState.Options);
             }
-            ChangeState(uiState);
         }
 
         private void ChangeState(UIState state)
@@ -156,6 +156,7 @@ namespace Immersal.Samples.Mapping
                     m_MapDownloadList.SetActive(false);
                     m_OptionsScrollList.SetActive(false);
                     m_AlignMapsPrompt.SetActive(false);
+                    OnSelectorClosed?.Invoke();
                     break;
                 case UIState.MapList:
                     m_InfoPanel.Disable();
@@ -165,6 +166,7 @@ namespace Immersal.Samples.Mapping
                     m_MapDownloadList.SetActive(true);
                     m_OptionsScrollList.SetActive(false);
                     m_AlignMapsPrompt.SetActive(false);
+                    OnSelectorOpened?.Invoke();
                     break;
                 case UIState.Options:
                     m_InfoPanel.Disable();
@@ -187,11 +189,8 @@ namespace Immersal.Samples.Mapping
                 default:
                     break;
             }
-        }
 
-        private void Start()
-        {
-            ChangeState(uiState);
+            currentUIState = state;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -71,6 +71,8 @@ namespace Immersal.Samples.Mapping
 
         private static IDispatch Dispatch;
 
+        private bool m_enableStatusPolling;
+
         public Camera mainCamera
         {
             get
@@ -127,12 +129,28 @@ namespace Immersal.Samples.Mapping
             #if UNITY_IOS
             UnityEngine.iOS.Device.SetNoBackupFlag(tempImagePath);
             #endif
+
+            m_enableStatusPolling = true;
         }
 
         protected virtual void OnDisable()
         {
-            PlayerPrefs.DeleteKey("token");
-            m_Sdk.developerToken = null;
+            bool deleteToken = true;
+            if (PlayerPrefs.HasKey("rememberMe"))
+            {
+                if(bool.Parse(PlayerPrefs.GetString("rememberMe")))
+                {
+                    Debug.Log("Remember me feature is on - skipping token deletion");
+                    deleteToken = false;
+                }
+            }
+            if (deleteToken)
+            {
+                PlayerPrefs.DeleteKey("token");
+                m_Sdk.developerToken = null;    
+            }
+            
+            m_enableStatusPolling = false;
         }
 
         public virtual void Update()
@@ -401,7 +419,7 @@ namespace Immersal.Samples.Mapping
             await j.RunJobAsync();
             await Task.Delay(3000);
 
-            if (Application.isPlaying)
+            if (Application.isPlaying && m_enableStatusPolling)
             {
                 StatusPoll();
             }

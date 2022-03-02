@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## [1.16.0] - 2022-03-02
+### Added
+- Developer Portal: Support for uploading Leica BLK2GO .b2g files for map construction (FOR ENTERPRISE LICENSE ONLY, contact sdk@immersal.com for licensing requests)
+- Core & Samples: A native UWP ARM64 plugin for HoloLens 2 + `HLLocalizer` sample  (FOR ENTERPRISE LICENSE ONLY, contact sdk@immersal.com for licensing requests)
+- Mapper: Added license text
+### Changed
+- Core: Refactored `ImmersalSDK.cs` to have `RegisterLocalizer()` and `UnRegisterLocalizer()` functions
+### Fixed
+- Several bug fixes
+
 ## [1.15.0] - 2021-12-02
 ### Added
 - Cloud Service: Restoring map data to the workspace now supports additive restore keeping old data. This allows for easy combination of existing maps.

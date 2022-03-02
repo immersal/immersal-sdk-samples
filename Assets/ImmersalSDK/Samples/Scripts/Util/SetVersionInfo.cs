@@ -1,5 +1,5 @@
 /*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -15,12 +15,11 @@ using UnityEngine;
 
 public class SetVersionInfo : MonoBehaviour
 {
-    [SerializeField] private uint year;
     [SerializeField] private TextMeshProUGUI m_VersionText;
     void Start()
     {
         string versionText = Application.productName+" v" + Application.version;
-        string copyrightText = "© " + year + " "+Application.companyName+" All Rights Reserved.";
+        string copyrightText = "© " + DateTime.Now.Year + " "+Application.companyName+" All Rights Reserved.";
 
         m_VersionText.text = versionText + Environment.NewLine + copyrightText;
     }

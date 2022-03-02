@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -9,6 +9,7 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,7 @@ using UnityEngine.Networking;
 using TMPro;
 using Immersal.REST;
 using Immersal.Samples.Mapping;
+using UnityEngine.UI;
 
 namespace Immersal.Samples.Mapping
 {
@@ -35,6 +37,12 @@ namespace Immersal.Samples.Mapping
         private IEnumerator m_FadeAlpha;
         private CanvasGroup m_CanvasGroup;
         private ImmersalSDK m_Sdk;
+
+        private bool m_autoLoginEnabled;
+        [SerializeField] private Toggle m_rememberMeToggle;
+        
+        [SerializeField] private GameObject m_loginControlContainer;
+        [SerializeField] private TMP_Text m_autoLoggingIndicatorText;
 
         private static LoginManager instance = null;
 
@@ -92,6 +100,22 @@ namespace Immersal.Samples.Mapping
             Invoke("FillFields", 0.1f);
         }
 
+        private void OnEnable()
+        {
+            if (PlayerPrefs.HasKey("rememberMe"))
+            {
+                m_autoLoginEnabled = bool.Parse(PlayerPrefs.GetString("rememberMe"));
+            }
+            
+            m_loginControlContainer.SetActive(!m_autoLoginEnabled);
+            m_autoLoggingIndicatorText.gameObject.SetActive(m_autoLoginEnabled);
+
+            if (m_autoLoginEnabled)
+            {
+                m_autoLoggingIndicatorText.text = "Logging in automatically as " + PlayerPrefs.GetString("login");
+            }
+        }
+
         void FillFields()
         {
             emailField.text = PlayerPrefs.GetString("login", "");
@@ -101,6 +125,17 @@ namespace Immersal.Samples.Mapping
             if (serverField.text != ImmersalSDK.DefaultServer)
             {
                 m_Sdk.localizationServer = serverField.text;
+            }
+
+            AttemptAutoLogin();
+        }
+        
+        void AttemptAutoLogin()
+        {
+            if (m_autoLoginEnabled)
+            {
+                m_Sdk.developerToken = PlayerPrefs.GetString("token");    
+                CompleteLogin();    
             }
         }
 
@@ -153,20 +188,29 @@ namespace Immersal.Samples.Mapping
                 PlayerPrefs.SetString("server", serverField.text);
                 m_Sdk.developerToken = result.token;
 
-                loginErrorText.gameObject.SetActive(false);
-                
-                FadeOut();
-
-                OnLogin?.Invoke();
+                CompleteLogin();
             };
 
             await j.RunJobAsync();
         }
 
+        private void CompleteLogin()
+        {
+            loginErrorText.gameObject.SetActive(false);
+                
+            FadeOut();
+
+            OnLogin?.Invoke();
+        }
+
         public void Logout()
         {
+            SetRememberMe(false);
+            
             m_CanvasGroup.alpha = 1;
             loginPanel.SetActive(true);
+            
+            m_rememberMeToggle.isOn = false;
 
             OnLogout?.Invoke();
         }
@@ -193,5 +237,10 @@ namespace Immersal.Samples.Mapping
             loginPanel.SetActive(false);
 			yield return null;
 		}
+
+        public void SetRememberMe(bool value)
+        {
+            PlayerPrefs.SetString("rememberMe", value.ToString());
+        }
     }
 }

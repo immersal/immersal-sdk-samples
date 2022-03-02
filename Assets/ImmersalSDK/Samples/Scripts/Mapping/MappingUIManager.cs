@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -9,6 +9,7 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Immersal.Samples.Util;
@@ -29,10 +30,12 @@ namespace Immersal.Samples.Mapping
 
         [SerializeField]
         private HorizontalProgressBar m_ProgressBar = null;
-
+        
 		private enum UIState {Workspace, Visualize};
 		private UIState uiState = UIState.Workspace;
 
+		[SerializeField] private TextMeshProUGUI loggedInAsText = null;
+		
 		public void SwitchMode() {
 			if (uiState == UIState.Workspace) {
 				uiState = UIState.Visualize;
@@ -62,6 +65,11 @@ namespace Immersal.Samples.Mapping
 	        DebugConsole.Instance.Show(value);
         }
 
+        public void LogoutButtonPressed()
+        {
+	        LoginManager.Instance.Logout();
+        }
+
 		private void ChangeState(UIState state) {
 			switch (state) {
 				case UIState.Workspace:
@@ -75,6 +83,16 @@ namespace Immersal.Samples.Mapping
 				default:
 					break;
 			}
+		}
+
+		private void OnEnable()
+		{
+			loggedInAsText.text = "Logged in as " + PlayerPrefs.GetString("login");
+		}
+
+		private void OnDisable()
+		{
+			loggedInAsText.text = string.Empty;
 		}
 
 		private void Start()
