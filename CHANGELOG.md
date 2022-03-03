@@ -4,6 +4,10 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2022-03-03
+### Changed
+- Updated sample to work with Immersal SDK v1.16
+
 ## [1.12.0] - 2021-04-06
 ### Changed
 - Updated project to work with Immersal SDK 1.12.0

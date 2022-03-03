@@ -1,5 +1,5 @@
 /*===============================================================================
-Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -103,8 +103,7 @@ namespace Immersal.AR.MagicLeap
         public override void Start()
         {
 	        base.Start();
-
-			m_Sdk.Localizer = instance;
+			m_Sdk.RegisterLocalizer(instance);
 
 			Immersal.Core.SetInteger("NumThreads", 1);
 			//Immersal.Core.SetInteger("ImageCompressionLevel", 0);
@@ -186,6 +185,10 @@ namespace Immersal.AR.MagicLeap
 
 				if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 				{
+					rot *= Quaternion.Euler(0f, 0f, 180.0f);
+					pos = ARHelper.SwitchHandedness(pos);
+					rot = ARHelper.SwitchHandedness(rot);
+
 					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 					stats.localizationSuccessCount++;
 
@@ -203,9 +206,7 @@ namespace Immersal.AR.MagicLeap
 						OnMapChanged?.Invoke(mapId);
 					}
 
-					rot *= Quaternion.Euler(0f, 0f, -90f);
 					MapOffset mo = ARSpace.mapIdToOffset[mapId];
-
 					Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 					Vector3 scaledPos = Vector3.Scale(pos, mo.scale);
 					Matrix4x4 cloudSpace = offsetNoScale * Matrix4x4.TRS(scaledPos, rot, Vector3.one);
@@ -218,8 +219,8 @@ namespace Immersal.AR.MagicLeap
 						ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
 
 					GetLocalizerPose(out lastLocalizedPose, mapId, pos, rot, m.inverse);
-					map.NotifySuccessfulLocalization(mapId);
 					OnPoseFound?.Invoke(lastLocalizedPose);
+					map.NotifySuccessfulLocalization(mapId);
 				}
 				else
 				{
@@ -307,6 +308,7 @@ namespace Immersal.AR.MagicLeap
 						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
 						
 						int mapId = result.map;
+						Debug.Log("!!mapId: " + mapId);
 						
 						if (mapId > 0 && ARSpace.mapIdToOffset.ContainsKey(mapId))
 						{
@@ -334,7 +336,9 @@ namespace Immersal.AR.MagicLeap
 							
 							Vector3 pos = responseMatrix.GetColumn(3);
 							Quaternion rot = responseMatrix.rotation;
-							rot *= Quaternion.Euler(0f, 0f, -90f);
+							rot *= Quaternion.Euler(0f, 0f, 180f);
+							pos = ARHelper.SwitchHandedness(pos);
+							rot = ARHelper.SwitchHandedness(rot);
 							
 							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 							Vector3 scaledPos = Vector3.Scale(pos, mo.scale);

@@ -134,7 +134,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 1.14.0
+  bundleVersion: 1.16.0
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -691,12 +691,12 @@ PlayerSettings:
     m_ModelFolderPath: 
     m_PortalFolderPath: 
   luminCert:
-    m_CertPath: /Users/mikko/Downloads/20200909_IMLS/immersal.cert
+    m_CertPath: /Users/mikko/MagicLeap/immersaldev2.cert
     m_SignPackage: 1
   luminIsChannelApp: 0
   luminVersion:
     m_VersionCode: 1
-    m_VersionName: 1.14.0
+    m_VersionName: 1.16.0
   apiCompatibilityLevel: 6
   activeInputHandler: 0
   cloudProjectId: 
