@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -64,8 +64,7 @@ namespace Immersal.AR.Nreal
         public override void Start()
         {
 			base.Start();
-
-			m_Sdk.Localizer = instance;
+			m_Sdk.RegisterLocalizer(instance);
 
 			if (m_UseYUV)
 			{

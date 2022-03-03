@@ -4,6 +4,11 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2022-03-03
+### Changed
+- Changed `NRLocalizer` registration to work with Immersal SDK 1.16
+- Updated Unity packages
+
 ## [1.12.1] - 2021-05-04
 ### Changed
 - `NRLocalizer.cs`: Better way for acquiring RGB camera position and intrinsics. Should result in more accurate localization.
