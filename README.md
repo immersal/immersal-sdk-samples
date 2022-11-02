@@ -23,8 +23,8 @@ Also available pre-built on [App Store](https://apps.apple.com/app/immersal-mapp
 
 # Compatibility
 
-- Unity 2020.3 LTS
-- AR Foundation 4
+- Unity 2021.3 LTS
+- AR Foundation 4+
 
 Note: Earlier versions of Unity and AR Foundation will still work with minimal script changes.
 
@@ -35,7 +35,7 @@ Note: Earlier versions of Unity and AR Foundation will still work with minimal s
 git clone https://github.com/immersal/arcloud-sdk-samples.git
 ```
 2. Download our Unity Plugin (`ImmersalSDKvX_X_X.unitypackage`) from [here](https://developers.immersal.com/)
-3. Launch Unity, click on **Open Project**, navigate to the `arcloud-sdk-samples` folder on your computer and press Apply/OK.
+3. Launch Unity, click on **Open Project**, navigate to the `immersal-sdk-samples` folder on your computer and press Apply/OK.
 4. Click on **Assets -> Import Package -> Custom Package** and load the `ImmersalSDKvX_X_X.unitypackage`.
 
 Optional step:
