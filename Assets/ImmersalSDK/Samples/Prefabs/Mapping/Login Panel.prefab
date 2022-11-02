@@ -210,7 +210,7 @@ MonoBehaviour:
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
-  m_lineSpacing: 0
+  m_lineSpacing: 50
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
@@ -410,8 +410,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 26156.26}
+  m_AnchoredPosition: {x: 0, y: 0.0005753274}
+  m_SizeDelta: {x: 0, y: 26789.07}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &5890693101280161744
 MonoBehaviour:
@@ -2296,8 +2296,8 @@ RectTransform:
   m_Father: {fileID: 3217896695048513160}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -2967,10 +2967,10 @@ RectTransform:
   m_Father: {fileID: 8427092472582435824}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 456.70642, y: -13078.13}
-  m_SizeDelta: {x: 913.41284, y: 26156.26}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 424.80493, y: -13394.535}
+  m_SizeDelta: {x: 849.60986, y: 26789.07}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3188385905759206602
 CanvasRenderer:
@@ -3000,7 +3000,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "License notice for Open CV \r\n--------------------------\n\r\nApache
+  m_text: "License notice for Open CV \r\n--------------------------\r\n\r\nApache
     License\r\nVersion 2.0, January 2004\r\nhttp://www.apache.org/licenses/\r\n\r\nTERMS
     AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\r\n\r\n1. Definitions.\r\n\r\n\"License\"
     shall mean the terms and conditions for use, reproduction,\r\nand distribution
@@ -3065,32 +3065,32 @@ MonoBehaviour:
     of the Work or\r\n Derivative Works a copy of this License; and\r\n\r\n(b) You
     must cause any modified files to carry prominent notices\r\n stating that You
     changed the files; and\r\n\r\n(c) You must retain, in the Source form of any
-    Derivative Works\r\n that You distribute, all copyright, patent, trademark, and\r\n
-    attribution notices from the Source form of the Work,\r\n excluding those notices
-    that do not pertain to any part of\r\n the Derivative Works; and\r\n\r\n(d) If
-    the Work includes a \"NOTICE\" text file as part of its\r\n distribution, then
-    any Derivative Works that You distribute must\r\n include a readable copy of
-    the attribution notices contained\r\n within such NOTICE file, excluding those
-    notices that do not\r\n pertain to any part of the Derivative Works, in at least
-    one\r\n of the following places: within a NOTICE text file distributed\r\n as
-    part of the Derivative Works; within the Source form or\r\n documentation, if
-    provided along with the Derivative Works; or,\r\n within a display generated
-    by the Derivative Works, if and\r\n wherever such third-party notices normally
-    appear. The contents\r\n of the NOTICE file are for informational purposes only
-    and\r\n do not modify the License. You may add Your own attribution\r\n notices
-    within Derivative Works that You distribute, alongside\r\n or as an addendum
-    to the NOTICE text from the Work, provided\r\n that such additional attribution
-    notices cannot be construed\r\n as modifying the License.\r\n\r\nYou may add
-    Your own copyright statement to Your modifications and\r\nmay provide additional
-    or different license terms and conditions\r\nfor use, reproduction, or distribution
-    of Your modifications, or\r\nfor any such Derivative Works as a whole, provided
-    Your use,\r\nreproduction, and distribution of the Work otherwise complies with\r\nthe
-    conditions stated in this License.\r\n\r\n5. Submission of Contributions. Unless
-    You explicitly state otherwise,\r\nany Contribution intentionally submitted for
-    inclusion in the Work\r\nby You to the Licensor shall be under the terms and
-    conditions of\r\nthis License, without any additional terms or conditions.\r\nNotwithstanding
-    the above, nothing herein shall supersede or modify\r\nthe terms of any separate
-    license agreement you may have executed\r\nwith Licensor regarding such Contributions.\r\n\r\n6.
+    Derivative Works\r\n that You distribute, all copyright, patent, trademark, and\r\nattribution
+    notices from the Source form of the Work,\r\n excluding those notices that do
+    not pertain to any part of\r\n the Derivative Works; and\r\n\r\n(d) If the Work
+    includes a \"NOTICE\" text file as part of its\r\n distribution, then any Derivative
+    Works that You distribute must\r\n include a readable copy of the attribution
+    notices contained\r\n within such NOTICE file, excluding those notices that do
+    not\r\n pertain to any part of the Derivative Works, in at least one\r\n of the
+    following places: within a NOTICE text file distributed\r\n as part of the Derivative
+    Works; within the Source form or\r\n documentation, if provided along with the
+    Derivative Works; or,\r\n within a display generated by the Derivative Works,
+    if and\r\n wherever such third-party notices normally appear. The contents\r\n
+    of the NOTICE file are for informational purposes only and\r\n do not modify
+    the License. You may add Your own attribution\r\n notices within Derivative Works
+    that You distribute, alongside\r\n or as an addendum to the NOTICE text from
+    the Work, provided\r\n that such additional attribution notices cannot be construed\r\n
+    as modifying the License.\r\n\r\nYou may add Your own copyright statement to
+    Your modifications and\r\nmay provide additional or different license terms and
+    conditions\r\nfor use, reproduction, or distribution of Your modifications, or\r\nfor
+    any such Derivative Works as a whole, provided Your use,\r\nreproduction, and
+    distribution of the Work otherwise complies with\r\nthe conditions stated in
+    this License.\r\n\r\n5. Submission of Contributions. Unless You explicitly state
+    otherwise,\r\nany Contribution intentionally submitted for inclusion in the Work\r\nby
+    You to the Licensor shall be under the terms and conditions of\r\nthis License,
+    without any additional terms or conditions.\r\nNotwithstanding the above, nothing
+    herein shall supersede or modify\r\nthe terms of any separate license agreement
+    you may have executed\r\nwith Licensor regarding such Contributions.\r\n\r\n6.
     Trademarks. This License does not grant permission to use the trade\r\nnames,
     trademarks, service marks, or product names of the Licensor,\r\nexcept as required
     for reasonable and customary use in describing the\r\norigin of the Work and
@@ -3191,32 +3191,32 @@ MonoBehaviour:
     of the Work or\r\n Derivative Works a copy of this License; and\r\n\r\n(b) You
     must cause any modified files to carry prominent notices\r\n stating that You
     changed the files; and\r\n\r\n(c) You must retain, in the Source form of any
-    Derivative Works\r\n that You distribute, all copyright, patent, trademark, and\r\n
-    attribution notices from the Source form of the Work,\r\n excluding those notices
-    that do not pertain to any part of\r\n the Derivative Works; and\r\n\r\n(d) If
-    the Work includes a \"NOTICE\" text file as part of its\r\n distribution, then
-    any Derivative Works that You distribute must\r\n include a readable copy of
-    the attribution notices contained\r\n within such NOTICE file, excluding those
-    notices that do not\r\n pertain to any part of the Derivative Works, in at least
-    one\r\n of the following places: within a NOTICE text file distributed\r\n as
-    part of the Derivative Works; within the Source form or\r\n documentation, if
-    provided along with the Derivative Works; or,\r\n within a display generated
-    by the Derivative Works, if and\r\n wherever such third-party notices normally
-    appear. The contents\r\n of the NOTICE file are for informational purposes only
-    and\r\n do not modify the License. You may add Your own attribution\r\n notices
-    within Derivative Works that You distribute, alongside\r\n or as an addendum
-    to the NOTICE text from the Work, provided\r\n that such additional attribution
-    notices cannot be construed\r\n as modifying the License.\r\n\r\nYou may add
-    Your own copyright statement to Your modifications and\r\nmay provide additional
-    or different license terms and conditions\r\nfor use, reproduction, or distribution
-    of Your modifications, or\r\nfor any such Derivative Works as a whole, provided
-    Your use,\r\nreproduction, and distribution of the Work otherwise complies with\r\nthe
-    conditions stated in this License.\r\n\r\n5. Submission of Contributions. Unless
-    You explicitly state otherwise,\r\nany Contribution intentionally submitted for
-    inclusion in the Work\r\nby You to the Licensor shall be under the terms and
-    conditions of\r\nthis License, without any additional terms or conditions.\r\nNotwithstanding
-    the above, nothing herein shall supersede or modify\r\nthe terms of any separate
-    license agreement you may have executed\r\nwith Licensor regarding such Contributions.\r\n\r\n6.
+    Derivative Works\r\n that You distribute, all copyright, patent, trademark, and\r\nattribution
+    notices from the Source form of the Work,\r\n excluding those notices that do
+    not pertain to any part of\r\n the Derivative Works; and\r\n\r\n(d) If the Work
+    includes a \"NOTICE\" text file as part of its\r\n distribution, then any Derivative
+    Works that You distribute must\r\n include a readable copy of the attribution
+    notices contained\r\n within such NOTICE file, excluding those notices that do
+    not\r\n pertain to any part of the Derivative Works, in at least one\r\n of the
+    following places: within a NOTICE text file distributed\r\n as part of the Derivative
+    Works; within the Source form or\r\n documentation, if provided along with the
+    Derivative Works; or,\r\n within a display generated by the Derivative Works,
+    if and\r\n wherever such third-party notices normally appear. The contents\r\n
+    of the NOTICE file are for informational purposes only and\r\n do not modify
+    the License. You may add Your own attribution\r\n notices within Derivative Works
+    that You distribute, alongside\r\n or as an addendum to the NOTICE text from
+    the Work, provided\r\n that such additional attribution notices cannot be construed\r\n
+    as modifying the License.\r\n\r\nYou may add Your own copyright statement to
+    Your modifications and\r\nmay provide additional or different license terms and
+    conditions\r\nfor use, reproduction, or distribution of Your modifications, or\r\nfor
+    any such Derivative Works as a whole, provided Your use,\r\nreproduction, and
+    distribution of the Work otherwise complies with\r\nthe conditions stated in
+    this License.\r\n\r\n5. Submission of Contributions. Unless You explicitly state
+    otherwise,\r\nany Contribution intentionally submitted for inclusion in the Work\r\nby
+    You to the Licensor shall be under the terms and conditions of\r\nthis License,
+    without any additional terms or conditions.\r\nNotwithstanding the above, nothing
+    herein shall supersede or modify\r\nthe terms of any separate license agreement
+    you may have executed\r\nwith Licensor regarding such Contributions.\r\n\r\n6.
     Trademarks. This License does not grant permission to use the trade\r\nnames,
     trademarks, service marks, or product names of the Licensor,\r\nexcept as required
     for reasonable and customary use in describing the\r\norigin of the Work and
@@ -3245,7 +3245,77 @@ MonoBehaviour:
     behalf\r\nof any other Contributor, and only if You agree to indemnify,\r\ndefend,
     and hold each Contributor harmless for any liability\r\nincurred by, or claims
     asserted against, such Contributor by reason\r\nof your accepting any such warranty
-    or additional liability.\r\n\r\nEND OF TERMS AND CONDITIONS\r\n\r\nCopyright
+    or additional liability.\r\n\r\nEND OF TERMS AND CONDITIONS\r\n\r\n-------------------------\r\n\r\nCOPYRIGHT
+    NOTICE, DISCLAIMER, and LICENSE\r\n=========================================\r\n\r\nPNG
+    Reference Library License version 2\r\n---------------------------------------\r\n\r\n
+    * Copyright (c) 1995-2019 The PNG Reference Library Authors.\r\n * Copyright
+    (c) 2018-2019 Cosmin Truta.\r\n * Copyright (c) 2000-2002, 2004, 2006-2018 Glenn
+    Randers-Pehrson.\r\n * Copyright (c) 1996-1997 Andreas Dilger.\r\n * Copyright
+    (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.\r\n\r\nThe software is supplied
+    \"as is\", without warranty of any kind,\r\nexpress or implied, including, without
+    limitation, the warranties\r\nof merchantability, fitness for a particular purpose,
+    title, and\r\nnon-infringement.  In no event shall the Copyright owners, or\r\nanyone
+    distributing the software, be liable for any damages or\r\nother liability, whether
+    in contract, tort or otherwise, arising\r\nfrom, out of, or in connection with
+    the software, or the use or\r\nother dealings in the software, even if advised
+    of the possibility\r\nof such damage.\r\n\r\nPermission is hereby granted to
+    use, copy, modify, and distribute\r\nthis software, or portions hereof, for any
+    purpose, without fee,\r\nsubject to the following restrictions:\r\n\r\n 1. The
+    origin of this software must not be misrepresented; you\r\n    must not claim
+    that you wrote the original software.  If you\r\n    use this software in a product,
+    an acknowledgment in the product\r\n    documentation would be appreciated, but
+    is not required.\r\n\r\n 2. Altered source versions must be plainly marked as
+    such, and must\r\n    not be misrepresented as being the original software.\r\n\r\n
+    3. This Copyright notice may not be removed or altered from any\r\n    source
+    or altered source distribution.\r\n\r\n\r\nPNG Reference Library License version
+    1 (for libpng 0.5 through 1.6.35)\r\n-----------------------------------------------------------------------\r\n\r\nlibpng
+    versions 1.0.7, July 1, 2000, through 1.6.35, July 15, 2018 are\r\nCopyright
+    (c) 2000-2002, 2004, 2006-2018 Glenn Randers-Pehrson, are\r\nderived from libpng-1.0.6,
+    and are distributed according to the same\r\ndisclaimer and license as libpng-1.0.6
+    with the following individuals\r\nadded to the list of Contributing Authors:\r\n\r\n   
+    Simon-Pierre Cadieux\r\n    Eric S. Raymond\r\n    Mans Rullgard\r\n    Cosmin
+    Truta\r\n    Gilles Vollant\r\n    James Yu\r\n    Mandar Sahastrabuddhe\r\n   
+    Google Inc.\r\n    Vadim Barkov\r\n\r\nand with the following additions to the
+    disclaimer:\r\n\r\n    There is no warranty against interference with your enjoyment
+    of\r\n    the library or against infringement.  There is no warranty that our\r\n   
+    efforts or the library will fulfill any of your particular purposes\r\n    or
+    needs.  This library is provided with all faults, and the entire\r\n    risk
+    of satisfactory quality, performance, accuracy, and effort is\r\n    with the
+    user.\r\n\r\nSome files in the \"contrib\" directory and some configure-generated\r\nfiles
+    that are distributed with libpng have other copyright owners, and\r\nare released
+    under other open source licenses.\r\n\r\nlibpng versions 0.97, January 1998,
+    through 1.0.6, March 20, 2000, are\r\nCopyright (c) 1998-2000 Glenn Randers-Pehrson,
+    are derived from\r\nlibpng-0.96, and are distributed according to the same disclaimer
+    and\r\nlicense as libpng-0.96, with the following individuals added to the\r\nlist
+    of Contributing Authors:\r\n\r\n    Tom Lane\r\n    Glenn Randers-Pehrson\r\n   
+    Willem van Schaik\r\n\r\nlibpng versions 0.89, June 1996, through 0.96, May 1997,
+    are\r\nCopyright (c) 1996-1997 Andreas Dilger, are derived from libpng-0.88,\r\nand
+    are distributed according to the same disclaimer and license as\r\nlibpng-0.88,
+    with the following individuals added to the list of\r\nContributing Authors:\r\n\r\n   
+    John Bowler\r\n    Kevin Bracey\r\n    Sam Bushell\r\n    Magnus Holmgren\r\n   
+    Greg Roelofs\r\n    Tom Tanner\r\n\r\nSome files in the \"scripts\" directory
+    have other copyright owners,\r\nbut are released under this license.\r\n\r\nlibpng
+    versions 0.5, May 1995, through 0.88, January 1996, are\r\nCopyright (c) 1995-1996
+    Guy Eric Schalnat, Group 42, Inc.\r\n\r\nFor the purposes of this copyright and
+    license, \"Contributing Authors\"\r\nis defined as the following set of individuals:\r\n\r\n   
+    Andreas Dilger\r\n    Dave Martindale\r\n    Guy Eric Schalnat\r\n    Paul Schmidt\r\n   
+    Tim Wegner\r\n\r\nThe PNG Reference Library is supplied \"AS IS\".  The Contributing\r\nAuthors
+    and Group 42, Inc. disclaim all warranties, expressed or\r\nimplied, including,
+    without limitation, the warranties of\r\nmerchantability and of fitness for any
+    purpose.  The Contributing\r\nAuthors and Group 42, Inc. assume no liability
+    for direct, indirect,\r\nincidental, special, exemplary, or consequential damages,
+    which may\r\nresult from the use of the PNG Reference Library, even if advised
+    of\r\nthe possibility of such damage.\r\n\r\nPermission is hereby granted to
+    use, copy, modify, and distribute this\r\nsource code, or portions hereof, for
+    any purpose, without fee, subject\r\nto the following restrictions:\r\n\r\n 1.
+    The origin of this source code must not be misrepresented.\r\n\r\n 2. Altered
+    versions must be plainly marked as such and must not\r\n    be misrepresented
+    as being the original source.\r\n\r\n 3. This Copyright notice may not be removed
+    or altered from any\r\n    source or altered source distribution.\r\n\r\nThe
+    Contributing Authors and Group 42, Inc. specifically permit,\r\nwithout fee,
+    and encourage the use of this source code as a component\r\nto supporting the
+    PNG file format in commercial products.  If you use\r\nthis source code in a
+    product, acknowledgment is not required but would\r\nbe appreciated.\r\n\r\n\r\nCopyright
     2022 Immersal"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 15b56416980a5014ea7c6b3e07df0a56, type: 2}
@@ -3660,7 +3730,7 @@ RectTransform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -4004,9 +4074,9 @@ RectTransform:
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 213.12537, y: 0}
+  m_SizeDelta: {x: 0, y: 167.26172}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &7025249369259763776
 CanvasRenderer:
@@ -4089,8 +4159,8 @@ RectTransform:
   m_Father: {fileID: 5852151650570155717}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.52400124}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}

@@ -18,9 +18,6 @@ EditorBuildSettings:
     path: Assets/ImmersalSDK/Samples/Scenes/ContentPlacementSample.unity
     guid: a5347933d518cc34ba0c72bc19f2f118
   - enabled: 0
-    path: Assets/ImmersalSDK/Samples/Scenes/MultiplayerSample.unity
-    guid: 263cce6359605a54ca895b0a135822a4
-  - enabled: 0
     path: Assets/ImmersalSDK/Samples/Scenes/NavigationSampleNavMesh.unity
     guid: 98454a452db26144ca9d0692e148ed12
   m_configObjects:

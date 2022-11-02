@@ -4,6 +4,21 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2022-11-01
+### Added
+- Core: Improved map construction and localization pipeline for large maps
+- Core: Apple Silicon support in the macOS plugin
+- REST: Map construction parameter `featureType` (0 == 1.16 and older, 2 == 1.17+)
+- REST: Get/set map access token
+### Removed
+- Samples: MultiPlayer sample, because it was using the old UNet HLAPI not supported by Unity anymore
+- Cloud Service: Dense and textured maps are currently not constructed for v1.17 maps
+### Changed
+- Samples: Updated Unity version to 2021.3 LTS
+- Samples: Updated AR Foundation packages to v4.2.6 to fix iOS 16 problems
+### Fixed
+- Core: Improved tracking quality measurement
+- Core: Fixed OnPoseFound event not always firing
 
 ## [1.16.0] - 2022-03-02
 ### Added

@@ -131,6 +131,16 @@ namespace Immersal.Samples.Mapping
             #endif
 
             m_enableStatusPolling = true;
+            
+            mappingUIManager.vLocationText.text = "No VGPS localizations";
+
+            if (mapperSettings.useGps)
+            {
+                Invoke("StartGPS", 0.1f);
+            }
+
+            StatusPoll();
+            Jobs();
         }
 
         protected virtual void OnDisable()
@@ -214,12 +224,6 @@ namespace Immersal.Samples.Mapping
             {
                 Immersal.Core.SetInteger("LocalizationMaxPixels", 1280*720);
             }
-
-            mappingUIManager.vLocationText.text = "No VGPS localizations";
-
-            Invoke("StartGPS", 0.1f);
-            StatusPoll();
-            Jobs();
         }
 
 #if PLATFORM_ANDROID
@@ -261,7 +265,7 @@ namespace Immersal.Samples.Mapping
             #else
             Input.location.Stop();
             #endif
-            PlayerPrefs.SetInt("use_gps", 0);
+            mapperSettings.SetUseGPS(false);
             NotificationManager.Instance.GenerateNotification("Geolocation tracking stopped");
             mappingUIManager.locationText.text = "GPS not enabled";
         }
@@ -327,7 +331,6 @@ namespace Immersal.Samples.Mapping
             if (Input.location.status == LocationServiceStatus.Running)
             #endif
             {
-                //PlayerPrefs.SetInt("use_gps", 1);
                 mappingUIManager.gpsToggle.SetIsOnWithoutNotify(true);
                 mapperSettings.SetUseGPS(true);
                 NotificationManager.Instance.GenerateNotification("Tracking geolocation");

@@ -149,9 +149,14 @@ namespace Immersal.Samples.Mapping
 
         public void OnServerEndEdit(string s)
         {
-            if(s.Length == 0)
+            if (s.Length == 0)
             {
                 s = ImmersalSDK.DefaultServer;
+                serverField.text = s;
+            }
+            else if (s[s.Length - 1] == '/')
+            {
+                s = s.Substring(0, s.Length - 1);
                 serverField.text = s;
             }
 
@@ -186,6 +191,7 @@ namespace Immersal.Samples.Mapping
                 PlayerPrefs.SetString("password", j.password);
                 PlayerPrefs.SetString("token", result.token);
                 PlayerPrefs.SetString("server", serverField.text);
+                Debug.Log(string.Format("Logged in to {0}", m_Sdk.localizationServer));
                 m_Sdk.developerToken = result.token;
 
                 CompleteLogin();
