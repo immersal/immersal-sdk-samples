@@ -21,15 +21,10 @@ EditorBuildSettings:
     path: Assets/ImmersalSDK/Samples/Scenes/NavigationSampleNavMesh.unity
     guid: 98454a452db26144ca9d0692e148ed12
   m_configObjects:
-    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: a71208f28aadf4aa28dda8b07bd02e62,
-      type: 2}
-    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 5a339459f38d14f9d86d7c4dfaac2522,
-      type: 2}
-    com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20,
-      type: 2}
-    com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: 61430ebb5678b4a2680a97641f470d65,
-      type: 2}
-    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d2bb15fa8c2bf4d90921035afa2666fa,
-      type: 2}
-    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: bd1621deeb1c648cdbd829efe7e8df9d,
-      type: 2}
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: a71208f28aadf4aa28dda8b07bd02e62, type: 2}
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 5a339459f38d14f9d86d7c4dfaac2522, type: 2}
+    com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20, type: 2}
+    com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: 61430ebb5678b4a2680a97641f470d65, type: 2}
+    com.unity.xr.magicleap.magic_leap_settings: {fileID: 11400000, guid: cde058d4fcba54bf1b87b48e2a9e80c9, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d2bb15fa8c2bf4d90921035afa2666fa, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: bd1621deeb1c648cdbd829efe7e8df9d, type: 2}
