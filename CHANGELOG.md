@@ -4,6 +4,27 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2022-12-28
+### Fixed
+- Core/Cloud Service: Localization improvements, less false positives
+- Cloud Service: Improved memory usage with large maps
+- Core: Removed unnecessary TMPro reference from a script
+- Core: Fixed editor scripts not to be included in builds on Unity 2022
+### Added
+- Core: Android x86_64 plugin for Magic Leap 2 (FOR ENTERPRISE LICENSE ONLY, contact sdk@immersal.com for licensing requests)
+- Samples: iOS post process script to turn off bitcode
+### Changed
+- Core: `LoadMap()` in `ARMap` now calls the plugin asynchronously to avoid UI freezes with large maps. The function doesn't return `mapHandle` anymore, but it's still available through `ARMap.mapHandle`.
+- Samples: Updated Unity version to 2021.3.16f1 and AR Foundation to 4.2.7
+- Samples: Cleaned up and updated some Unity packages
+### Known Issues
+- Samples: ARMap errors in the Unity Editor, don't affect builds on device
+
+## [1.17.1] - 2022-11-09
+### Fixed
+- Cloud Service: Re-enabled dense & textured meshes
+- Core: Memory usage fixes
+
 ## [1.17.0] - 2022-11-01
 ### Added
 - Core: Improved map construction and localization pipeline for large maps
