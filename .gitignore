@@ -32,10 +32,13 @@ ExportedObj/
 *.VC.db
 *.iml
 
+
 # Unity3D generated meta files
 *.pidb.meta
 *.pdb.meta
 *.mdb.meta
+*.lighting.meta
+*.lighting
 
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
