@@ -63,7 +63,7 @@ namespace Immersal.Samples
             }
         }
 
-        public void OnValueChanged(TMP_Dropdown dropdown)
+        public async void OnValueChanged(TMP_Dropdown dropdown)
         {
             int value = dropdown.value - 1;
 
@@ -71,7 +71,7 @@ namespace Immersal.Samples
             if (m_EmbeddedMap != null && value == -1)
             {
                 m_ARMap.mapFile = m_EmbeddedMap;
-                m_ARMap.LoadMap();
+                await m_ARMap.LoadMap();
             }
             else
             {
@@ -124,14 +124,14 @@ namespace Immersal.Samples
         {
             JobLoadMapBinaryAsync j = new JobLoadMapBinaryAsync();
             j.id = job.id;
-            j.OnResult += (SDKMapResult result) =>
+            j.OnResult += async (SDKMapResult result) =>
             {
                 Debug.Log(string.Format("Load map {0} ({1} bytes)", job.id, result.mapData.Length));
 
                 Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
                 ARMap.RenderMode renderMode = m_ARMap?.renderMode ?? ARMap.RenderMode.EditorAndRuntime;
 
-                ARSpace.LoadAndInstantiateARMap(null, result, renderMode, pointCloudColor);
+                await ARSpace.LoadAndInstantiateARMap(null, result, renderMode, pointCloudColor);
             };
 
             m_Jobs.Add(j);

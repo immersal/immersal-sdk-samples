@@ -5,6 +5,7 @@
     "EnableOptimisations": true,
     "EnableSafetyChecks": false,
     "EnableDebugInAllBuilds": false,
+    "EnableArmv9SecurityFeatures": false,
     "CpuMinTargetX32": 0,
     "CpuMaxTargetX32": 0,
     "CpuMinTargetX64": 0,

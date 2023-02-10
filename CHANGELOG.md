@@ -4,6 +4,19 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+
+## [1.18.1] - 2023-02-11
+### Fixed
+- `ARMap::LoadMap()` problems and semi-random crashes in Unity Editor
+- Other minor bug fixes
+### Added
+- Samples: Auto-mapper max. images and interval to Mapper app's developer settings
+- Samples: `ImmersalLogos` folder and examples in the scenes on how to use them
+### Changed
+- Cloud Service: max. number of map IDs in localization requests is now 32 (was 8)
+- Unity to 2021.3.17f1
+- Core: Code signed macOS plugin
+
 ## [1.18.0] - 2022-12-28
 ### Fixed
 - Core/Cloud Service: Localization improvements, less false positives

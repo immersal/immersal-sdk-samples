@@ -37,6 +37,8 @@ namespace Immersal.Samples.Mapping
         public bool useDifferentARSpaces { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
         public bool automaticCapture { get; private set; } = false;
+        public int automaticCaptureMaxImages { get; private set; } = 40;
+        public float automaticCaptureInterval { get; private set; } = 0.6f;
         public int windowSize { get; private set; } = 0;
 
         // workspace mode settings
@@ -66,8 +68,8 @@ namespace Immersal.Samples.Mapping
         // developer settings
         [SerializeField]
         private TMP_Dropdown m_ResolutionDropdown = null;
-        [SerializeField]
-        private TMP_Dropdown m_LocalizerDropdown = null;
+        /*[SerializeField]
+        private TMP_Dropdown m_LocalizerDropdown = null;*/
         [SerializeField]
         private TMP_InputField m_MapDetailLevelInput = null;
         [SerializeField]
@@ -78,6 +80,18 @@ namespace Immersal.Samples.Mapping
         private Toggle m_PreservePosesToggle = null;
         [SerializeField]
         private Toggle m_AutomaticCaptureToggle = null;
+        [SerializeField]
+        private GameObject m_AutomaticCaptureMaxImages = null;
+        [SerializeField]
+        private Slider m_AutomaticCaptureMaxImagesSlider = null;
+        [SerializeField]
+        private TMP_Text m_AutomaticCaptureMaxImagesText = null;
+        [SerializeField] 
+        private GameObject m_AutomaticCaptureInterval = null;
+        [SerializeField] 
+        private Slider m_AutomaticCaptureIntervalSlider = null;
+        [SerializeField]
+        private TMP_Text m_AutomaticCaptureIntervalText = null;
         [SerializeField]
         private GameObject m_ManualCaptureButton = null;
         [SerializeField]
@@ -110,6 +124,8 @@ namespace Immersal.Samples.Mapping
             public bool useDifferentARSpaces;
             public bool preservePoses;
             public bool automaticCapture;
+            public int automaticCaptureMaxImages;
+            public float automaticCaptureInterval;
             public int windowSize;
         }
         
@@ -232,7 +248,21 @@ namespace Immersal.Samples.Mapping
         public void SetAutomaticCapture(bool value)
         {
             automaticCapture = value;
-            EnableAutomaticCaptureButton(automaticCapture);
+            EnableAutomaticCaptureUI(automaticCapture);
+            SaveSettingsToPrefs();
+        }
+		
+		public void SetAutomaticCaptureMaxImageValue(float maxImages)
+        {
+            automaticCaptureMaxImages = Mathf.RoundToInt(maxImages);
+            m_AutomaticCaptureMaxImagesText.text = automaticCaptureMaxImages.ToString();
+            SaveSettingsToPrefs();
+        }
+        
+        public void SetAutomaticCaptureIntervalValue(float interval)
+        {
+            automaticCaptureInterval = interval;
+            m_AutomaticCaptureIntervalText.text = automaticCaptureInterval.ToString("F2");
             SaveSettingsToPrefs();
         }
 
@@ -250,8 +280,13 @@ namespace Immersal.Samples.Mapping
             LoadSettingsFromPrefs();
         }
 
-        private void EnableAutomaticCaptureButton(bool value)
+        private void EnableAutomaticCaptureUI(bool value)
         {
+            //enable sub-setting items for automatic capture
+            m_AutomaticCaptureMaxImages.SetActive(value);
+            m_AutomaticCaptureInterval.SetActive(value);
+
+            //enable manual capture button
             m_ManualCaptureButton.SetActive(!value);
             m_AutomaticCaptureButton.SetActive(value);
         }
@@ -306,7 +341,16 @@ namespace Immersal.Samples.Mapping
                 preservePoses = loadFile.preservePoses;
                 m_AutomaticCaptureToggle.SetIsOnWithoutNotify(loadFile.automaticCapture);
                 automaticCapture = loadFile.automaticCapture;
-                EnableAutomaticCaptureButton(automaticCapture);
+                EnableAutomaticCaptureUI(automaticCapture);
+                
+                automaticCaptureMaxImages = Mathf.Max(loadFile.automaticCaptureMaxImages, Mathf.RoundToInt(m_AutomaticCaptureMaxImagesSlider.minValue));
+                m_AutomaticCaptureMaxImagesSlider.value = loadFile.automaticCaptureMaxImages;
+                m_AutomaticCaptureMaxImagesText.text = automaticCaptureMaxImages.ToString();
+
+                automaticCaptureInterval = Mathf.Max(loadFile.automaticCaptureInterval, m_AutomaticCaptureIntervalSlider.minValue);
+                m_AutomaticCaptureIntervalSlider.value = loadFile.automaticCaptureInterval;
+                m_AutomaticCaptureIntervalText.text = automaticCaptureInterval.ToString("F2");
+
                 m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
                 windowSize = loadFile.windowSize;
             }
@@ -345,6 +389,8 @@ namespace Immersal.Samples.Mapping
             saveFile.useDifferentARSpaces = useDifferentARSpaces;
             saveFile.preservePoses = preservePoses;
             saveFile.automaticCapture = automaticCapture;
+            saveFile.automaticCaptureMaxImages = automaticCaptureMaxImages;
+            saveFile.automaticCaptureInterval = automaticCaptureInterval;
             saveFile.windowSize = windowSize;
 
             string jsonstring = JsonUtility.ToJson(saveFile, true);
@@ -373,7 +419,13 @@ namespace Immersal.Samples.Mapping
             preservePoses = false;
             m_AutomaticCaptureToggle.SetIsOnWithoutNotify(false);
             automaticCapture = false;
-            EnableAutomaticCaptureButton(automaticCapture);
+            EnableAutomaticCaptureUI(automaticCapture);
+            
+            automaticCaptureMaxImages = Mathf.RoundToInt(40);
+            m_AutomaticCaptureMaxImagesSlider.value = automaticCaptureMaxImages;
+
+            automaticCaptureInterval = 0.6f;
+            m_AutomaticCaptureIntervalSlider.value = automaticCaptureInterval;
 
             SaveSettingsToPrefs();
         }

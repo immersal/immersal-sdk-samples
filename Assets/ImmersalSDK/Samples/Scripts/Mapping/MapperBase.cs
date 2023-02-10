@@ -682,7 +682,7 @@ namespace Immersal.Samples.Mapping
                 mappingUIManager.SetProgress(0);
                 mappingUIManager.ShowProgressBar();
             };
-            j.OnResult += (SDKMapResult result) =>
+            j.OnResult += async (SDKMapResult result) =>
             {
                 Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", job.id, result.mapData.Length, CryptoUtil.SHA256(result.mapData), result.sha256_al));
     			Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
@@ -702,8 +702,8 @@ namespace Immersal.Samples.Mapping
 
                 bool applyAlignment = !mapperSettings.useDifferentARSpaces;
 
-                ARSpace.LoadAndInstantiateARMap(root, result, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
-                //ARSpace.LoadAndInstantiateARMap(root, job, result.mapData, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
+                await ARSpace.LoadAndInstantiateARMap(root, result, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
+                //await ARSpace.LoadAndInstantiateARMap(root, job, result.mapData, ARMap.RenderMode.EditorAndRuntime, pointCloudColor, applyAlignment);
 
                 m_Sdk.Localizer.stats.localizationAttemptCount = 0;
                 m_Sdk.Localizer.stats.localizationSuccessCount = 0;
