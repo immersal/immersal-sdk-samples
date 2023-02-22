@@ -1,15 +1,15 @@
 ﻿namespace Common
 {
-    using UnityEngine;
     using Immersal;
-    #if HWAR
+    using UnityEngine;
+#if HWAR
     using HuaweiARUnitySDK;
     using HuaweiARInternal;
-    #endif
+#endif
 
     public class SessionComponent : MonoBehaviour
     {
-#if HWAR
+    #if HWAR
         [Tooltip("config")]
         public ARConfigBase Config;
 
@@ -21,7 +21,9 @@
         public static bool isEnableMask = false;
 
         private string errorMessage = null;
-        private AppController app = null;
+
+        private GUIStyle bb = new GUIStyle();
+        private GUISkin skin;
 
         private void Awake()
         {
@@ -30,17 +32,12 @@
 
         private void Start()
         {
-            app = UnityEngine.Object.FindObjectOfType<AppController>();
-            Init();
-        }
+            //Init();
+            bb.normal.background = null;
+            bb.normal.textColor = new Color(1, 0, 0);
+            bb.fontSize = 45;
 
-        private void Log()
-        {
-            if (app != null)
-            {
-                app.LogHWAR(errorMessage);
-            }
-            Debug.Log(errorMessage);
+            skin = Resources.Load("Skins/guiSkin") as GUISkin;
         }
 
         bool installRequested = false;
@@ -49,28 +46,6 @@
             if (ImmersalSDK.isHWAR)
                 return;
             
-            //If you do not want to switch engines, AREnginesSelector is useless.
-            // You just need to use AREnginesApk.Instance.requestInstall() and the default engine
-            // is Huawei AR Engine.
-            AREnginesAvaliblity ability = AREnginesSelector.Instance.CheckDeviceExecuteAbility();
-            if ((AREnginesAvaliblity.HUAWEI_AR_ENGINE & ability) != 0)
-            {
-                AREnginesSelector.Instance.SetAREngine(AREnginesType.HUAWEI_AR_ENGINE);
-                ImmersalSDK.isHWAR = true;
-
-                errorMessage = "Your device supports AR!";
-                Log();
-                errorMessage = "Starting AR session...";
-                Log();
-            }
-            else
-            {
-                errorMessage ="This device does not support AR Engine. Exit.";
-                Log();
-                Invoke("_DoQuit", 0.5f);
-                return;
-            }
-
             try
             {
                 switch (AREnginesApk.Instance.RequestInstall(!installRequested))
@@ -86,28 +61,24 @@
             catch (ARUnavailableConnectServerTimeOutException e)
             {
                 errorMessage ="Network is not available, retry later!";
-                Log();
                 Invoke("_DoQuit", 0.5f);
                 return;
             }
             catch (ARUnavailableDeviceNotCompatibleException e)
             {
                 errorMessage ="This Device does not support AR!";
-                Log();
                 Invoke("_DoQuit", 0.5f);
                 return;
             }
             catch (ARUnavailableEmuiNotCompatibleException e)
             {
                 errorMessage ="This EMUI does not support AR!";
-                Log();
                 Invoke("_DoQuit", 0.5f);
                 return;
             }
             catch (ARUnavailableUserDeclinedInstallationException e)
             {
                 errorMessage ="User decline installation right now, quit";
-                Log();
                 Invoke("_DoQuit", 0.5f);
                 return;
             }
@@ -155,7 +126,6 @@
                 {
                     ARDebug.LogError("camera permission is denied");
                     errorMessage="This app require camera permission";
-                    Log();
                     Invoke("_DoQuit", 0.5f);
                 }
             }
@@ -188,7 +158,6 @@
                 {
                     ARDebug.LogError("connection failed because a needed permission was rejected.");
                     errorMessage="This app require camera permission";
-                    Log();
                     Invoke("_DoQuit", 0.5f);
                     return;
                 }
@@ -204,41 +173,37 @@
                 ARSession.Resume();
                 ARSession.SetCameraTextureNameAuto();
                 ARSession.SetDisplayGeometry(Screen.width, Screen.height);
+                ImmersalSDK.isHWAR = true;
             }
             catch (ARCameraPermissionDeniedException e)
             {
                 isErrorHappendWhenInit = true;
                 ARDebug.LogError("camera permission is denied");
                 errorMessage="This app require camera permission";
-                Log();
                 Invoke("_DoQuit", 0.5f);
             }
             catch (ARUnavailableDeviceNotCompatibleException e)
             {
                 isErrorHappendWhenInit = true;
                 errorMessage="This device does not support AR";
-                Log();
                 Invoke("_DoQuit", 0.5f);
             }
             catch (ARUnavailableServiceApkTooOldException e)
             {
                 isErrorHappendWhenInit = true;
                 errorMessage="This AR Engine is too old, please update";
-                Log();
                 Invoke("_DoQuit", 0.5f);
             }
             catch (ARUnavailableServiceNotInstalledException e)
             {
                 isErrorHappendWhenInit = true;
                 errorMessage="This app depend on AREngine.apk, please install it";
-                Log();
                 Invoke("_DoQuit", 0.5f);
             }
             catch(ARUnSupportedConfigurationException e)
             {
                 isErrorHappendWhenInit = true;
                 errorMessage="This config is not supported on this device, exit now.";
-                Log();
                 Invoke("_DoQuit", 0.5f);
             }
         }
@@ -253,20 +218,19 @@
 
         private void _DoQuit()
         {
+            return;
             Application.Quit();
         }
 
-        /*
         private void OnGUI()
         {
-            GUIStyle bb = new GUIStyle();
-            bb.normal.background = null;
-            bb.normal.textColor = new Color(1, 0, 0);
-            bb.fontSize = 45;
-
-            GUI.Label(new Rect(0, Screen.height-100, 200, 200), errorMessage, bb);
+            GUI.Label(new Rect(0, Screen.height - 100, 200, 200), errorMessage, bb);
+            GUI.skin = skin;
+            Font f = new Font();
+            if (errorMessage!=null&&GUI.Button(new Rect(Screen.width / 2 - 200, Screen.height / 2 - 100, 400, 200), "Quit")) {
+                Application.Quit();
+            }
         }
-        */
-#endif
+    #endif
     }
 }

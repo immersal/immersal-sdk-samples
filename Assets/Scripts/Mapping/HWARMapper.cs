@@ -1,5 +1,5 @@
 /*===============================================================================
-Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2023 Immersal Ltd. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -10,16 +10,12 @@ Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
 #if HWAR
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using Immersal.AR;
 using Immersal.REST;
-using Immersal.Samples.Util;
 using HuaweiARUnitySDK;
 
 namespace Immersal.Samples.Mapping
@@ -28,18 +24,24 @@ namespace Immersal.Samples.Mapping
     {
         private void SetSessionState()
         {
-            bool isTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+			if (!ARFrame.TextureIsAvailable())
+				return;
 
-            if (isTracking != m_IsTracking)
+            using (ARCamera camera = ARFrame.GetCamera())
             {
-                ImageRunUpdate();
-            }
+                bool isTracking = camera.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
 
-            var captureButton = workspaceManager.captureButton.GetComponent<Button>();
-            var localizeButton = visualizeManager.localizeButton.GetComponent<Button>();
-            captureButton.interactable = isTracking;
-            localizeButton.interactable = isTracking;
-            m_IsTracking = isTracking;
+                if (isTracking != m_IsTracking)
+                {
+                    ImageRunUpdate();
+                }
+
+                var captureButton = workspaceManager.captureButton.GetComponent<Button>();
+                var localizeButton = visualizeManager.localizeButton.GetComponent<Button>();
+                captureButton.interactable = isTracking;
+                localizeButton.interactable = isTracking;
+                m_IsTracking = isTracking;
+            }
         }
 
         public override void Update()
@@ -62,10 +64,7 @@ namespace Immersal.Samples.Mapping
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
-			ARCameraImageBytes image = null;
-			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
+			if (HWARHelper.TryGetCameraImageBytes(out ARCameraImageBytes image, out bool isHD))
             {
                 JobCaptureAsync j = new JobCaptureAsync();
                 j.run = (int)(m_ImageRun & 0xEFFFFFFF);

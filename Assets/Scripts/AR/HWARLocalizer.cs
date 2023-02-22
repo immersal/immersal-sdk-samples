@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2023 Immersal Ltd. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -22,9 +22,31 @@ namespace Immersal.AR
 	{
 		private static HWARLocalizer instance = null;
 
+		private bool m_localizationDebugLoggingEnabled = false;
+
+		public bool LocalizationDebugLoggingEnabled
+		{
+			set => m_localizationDebugLoggingEnabled = value;
+			get => m_localizationDebugLoggingEnabled;
+		}
+
+		private void LocalizerDebugLog(string message)
+		{
+			if (m_localizationDebugLoggingEnabled)
+			{
+				Debug.LogFormat("[HWARLocalizer]: {0}", message);
+			}
+		}
+
 		protected override void Update()
 		{
-            isTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+			if (!ARFrame.TextureIsAvailable())
+				return;
+			
+			using (ARCamera camera = ARFrame.GetCamera())
+			{
+	            isTracking = camera.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+			}
 
             base.Update();
 		}
@@ -64,16 +86,13 @@ namespace Immersal.AR
         public override void Start()
         {
             base.Start();
-			m_Sdk.Localizer = instance;
+            m_Sdk.RegisterLocalizer(instance);
         }
 
         public override async void LocalizeServer(SDKMapId[] mapIds)
         {
-			ARCameraImageBytes image = null;
-			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
-            {
+			if (HWARHelper.TryGetCameraImageBytes(out ARCameraImageBytes image, out bool isHD))
+			{
 				stats.localizationAttemptCount++;
 
                 JobLocalizeServerAsync j = new JobLocalizeServerAsync();
@@ -111,8 +130,7 @@ namespace Immersal.AR
 
 					if (result.success)
 					{
-						Debug.Log("*************************** On-Server Localization Succeeded ***************************");
-						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+						LocalizerDebugLog(string.Format("Relocalized in {0} seconds", elapsedTime));
 
 						int mapId = result.map;
 
@@ -164,8 +182,7 @@ namespace Immersal.AR
 					}
 					else
 					{
-						Debug.Log("*************************** On-Server Localization Failed ***************************");
-						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+						LocalizerDebugLog(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 					}
                 };
 
@@ -179,10 +196,7 @@ namespace Immersal.AR
 
         public override async void LocalizeGeoPose(SDKMapId[] mapIds)
         {
-			ARCameraImageBytes image = null;
-			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
+			if (HWARHelper.TryGetCameraImageBytes(out ARCameraImageBytes image, out bool isHD))
             {
 				stats.localizationAttemptCount++;
 
@@ -221,15 +235,14 @@ namespace Immersal.AR
 
                     if (result.success)
                     {
-                        Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
-						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+	                    LocalizerDebugLog(string.Format("Relocalized in {0} seconds", elapsedTime));
 
                         int mapId = result.map;
                         double latitude = result.latitude;
                         double longitude = result.longitude;
                         double ellipsoidHeight = result.ellipsoidHeight;
                         Quaternion rot = new Quaternion(result.quaternion[1], result.quaternion[2], result.quaternion[3], result.quaternion[0]);
-                        Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
+                        LocalizerDebugLog(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
 
                         double[] ecef = new double[3];
                         double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
@@ -278,8 +291,7 @@ namespace Immersal.AR
                     }
                     else
                     {
-                        Debug.Log("*************************** GeoPose Localization Failed ***************************");
-						Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
+	                    LocalizerDebugLog(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
                     }
                 };
 
@@ -292,10 +304,7 @@ namespace Immersal.AR
 
         public override async void Localize()
 		{
-			ARCameraImageBytes image = null;
-			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
+			if (HWARHelper.TryGetCameraImageBytes(out ARCameraImageBytes image, out bool isHD))
 			{
 				stats.localizationAttemptCount++;
 				Vector3 camPos = m_Cam.transform.position;
@@ -329,7 +338,7 @@ namespace Immersal.AR
 						pos = ARHelper.SwitchHandedness(pos);
 						rot = ARHelper.SwitchHandedness(rot);
 
-						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+						LocalizerDebugLog(string.Format("Relocalized in {0} seconds", elapsedTime));
 						stats.localizationSuccessCount++;
 
 						if (mapId != lastLocalizedMapId)
@@ -363,7 +372,7 @@ namespace Immersal.AR
 					}
 					else
 					{
-						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+						LocalizerDebugLog(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 					}
 				}
 

@@ -42,7 +42,13 @@ public class AppController : MonoBehaviour
         bool isARCoreTracking = false;
 
         #if HWAR
-        isHWARTracking = ARFrame.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+        if (!ARFrame.TextureIsAvailable())
+            return;
+        
+        using (ARCamera camera = ARFrame.GetCamera())
+        {
+            isHWARTracking = camera.GetTrackingState() == ARTrackable.TrackingState.TRACKING;
+        }
         #endif
         isARCoreTracking = UnityEngine.XR.ARFoundation.ARSession.state == UnityEngine.XR.ARFoundation.ARSessionState.SessionTracking;
 

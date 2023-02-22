@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2023 Immersal Ltd. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -9,16 +9,14 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+#if HWAR
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using Immersal.AR;
 using Immersal.REST;
-using UnityEngine.XR.ARFoundation;
-using UnityEngine.XR.ARSubsystems;
 using HuaweiARUnitySDK;
 
 namespace Immersal.Samples.Mapping
@@ -83,10 +81,7 @@ namespace Immersal.Samples.Mapping
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
-			ARCameraImageBytes image = null;
-			bool isHD = HWARHelper.TryGetCameraImageBytes(out image);
-
-			if (image != null && image.IsAvailable)
+			if (HWARHelper.TryGetCameraImageBytes(out ARCameraImageBytes image, out bool isHD))
             {
                 JobCaptureAsync j = new JobCaptureAsync();
                 j.run = (int)(m_ImageRun & 0xEFFFFFFF);
@@ -222,3 +217,4 @@ namespace Immersal.Samples.Mapping
         }
     }
 }
+#endif

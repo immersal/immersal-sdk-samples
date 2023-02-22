@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2021 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2023 Immersal Ltd. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -9,12 +9,11 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+#if HWAR
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.XR.ARFoundation;
-using TMPro;
 using Immersal.Samples.Util;
 using ARPointCloud = HuaweiARUnitySDK.ARPointCloud;
 
@@ -24,8 +23,7 @@ namespace Immersal.Samples.Mapping
     {
         public const int MAX_VERTICES = 65535;
 
-        [SerializeField] private int m_MaxImages = 300;
-        [SerializeField] private int m_MinImages = 10;
+        [SerializeField] private int m_MaxImages = 40;
         [SerializeField] private float m_ImageInterval = 0.6f;
         [SerializeField] private Image m_CaptureButtonIcon = null;
         [SerializeField] private Sprite m_StartCaptureSprite = null;
@@ -47,6 +45,7 @@ namespace Immersal.Samples.Mapping
         private List<ARPoint> m_Points = new List<ARPoint>();
 
         protected HWARAutomaticCapture m_AutomaticCapture = null;
+        private Fader m_MoveDevicePromptFader = null;
 
         virtual protected void Start()
         {
@@ -56,6 +55,7 @@ namespace Immersal.Samples.Mapping
             camPrevRot = m_MainCamera.transform.rotation;
             m_AutomaticCapture = GetComponent<HWARAutomaticCapture>();
             m_CaptureButtonIcon.sprite = m_StartCaptureSprite;
+            m_MoveDevicePromptFader = m_MoveDevicePromptCanvasGroup.GetComponent<Fader>();
 
             if (m_AutomaticCapture != null)
                 m_AutomaticCapture.OnImageUploaded += OnImageUploaded;
@@ -127,7 +127,7 @@ namespace Immersal.Samples.Mapping
         private void UpdatePoints()
         {
             List<Vector3> pointList = new List<Vector3>();
-            HuaweiARUnitySDK.ARPointCloud arPointCloud = HuaweiARUnitySDK.ARFrame.AcquirePointCloud();
+            ARPointCloud arPointCloud = HuaweiARUnitySDK.ARFrame.AcquirePointCloud();
             arPointCloud.GetPoints(pointList);
             
             Debug.Log(string.Format("HWAR POINTS: {0}", pointList.Count));
@@ -203,42 +203,56 @@ namespace Immersal.Samples.Mapping
             m_ImagesSubmitted = 0;
             m_ImagesUploaded = 0;
             float t = 0f;
-            float promptThreshold = 2.5f;
             bool promptActive = false;
 
-            while (m_ImagesSubmitted < m_MaxImages)
+            while (m_ImagesUploaded < m_MaxImages)
             {
                 t += Time.deltaTime;
-
-                if (t > m_ImageInterval && m_CameraHasMoved)
+        
+                if (t > m_ImageInterval)
                 {
-                    m_MoveDevicePromptCanvasGroup.GetComponent<Fader>().fadeTime = 0.15f;
-                    m_MoveDevicePromptCanvasGroup.GetComponent<Fader>().FadeOut();
-                    promptActive = false;
+                    if (m_CameraHasMoved)
+                    {
+                        m_MoveDevicePromptFader.fadeTime = 0.15f;
+                        m_MoveDevicePromptFader.FadeOut();
+                        promptActive = false;
+        
+                        float progressStart = (float)m_ImagesSubmitted / (float)m_MaxImages;
+                        float progressEnd = progressStart + 1f / (float)m_MaxImages;
+        
+                        // Capture image
+                        m_AutomaticCapture.Capture();
 
-                    float progressStart = (float)m_ImagesSubmitted / (float)m_MaxImages;
-                    float progressEnd = progressStart + 1f / (float)m_MaxImages;
-
-                    // Capture image
-                    m_AutomaticCapture.Capture();
-                    t = 0f;
-                    m_ImagesSubmitted++;
-                    camPrevPos = m_MainCamera.transform.position;
-                    camPrevRot = m_MainCamera.transform.rotation;
-
-                    UpdatePoints();
+                        t = 0f;
+                        m_ImagesSubmitted++;
+                        camPrevPos = m_MainCamera.transform.position;
+                        camPrevRot = m_MainCamera.transform.rotation;
+        
+                        UpdatePoints();
+                    }
+                    else if(!promptActive)
+                    {
+                        m_MoveDevicePromptFader.fadeTime = 1f;
+                        m_MoveDevicePromptFader.FadeIn();
+                        promptActive = true;
+                    }
                 }
-                else if (t > promptThreshold && !promptActive)
-                {
-                    m_MoveDevicePromptCanvasGroup.GetComponent<Fader>().fadeTime = 1f;
-                    m_MoveDevicePromptCanvasGroup.GetComponent<Fader>().FadeIn();
-                    promptActive = true;
-                }
-
+        
                 yield return null;
             }
 
             StopMapping();
         }
+
+        public void SetMaxImages(float maxImages)
+        {
+            m_MaxImages = Mathf.RoundToInt(maxImages);
+        }
+
+        public void SetInterval(float interval)
+        {
+            m_ImageInterval = interval;
+        }
     }
 }
+#endif

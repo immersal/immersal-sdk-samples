@@ -1,5 +1,5 @@
 ﻿/*===============================================================================
-Copyright (C) 2020 Immersal Ltd. All Rights Reserved.
+Copyright (C) 2023 Immersal Ltd. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
@@ -24,14 +24,22 @@ namespace Immersal.AR
         {
             intrinsics = Vector4.zero;
 
+			if (!ARFrame.TextureIsAvailable())
+				return;
+
 			if (isHD)
 			{
-				ARCameraIntrinsics intr = ARFrame.ImageIntrinsics;
-				
-				intrinsics.x = intr.ARFocalLength.x;
-				intrinsics.y = intr.ARFocalLength.y;
-				intrinsics.z = intr.ARPrincipalPoint.y;	// wrong order in HWAR SDK?
-				intrinsics.w = intr.ARPrincipalPoint.x;
+				using (ARCamera camera = ARFrame.GetCamera())
+				{
+					ARCameraIntrinsics intr = camera.GetImageIntrinsics();
+					Vector2 principalPoint = intr.GetPrincipalPoint();
+					Vector2 focalLength = intr.GetFocalLength();
+
+					intrinsics.x = focalLength.x;
+					intrinsics.y = focalLength.y;
+					intrinsics.z = principalPoint.y;	// wrong order in HWAR SDK?
+					intrinsics.w = principalPoint.x;
+				}
 			}
 			else
 			{
@@ -99,21 +107,20 @@ namespace Immersal.AR
 			}
 		}
 
-		public static bool TryGetCameraImageBytes(out ARCameraImageBytes image)
+		public static bool TryGetCameraImageBytes(out ARCameraImageBytes image, out bool isHD)
 		{
-			bool isHD = false;
+			isHD = false;
 
 			if (ImmersalSDK.Instance.androidResolution == ImmersalSDK.CameraResolution.Max)
 			{
 				try
 				{
-					image = ARFrame.AcquirPreviewImageBytes();
+					image = ARFrame.AcquirePreviewImageBytes();
 					isHD = true;
 				}
 				catch (SystemException e)
 				{
 					Debug.LogError("Cannot acquire FullHD image: " + e.Message);
-
 					image = ARFrame.AcquireCameraImageBytes();
 				}
 			}
@@ -122,7 +129,13 @@ namespace Immersal.AR
 				image = ARFrame.AcquireCameraImageBytes();
 			}
 
-			return isHD;
+			if (image != null && image.IsAvailable)
+			{
+				Debug.LogFormat("Got image with dimensions {0}x{1}", image.Width, image.Height);
+				return true;
+			}
+			else
+				return false;
 		}
 
 		public static bool TryGetTrackingQuality(out int quality)
@@ -132,7 +145,12 @@ namespace Immersal.AR
 			if (!ARFrame.TextureIsAvailable())
 				return false;
 			
-			ARTrackable.TrackingState trackingState = ARFrame.GetTrackingState();
+			ARTrackable.TrackingState trackingState = default;
+
+			using (ARCamera camera = ARFrame.GetCamera())
+			{
+				trackingState = camera.GetTrackingState();
+			}
 			
 			switch (trackingState)
 			{
