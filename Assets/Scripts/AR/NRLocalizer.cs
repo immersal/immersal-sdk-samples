@@ -11,6 +11,7 @@ Contact sdk@immersal.com for licensing requests.
 
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NRKernal;
@@ -24,10 +25,20 @@ namespace Immersal.AR.Nreal
 		[Tooltip("Disable if you want to use RGB video capture while localizing. Also disable Multithreaded Rendering.")]
 		[SerializeField]
 		private bool m_UseYUV;
+		[SerializeField]
+		private bool m_EnableLogging;
 
 		private static NRLocalizer instance = null;
 
         private CameraModelView CamTexture { get; set; }
+
+		private void LocalizerDebugLog(string message)
+		{
+			if (m_EnableLogging)
+			{
+				Debug.LogFormat("[NRLocalizer]: {0}", message);
+			}
+		}
 
 		public static NRLocalizer Instance
 		{
@@ -59,6 +70,20 @@ namespace Immersal.AR.Nreal
 				UnityEngine.Object.DestroyImmediate(this);
 				return;
 			}
+		}
+
+		public override void OnEnable()
+		{
+			base.OnEnable();
+            NRHMDPoseTracker.OnHMDLostTracking += OnHMDLostTracking;
+            NRHMDPoseTracker.OnHMDPoseReady += OnHMDPoseReady;
+		}
+
+		public override void OnDisable()
+		{
+            NRHMDPoseTracker.OnHMDLostTracking -= OnHMDLostTracking;
+            NRHMDPoseTracker.OnHMDPoseReady -= OnHMDPoseReady;
+			base.OnDisable();
 		}
 
         public override void Start()
@@ -100,13 +125,6 @@ namespace Immersal.AR.Nreal
             base.Pause();
 			CamTexture.Pause();
         }
-
-		protected override void Update()
-		{
-            isTracking = NRFrame.SessionStatus == SessionState.Running;
-
-            base.Update();
-		}
 
         public override void OnDestroy()
         {
@@ -161,7 +179,7 @@ namespace Immersal.AR.Nreal
 
 				if (mapId > 0 && ARSpace.mapIdToMap.ContainsKey(mapId))
 				{
-					Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+					LocalizerDebugLog(string.Format("Relocalized in {0} seconds", elapsedTime));
 					stats.localizationSuccessCount++;
 
 					ARMap map = ARSpace.mapIdToMap[mapId];
@@ -204,7 +222,7 @@ namespace Immersal.AR.Nreal
 				}
 				else
 				{
-					Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+					LocalizerDebugLog(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 				}
 			}
 			else
@@ -262,8 +280,8 @@ namespace Immersal.AR.Nreal
 
 					if (result.success)
 					{
-						Debug.Log("*************************** On-Server Localization Succeeded ***************************");
-						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+						LocalizerDebugLog("*************************** On-Server Localization Succeeded ***************************");
+						LocalizerDebugLog(string.Format("Relocalized in {0} seconds", elapsedTime));
 
 						int mapId = result.map;
 
@@ -316,8 +334,8 @@ namespace Immersal.AR.Nreal
 					}
 					else
 					{
-						Debug.Log("*************************** On-Server Localization Failed ***************************");
-						Debug.Log(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
+						LocalizerDebugLog("*************************** On-Server Localization Failed ***************************");
+						LocalizerDebugLog(string.Format("Localization attempt failed after {0} seconds", elapsedTime));
 					}
 				};
 
@@ -378,15 +396,15 @@ namespace Immersal.AR.Nreal
 
 					if (result.success)
 					{
-						Debug.Log("*************************** GeoPose Localization Succeeded ***************************");
-						Debug.Log(string.Format("Relocalized in {0} seconds", elapsedTime));
+						LocalizerDebugLog("*************************** GeoPose Localization Succeeded ***************************");
+						LocalizerDebugLog(string.Format("Relocalized in {0} seconds", elapsedTime));
 
 						int mapId = result.map;
 						double latitude = result.latitude;
 						double longitude = result.longitude;
 						double ellipsoidHeight = result.ellipsoidHeight;
 						Quaternion rot = new Quaternion(result.quaternion[1], result.quaternion[2], result.quaternion[3], result.quaternion[0]);
-						Debug.Log(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
+						LocalizerDebugLog(string.Format("GeoPose returned latitude: {0}, longitude: {1}, ellipsoidHeight: {2}, quaternion: {3}", latitude, longitude, ellipsoidHeight, rot));
 
 						double[] ecef = new double[3];
 						double[] wgs84 = new double[3] { latitude, longitude, ellipsoidHeight };
@@ -429,8 +447,8 @@ namespace Immersal.AR.Nreal
 					}
 					else
 					{
-						Debug.Log("*************************** GeoPose Localization Failed ***************************");
-						Debug.Log(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
+						LocalizerDebugLog("*************************** GeoPose Localization Failed ***************************");
+						LocalizerDebugLog(string.Format("GeoPose localization attempt failed after {0} seconds", elapsedTime));
 					}
 				};
 
@@ -442,6 +460,21 @@ namespace Immersal.AR.Nreal
 			}
 
 			base.LocalizeGeoPose(mapIds);
+        }
+
+        private void OnHMDPoseReady()
+        {
+			LocalizerDebugLog("Is tracking");
+			isTracking = true;
+        }
+
+        private void OnHMDLostTracking()
+        {
+			LocalizerDebugLog("Lost tracking");
+			isTracking = false;
+
+			foreach (KeyValuePair<Transform, SpaceContainer> item in ARSpace.transformToSpace)
+				item.Value.filter.InvalidateHistory();
         }
 
         private void OnRGBCaptureUpdate(CameraTextureFrame frame)
