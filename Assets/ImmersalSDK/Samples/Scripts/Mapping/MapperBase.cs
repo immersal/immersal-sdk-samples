@@ -63,7 +63,6 @@ namespace Immersal.Samples.Mapping
         protected float m_VBearing = 0f;
         protected bool m_bCaptureRunning = false;
 		protected IntPtr m_PixelBuffer = IntPtr.Zero;
-        protected bool m_UseGeoPose = false;
 
         private AudioSource m_CameraShutterClick;
         private IEnumerator m_UpdateJobList;
@@ -161,6 +160,22 @@ namespace Immersal.Samples.Mapping
             }
             
             m_enableStatusPolling = false;
+        }
+
+        protected virtual SDKMapId[] GetActiveMapIds()
+        {
+            int n = ARSpace.mapIdToMap.Count;
+            SDKMapId[] mapIds = new SDKMapId[n];
+
+            int count = 0;
+            foreach (int id in ARSpace.mapIdToMap.Keys)
+            {
+                SDKMapId mapId;
+                mapId.id = id;
+                mapIds[count++] = mapId;
+            }
+
+            return mapIds;
         }
 
         public virtual void Update()
@@ -569,7 +584,7 @@ namespace Immersal.Samples.Mapping
             j.id = jobId;
             j.OnResult += (SDKDeleteMapResult result) =>
             {
-                Debug.Log(string.Format("Map {0} deleted successfully.", jobId));
+                Debug.LogFormat("Map {0} deleted successfully.", jobId);
             };
 
             m_Jobs.Add(j);
@@ -582,7 +597,7 @@ namespace Immersal.Samples.Mapping
             j.clear = clear;
             j.OnResult += (SDKRestoreMapImagesResult result) =>
             {
-                Debug.Log(string.Format("Successfully restored images for map {0}", jobId));
+                Debug.LogFormat("Successfully restored images for map {0}", jobId);
             };
 
             m_Jobs.Add(j);
@@ -613,7 +628,7 @@ namespace Immersal.Samples.Mapping
             j.windowSize = mapperSettings.windowSize;
             j.OnResult += (SDKConstructResult result) =>
             {
-                Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
+                Debug.LogFormat("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount);
             };
 
             m_Jobs.Add(j);
@@ -684,7 +699,7 @@ namespace Immersal.Samples.Mapping
             };
             j.OnResult += async (SDKMapResult result) =>
             {
-                Debug.Log(string.Format("Load map {0} ({1} bytes) ({2}/{3})", job.id, result.mapData.Length, CryptoUtil.SHA256(result.mapData), result.sha256_al));
+                Debug.LogFormat("Load map {0} ({1} bytes) ({2}/{3})", job.id, result.mapData.Length, CryptoUtil.SHA256(result.mapData), result.sha256_al);
     			Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
 
                 Transform root = null;
@@ -718,6 +733,7 @@ namespace Immersal.Samples.Mapping
             };
             j.OnError += (e) =>
             {
+                Debug.LogError(e);
                 mappingUIManager.HideProgressBar();
             };
 

@@ -20,11 +20,15 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/ImmersalSDK/Samples/Scenes/NavigationSampleNavMesh.unity
     guid: 98454a452db26144ca9d0692e148ed12
+  - enabled: 0
+    path: Assets/ImmersalSDK/Samples/Scenes/RealtimeMappingSample.unity
+    guid: c4d541a67648244d6a20f52893bcf122
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: a71208f28aadf4aa28dda8b07bd02e62, type: 2}
     UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 5a339459f38d14f9d86d7c4dfaac2522, type: 2}
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 2761f6e4bfd0f4211b7bddd7d12cdaab, type: 2}
     com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: 61430ebb5678b4a2680a97641f470d65, type: 2}
-    com.unity.xr.magicleap.magic_leap_settings: {fileID: 11400000, guid: deedc6e6a7f074daba8fb02fddd01806, type: 2}
+    com.unity.xr.magicleap.magic_leap_settings: {fileID: 11400000, guid: 573e6ab1f7888448d9d1150fb20a27a5, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d2bb15fa8c2bf4d90921035afa2666fa, type: 2}
-    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: bd1621deeb1c648cdbd829efe7e8df9d, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 03294d90b8ad247a18f1841e402e2bf8, type: 2}

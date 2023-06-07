@@ -59,6 +59,11 @@ namespace Immersal.Samples.Mapping.ScrollList
 			toggle.isOn = !toggle.isOn;
 		}
 
+		public bool isToggleOn()
+		{
+			return toggle.isOn;
+		}
+
 		public void OnToggleChanged(bool value)
 		{
 			SelectListItem();

@@ -48,7 +48,7 @@ namespace Immersal.Samples.Navigation
                     GameObject button = Instantiate(m_ButtonTemplate, m_ContentParent);
                     m_Buttons.Add(button);
                     button.SetActive(true);
-                    button.name = "button " + targetName;
+                    button.name = string.Format("button {0}", targetName);
 
                     NavigationTargetListButton navigationTargetListButton = button.GetComponent<NavigationTargetListButton>();
                     navigationTargetListButton.SetText(targetName);

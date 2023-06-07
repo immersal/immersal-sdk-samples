@@ -76,7 +76,7 @@ namespace Immersal.Samples.Mapping.ScrollList
 					SDKJob job = m_Data[i];
 					GameObject item = Instantiate(itemTemplate);
 					items.Add(item);
-					item.name = item.name + "_" + i;
+					item.name = string.Format("{0}_{1}", item.name, i);
 					item.SetActive(true);
 					item.transform.SetParent(contentParent, false);
 			
@@ -102,6 +102,18 @@ namespace Immersal.Samples.Mapping.ScrollList
 					return true;
 			}
 			return false;
+		}
+
+		public void ResetMaps()
+		{
+			ScrollListItem[] itemArr = contentParent.GetComponentsInChildren<ScrollListItem>();
+			foreach (var item in itemArr)
+			{
+				if (item.isToggleOn())
+				{
+					item.OnClick();
+				}
+			}
 		}
 
 		public void DestroyItems()

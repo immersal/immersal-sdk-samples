@@ -50,12 +50,12 @@ public class PoseDebug : MonoBehaviour
                 // Just to debug that the order of the matrix sent to Immersal Cloud Service is the same as in Unity (column-major)
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
-                    Debug.Log(string.Format(
+                    Debug.LogFormat(
                         "r00:{0}\tr01: {1}\tr02: {2}\nr10: {3}\tr11: {4}\tr12: {5}\nr20: {6}\tr21: {7}\tr22: {8}\n",
                         r.m00.ToString("F3"), r.m01.ToString("F3"), r.m02.ToString("F3"),
                         r.m10.ToString("F3"), r.m11.ToString("F3"), r.m12.ToString("F3"),
                         r.m20.ToString("F3"), r.m21.ToString("F3"), r.m22.ToString("F3")
-                    ));
+                    );
                 }
             }
             

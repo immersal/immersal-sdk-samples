@@ -18,7 +18,7 @@ namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 9;
+        public const int VERSION = 12;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -33,7 +33,7 @@ namespace Immersal.Samples.Mapping
         public int resolution { get; private set; } = 0;
         public int localizer { get; private set; } = 1;
         public int mapDetailLevel { get; private set; } = 1024;
-        public bool serverLocalizationWithIds { get; private set; } = true;
+        public bool useGeoPoseLocalizer { get; private set; } = false;
         public bool useDifferentARSpaces { get; private set; } = true;
         public bool preservePoses { get; private set; } = false;
         public bool automaticCapture { get; private set; } = false;
@@ -73,7 +73,7 @@ namespace Immersal.Samples.Mapping
         [SerializeField]
         private TMP_InputField m_MapDetailLevelInput = null;
         [SerializeField]
-        private Toggle m_ServerLocalizationWithIdsToggle = null;
+        private Toggle m_GeoPoseLocalizerToggle = null;
         [SerializeField]
         private Toggle m_UseDifferentARSpacesToggle = null;
         [SerializeField]
@@ -120,7 +120,7 @@ namespace Immersal.Samples.Mapping
             public int resolution;
             public int localizer;
             public int mapDetailLevel;
-            public bool serverLocalizationWithIds;
+            public bool useGeoPoseLocalizer;
             public bool useDifferentARSpaces;
             public bool preservePoses;
             public bool automaticCapture;
@@ -227,9 +227,9 @@ namespace Immersal.Samples.Mapping
             SaveSettingsToPrefs();
         }
 
-        public void SetServerLocalizationWithIds(bool value)
+        public void SetUseGeoPoseLocalizer(bool value)
         {
-            serverLocalizationWithIds = value;
+            useGeoPoseLocalizer = value;
             SaveSettingsToPrefs();
         }
 
@@ -333,8 +333,8 @@ namespace Immersal.Samples.Mapping
 
                 m_MapDetailLevelInput.SetTextWithoutNotify(loadFile.mapDetailLevel.ToString());
                 mapDetailLevel = loadFile.mapDetailLevel;
-                m_ServerLocalizationWithIdsToggle.SetIsOnWithoutNotify(loadFile.serverLocalizationWithIds);
-                serverLocalizationWithIds = loadFile.serverLocalizationWithIds;
+                m_GeoPoseLocalizerToggle.SetIsOnWithoutNotify(loadFile.useGeoPoseLocalizer);
+                useGeoPoseLocalizer = loadFile.useGeoPoseLocalizer;
                 m_UseDifferentARSpacesToggle.SetIsOnWithoutNotify(loadFile.useDifferentARSpaces);
                 useDifferentARSpaces = loadFile.useDifferentARSpaces;
                 m_PreservePosesToggle.SetIsOnWithoutNotify(loadFile.preservePoses);
@@ -356,7 +356,7 @@ namespace Immersal.Samples.Mapping
             }
             catch (FileNotFoundException e)
             {
-                Debug.Log(e.Message + "\nsettings.json file not found");
+                Debug.LogWarningFormat("{0}\nsettings.json file not found", e.Message);
                 SaveSettingsToPrefs();
                 LoadSettingsFromPrefs();
                 return;
@@ -385,7 +385,7 @@ namespace Immersal.Samples.Mapping
             saveFile.resolution = resolution;
             saveFile.localizer = localizer;
             saveFile.mapDetailLevel = mapDetailLevel;
-            saveFile.serverLocalizationWithIds = serverLocalizationWithIds;
+            saveFile.useGeoPoseLocalizer = useGeoPoseLocalizer;
             saveFile.useDifferentARSpaces = useDifferentARSpaces;
             saveFile.preservePoses = preservePoses;
             saveFile.automaticCapture = automaticCapture;
@@ -407,8 +407,8 @@ namespace Immersal.Samples.Mapping
             //localizer = 1;
             m_MapDetailLevelInput.SetTextWithoutNotify(1024.ToString());
             mapDetailLevel = 1024;
-            m_ServerLocalizationWithIdsToggle.SetIsOnWithoutNotify(true);
-            serverLocalizationWithIds = true;
+            m_GeoPoseLocalizerToggle.SetIsOnWithoutNotify(false);
+            useGeoPoseLocalizer = false;
             m_ListOnlyNearbyMapsToggle.SetIsOnWithoutNotify(false);
             listOnlyNearbyMaps = false;
             m_DownsampleWhenLocalizingToggle.SetIsOnWithoutNotify(false);

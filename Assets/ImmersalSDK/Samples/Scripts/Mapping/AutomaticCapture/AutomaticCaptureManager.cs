@@ -9,13 +9,17 @@ third-parties for commercial purposes without written permission of Immersal Ltd
 Contact sdk@immersal.com for licensing requests.
 ===============================================================================*/
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
-using TMPro;
+using UnityEngine.XR.ARSubsystems;
 using Immersal.Samples.Util;
+using Immersal.AR;
+using Immersal.REST;
 
 namespace Immersal.Samples.Mapping
 {
@@ -43,6 +47,9 @@ namespace Immersal.Samples.Mapping
         [SerializeField] private Sprite m_StopCaptureSprite = null;
         [SerializeField] private CanvasGroup m_MoveDevicePromptCanvasGroup = null;
 
+        private ImmersalSDK m_Sdk;
+        private MapperSettings m_MapperSettings;
+        private IntPtr m_PixelBuffer = IntPtr.Zero;
         protected bool m_IsMapping = false;
         private int m_ImagesSubmitted = 0;
         private int m_ImagesUploaded = 0;
@@ -55,6 +62,7 @@ namespace Immersal.Samples.Mapping
         private Mesh m_Mesh = null;
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
+        private Color m_PointColor = new Color(0.57f, 0.93f, 0.12f);
         private List<ARPoint> m_Points = new List<ARPoint>();
         protected List<ARPoint> m_CurrentPoints = new List<ARPoint>();
 
@@ -65,6 +73,8 @@ namespace Immersal.Samples.Mapping
         virtual protected void Start()
         {
             InitMesh();
+            m_Sdk = ImmersalSDK.Instance;
+            m_MapperSettings = gameObject.transform.parent.GetComponent<MapperSettings>();
             m_MainCamera = Camera.main;
             camPrevPos = m_MainCamera.transform.position;
             camPrevRot = m_MainCamera.transform.rotation;
@@ -144,7 +154,7 @@ namespace Immersal.Samples.Mapping
             m_MeshRenderer.material = material;
             m_MeshRenderer.material.SetFloat("_PointSize", 20f);
             m_MeshRenderer.material.SetFloat("_PerspectiveEnabled", 0f);
-            m_MeshRenderer.material.SetColor("_PointColor", new Color(0.57f, 0.93f, 0.12f));
+            m_MeshRenderer.material.SetColor("_PointColor", m_PointColor);
         }
 
         public void CreateCloud(Vector3[] points, int totalPoints, Matrix4x4 offset)

@@ -67,6 +67,11 @@ namespace Immersal.Samples.Mapping
             m_MapDownloadList.GetComponent<ScrollListControl>().SetData(data, activeMaps);
         }
 
+        public void ResetMaps()
+        {
+            m_MapDownloadList.GetComponent<ScrollListControl>().ResetMaps();
+        }
+
         public void OnListItemSelect(SDKJob job)
         {
             OnItemSelected?.Invoke(job);

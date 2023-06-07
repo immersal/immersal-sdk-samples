@@ -11,6 +11,7 @@ Contact sdk@immersal.com for licensing requests.
 
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 using System.IO;
 
 namespace Immersal.Samples.ContentPlacement
@@ -118,7 +119,7 @@ namespace Immersal.Samples.ContentPlacement
         public void LoadContents()
         {
             string dataPath = Path.Combine(Application.persistentDataPath, m_Filename);
-            Debug.Log(string.Format("Trying to load file: {0}", dataPath));
+            Debug.LogFormat("Trying to load file: {0}", dataPath);
 
             try
             {
@@ -134,7 +135,12 @@ namespace Immersal.Samples.ContentPlacement
             }
             catch (FileNotFoundException e)
             {
-                Debug.Log(e.Message + "\n.json file for content storage not found. Created a new file!");
+                Debug.LogWarningFormat("{0}\n.json file for content storage not found. Created a new file!", e.Message);
+                File.WriteAllText(dataPath, "");
+            }
+            catch (NullReferenceException err)
+            {
+                Debug.LogWarningFormat("{0}\n.json file for content storage not found. Created a new file!", err.Message);
                 File.WriteAllText(dataPath, "");
             }
         }

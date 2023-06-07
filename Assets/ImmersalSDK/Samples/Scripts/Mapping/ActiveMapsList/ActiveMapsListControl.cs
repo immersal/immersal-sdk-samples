@@ -107,7 +107,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
 
             bool transformRootToOrigin = mapperSettings.transformRootToOrigin;
 
-            // Debug.Log(string.Format("clicked, root id: {0}, map count {1}", rootMapId, m_ActiveMaps.Count));
+            // Debug.LogFormat("clicked, root id: {0}, map count {1}", rootMapId, m_ActiveMaps.Count);
             if(rootMapId > 0 && m_ActiveMaps.Count > 1)
             {
                 Transform root = ARSpace.mapIdToMap[rootMapId].transform;
@@ -117,7 +117,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
                 {
                     if(entry.Value.mapId != rootMapId)
                     {
-                        // Debug.Log(string.Format("looping... {0}", entry.Value.mapId));
+                        // Debug.LogFormat("looping... {0}", entry.Value.mapId);
                         Transform xf = entry.Value.transform;
                         Matrix4x4 worldSpaceTransform = xf.localToWorldMatrix;
 
@@ -192,13 +192,13 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
 
             j.OnResult += (SDKMapAlignmentSetResult result) =>
             {
-                Debug.Log(string.Format("Alignment for map {0} saved", mapId));
+                Debug.LogFormat("Alignment for map {0} saved", mapId);
             };
 
             j.OnError += (e) =>
             {
                 Immersal.Samples.Mapping.NotificationManager.Instance.GenerateError("Network Error");
-                Debug.Log(string.Format("Failed to save alignment for map id {0}\n{1}", mapId, e));
+                Debug.LogErrorFormat("Failed to save alignment for map id {0}\n{1}", mapId, e);
             };
 
             await j.RunJobAsync();

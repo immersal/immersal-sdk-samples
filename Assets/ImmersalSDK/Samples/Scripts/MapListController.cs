@@ -126,12 +126,16 @@ namespace Immersal.Samples
             j.id = job.id;
             j.OnResult += async (SDKMapResult result) =>
             {
-                Debug.Log(string.Format("Load map {0} ({1} bytes)", job.id, result.mapData.Length));
+                Debug.LogFormat("Load map {0} ({1} bytes)", job.id, result.mapData.Length);
 
                 Color pointCloudColor = ARMap.pointCloudColors[UnityEngine.Random.Range(0, ARMap.pointCloudColors.Length)];
                 ARMap.RenderMode renderMode = m_ARMap?.renderMode ?? ARMap.RenderMode.EditorAndRuntime;
 
                 await ARSpace.LoadAndInstantiateARMap(null, result, renderMode, pointCloudColor);
+            };
+            j.OnError += (e) =>
+            {
+                Debug.LogError(e);
             };
 
             m_Jobs.Add(j);

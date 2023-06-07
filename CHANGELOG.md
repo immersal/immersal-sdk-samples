@@ -5,6 +5,31 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
+## [1.19.0] - 2023-06-07
+### Added
+- Core: Real-time on-device mapping (requires Enterprise license)
+- Core: optimized memory usage and speed
+- Core: "Edit" map type for edited maps
+- Samples: [Magic Leap 2 samples](https://github.com/immersal/immersal-sdk-magicleap2-samples) (on-device localization and real-time mapping require Enterprise license)
+- Samples: Added GeoPose localizer option to Mapper settings
+- Samples: RealtimeMappingSample scene
+- Samples: "Move AR Camera instead of AR Space" sample
+- Support for Immersal China server
+### Changed
+- Unity to 2022.3 LTS
+- Removed Lumin plug-in and dropped Magic Leap 1 support
+- Removed unused `param1..4` from the plug-in interface
+- Removed old Unity NavMeshComponents in favour of AI Navigation package
+- Samples: Updated all sample scenes to use the new input system and XRRig
+### Fixed
+- Core: Handedness fix to GeoPose localizer
+- Core: Minor memory leaks
+- Core: `ARMap::FreeMap()` bugs with map handles, should now behave correctly in multi-scene scenarios and in Unity Editor
+- Core: REST requests now return the correct amount of bytes
+- Samples: ContentPlacement sample crash at startup when no content.json file was present
+- Samples: Removed Immersal logo from being a RaycastTarget
+- Samples: Mapper didn't clear loaded maps on logout
+
 ## [1.18.1] - 2023-02-11
 ### Fixed
 - `ARMap::LoadMap()` problems and semi-random crashes in Unity Editor

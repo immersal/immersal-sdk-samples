@@ -89,11 +89,11 @@ public class DebugConsole : MonoBehaviour
         switch (type)
         {
             case LogType.Warning:
-                logString = "<color=orange>" + logString + "</color>";
+                logString = string.Format("<color=orange>{0}</color>", logString);
                 break;
             case LogType.Error:
             case LogType.Exception:
-                logString = "<color=red>" + logString + Environment.NewLine + "STACK TRACE: " + stackTrace + "</color>";
+                logString = string.Format("<color=red>{0}{1}STACK TRACE: {2}</color>", logString, Environment.NewLine, stackTrace);
                 break;
         }
         AddText(logString);

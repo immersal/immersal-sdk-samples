@@ -18,8 +18,8 @@ public class SetVersionInfo : MonoBehaviour
     [SerializeField] private TextMeshProUGUI m_VersionText;
     void Start()
     {
-        string versionText = Application.productName+" v" + Application.version;
-        string copyrightText = "© " + DateTime.Now.Year + " "+Application.companyName+" All Rights Reserved.";
+        string versionText = string.Format("{0} v{1}", Application.productName, Application.version);
+        string copyrightText = string.Format("© {0} {1} All Rights Reserved.", DateTime.Now.Year, Application.companyName);
 
         m_VersionText.text = versionText + Environment.NewLine + copyrightText;
     }

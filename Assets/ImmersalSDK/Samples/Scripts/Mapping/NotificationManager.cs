@@ -48,7 +48,7 @@ namespace Immersal.Samples.Mapping
 
                 m_Notification.SetActive(false);
                 m_CreateNotification = m_Notification.GetComponent<CreateNotification>();
-                }
+            }
             if (instance != this)
             {
                 Debug.LogError("There must be only one NotificationManager object in a scene.");

@@ -42,7 +42,7 @@ namespace Immersal.Samples.Mapping
             {
                 MapperStats ms = mapper.stats;
                 LocalizerStats ls = m_Sdk.Localizer.stats;
-
+                
                 switch (debugMode)
                 {
                     case DebugMode.imageCount:
@@ -55,6 +55,14 @@ namespace Immersal.Samples.Mapping
                         textMeshProUGUI.text = string.Format("{0} {1}/{2}", textAppend, ls.localizationSuccessCount, ls.localizationAttemptCount);
                         break;
                 }
+            }
+        }
+
+        public void ResetStatistics()
+        {
+            if (mapper != null && textMeshProUGUI != null && m_Sdk != null)
+            {
+                m_Sdk.Localizer.Reset();
             }
         }
     }

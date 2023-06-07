@@ -11,13 +11,10 @@ Contact sdk@immersal.com for licensing requests.
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
 using Immersal.REST;
-using Immersal.Samples.Mapping;
 using UnityEngine.UI;
 
 namespace Immersal.Samples.Mapping
@@ -43,6 +40,8 @@ namespace Immersal.Samples.Mapping
         
         [SerializeField] private GameObject m_loginControlContainer;
         [SerializeField] private TMP_Text m_autoLoggingIndicatorText;
+
+        private const string IpApiUrl = "https://ipinfo.io?token=437904fba78a27";
 
         private static LoginManager instance = null;
 
@@ -112,22 +111,70 @@ namespace Immersal.Samples.Mapping
 
             if (m_autoLoginEnabled)
             {
-                m_autoLoggingIndicatorText.text = "Logging in automatically as " + PlayerPrefs.GetString("login");
+                m_autoLoggingIndicatorText.text = string.Format("Logging in automatically as {0}", PlayerPrefs.GetString("login"));
             }
         }
 
+        
         void FillFields()
         {
-            emailField.text = PlayerPrefs.GetString("login", "");
-            passwordField.text = PlayerPrefs.GetString("password", "");
-            serverField.text = PlayerPrefs.GetString("server", ImmersalSDK.DefaultServer);
-
-            if (serverField.text != ImmersalSDK.DefaultServer)
+            StartCoroutine(CheckIfUserIsInChina(isInChina => 
             {
-                m_Sdk.localizationServer = serverField.text;
-            }
+                //Debug.Log("Is user in China? " + isInChina);
+                if (isInChina)
+                {
+                    m_Sdk.defaultServer = ImmersalSDK.APIServer.ChinaServer;
+                }
+                
+                emailField.text = PlayerPrefs.GetString("login", "");
+                passwordField.text = PlayerPrefs.GetString("password", "");
+                serverField.text = PlayerPrefs.GetString("server", m_Sdk.localizationServer);
 
-            AttemptAutoLogin();
+                if (serverField.text != m_Sdk.defaultServerURL)
+                {
+                    m_Sdk.localizationServer = serverField.text;
+                }
+
+                AttemptAutoLogin();
+            }));
+        }
+
+        private IEnumerator CheckIfUserIsInChina(Action<bool> callback)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Get(IpApiUrl))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.ConnectionError ||
+                    request.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogErrorFormat("Error fetching IP geolocation data: {0}", request.error);
+                }
+                else
+                {
+                    string jsonResult = request.downloadHandler.text;
+                    GeolocationData data = JsonUtility.FromJson<GeolocationData>(jsonResult);
+
+                    bool isInChina = false;
+                    if (data.country.Equals("CN"))
+                    {
+                        //Debug.Log("User is in China.");
+                        isInChina = true;
+                    }
+                    else
+                    {
+                        //Debug.LogFormat("User is not in China. Country: {0}", data.country);
+                    }
+                    
+                    callback(isInChina);
+                }
+            }
+        }
+
+        [System.Serializable]
+        private class GeolocationData
+        {
+            public string country;
         }
         
         void AttemptAutoLogin()
@@ -151,7 +198,7 @@ namespace Immersal.Samples.Mapping
         {
             if (s.Length == 0)
             {
-                s = ImmersalSDK.DefaultServer;
+                s = m_Sdk.defaultServerURL;
                 serverField.text = s;
             }
             else if (s[s.Length - 1] == '/')
@@ -191,7 +238,7 @@ namespace Immersal.Samples.Mapping
                 PlayerPrefs.SetString("password", j.password);
                 PlayerPrefs.SetString("token", result.token);
                 PlayerPrefs.SetString("server", serverField.text);
-                Debug.Log(string.Format("Logged in to {0}", m_Sdk.localizationServer));
+                Debug.LogFormat("Logged in to {0}", m_Sdk.localizationServer);
                 m_Sdk.developerToken = result.token;
 
                 CompleteLogin();

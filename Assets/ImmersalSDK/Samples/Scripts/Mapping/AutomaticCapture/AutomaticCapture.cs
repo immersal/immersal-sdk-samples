@@ -12,7 +12,6 @@ Contact sdk@immersal.com for licensing requests.
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 using UnityEngine;
 using Immersal.AR;
@@ -82,94 +81,92 @@ namespace Immersal.Samples.Mapping
             float captureStartTime = Time.realtimeSinceStartup;
             float uploadStartTime = Time.realtimeSinceStartup;
 
-            XRCpuImage image;
-            ARCameraManager cameraManager = m_Sdk.cameraManager;
-            var cameraSubsystem = cameraManager.subsystem;
-
-            if (cameraSubsystem != null && cameraSubsystem.TryAcquireLatestCpuImage(out image))
+            if (m_Sdk.cameraManager.TryAcquireLatestCpuImage(out XRCpuImage image))
             {
-                JobCaptureAsync j = new JobCaptureAsync();
-                j.run = (int)(m_ImageRun & 0xEFFFFFFF);
-                j.index = m_ImageIndex++;
-                j.anchor = false;
-
-                if (AutomaticCaptureLocationProvider.Instance.gpsOn)
+                using (image)
                 {
-                    j.latitude = AutomaticCaptureLocationProvider.Instance.latitude;
-                    j.longitude = AutomaticCaptureLocationProvider.Instance.longitude;
-                    j.altitude = AutomaticCaptureLocationProvider.Instance.altitude;
+                    JobCaptureAsync j = new JobCaptureAsync();
+                    j.run = (int)(m_ImageRun & 0xEFFFFFFF);
+                    j.index = m_ImageIndex++;
+                    j.anchor = false;
+
+                    if (AutomaticCaptureLocationProvider.Instance.gpsOn)
+                    {
+                        j.latitude = AutomaticCaptureLocationProvider.Instance.latitude;
+                        j.longitude = AutomaticCaptureLocationProvider.Instance.longitude;
+                        j.altitude = AutomaticCaptureLocationProvider.Instance.altitude;
+                    }
+                    else
+                    {
+                        j.latitude = j.longitude = j.altitude = 0.0;
+                    }
+
+                    ARHelper.GetIntrinsics(out j.intrinsics);
+                    Quaternion rot = m_MainCamera.transform.rotation;
+                    Vector3 pos = m_MainCamera.transform.position;
+                    ARHelper.GetRotation(ref rot);
+                    j.rotation = ARHelper.SwitchHandedness(Matrix4x4.Rotate(rot));
+                    j.position = ARHelper.SwitchHandedness(pos);
+
+                    int width = image.width;
+                    int height = image.height;
+
+                    byte[] pixels;
+                    int channels = 1;
+
+                    if (m_RgbCapture)
+                    {
+                        ARHelper.GetPlaneDataRGB(out pixels, image);
+                        channels = 3;
+                    }
+                    else
+                    {
+                        ARHelper.GetPlaneData(out pixels, image);
+                    }
+
+                    byte[] capture = new byte[channels * width * height + 1024];
+
+                    Task<icvCaptureInfo> captureTask = Task.Run(() =>
+                    {
+                        return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    });
+
+                    await captureTask;
+
+                    string path = string.Format("{0}/{1}", tempImagePath, System.Guid.NewGuid());
+                    using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(path)))
+                    {
+                        writer.Write(capture, 0, captureTask.Result.captureSize);
+                    }
+
+                    j.imagePath = path;
+                    j.encodedImage = "";
+
+                    j.OnStart += () =>
+                    {
+                        uploadStartTime = Time.realtimeSinceStartup;
+                    };
+                    j.OnResult += (SDKImageResult result) =>
+                    {
+                        float et = Time.realtimeSinceStartup - uploadStartTime;
+                        Debug.LogFormat("Image uploaded successfully in {0} seconds", et);
+                        OnImageUploaded?.Invoke();
+                    };
+                    j.Progress.ProgressChanged += (s, progress) =>
+                    {
+                        int value = (int)(100f * progress);
+                        Debug.LogFormat("Upload progress: {0}%", value);
+                    };
+                    j.OnError += (e) =>
+                    {
+                        Debug.LogErrorFormat("Capture error: {0}", e);
+                    };
+
+                    m_Jobs.Add(j);
+
+                    float elapsedTime = Time.realtimeSinceStartup - captureStartTime;
+                    Debug.LogFormat("Capture in {0} seconds", elapsedTime);
                 }
-                else
-                {
-                    j.latitude = j.longitude = j.altitude = 0.0;
-                }
-
-                ARHelper.GetIntrinsics(out j.intrinsics);
-                Quaternion rot = m_MainCamera.transform.rotation;
-                Vector3 pos = m_MainCamera.transform.position;
-                ARHelper.GetRotation(ref rot);
-                j.rotation = ARHelper.SwitchHandedness(Matrix4x4.Rotate(rot));
-                j.position = ARHelper.SwitchHandedness(pos);
-
-                int width = image.width;
-                int height = image.height;
-
-                byte[] pixels;
-                int channels = 1;
-
-                if (m_RgbCapture)
-                {
-                    ARHelper.GetPlaneDataRGB(out pixels, image);
-                    channels = 3;
-                }
-                else
-                {
-                    ARHelper.GetPlaneData(out pixels, image);
-                }
-
-                byte[] capture = new byte[channels * width * height + 1024];
-
-                Task<icvCaptureInfo> captureTask = Task.Run(() =>
-                {
-                    return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
-                });
-
-                await captureTask;
-
-                string path = string.Format("{0}/{1}", tempImagePath, System.Guid.NewGuid());
-                using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(path)))
-                {
-                    writer.Write(capture, 0, captureTask.Result.captureSize);
-                }
-
-                j.imagePath = path;
-                j.encodedImage = "";
-
-                j.OnStart += () =>
-                {
-                    uploadStartTime = Time.realtimeSinceStartup;
-                };
-                j.OnResult += (SDKImageResult result) =>
-                {
-                    float et = Time.realtimeSinceStartup - uploadStartTime;
-                    Debug.Log(string.Format("Image uploaded successfully in {0} seconds", et));
-                    OnImageUploaded?.Invoke();
-                };
-                j.Progress.ProgressChanged += (s, progress) =>
-                {
-                    int value = (int)(100f * progress);
-                    Debug.Log(string.Format("Upload progress: {0}%", value));
-                };
-                j.OnError += (e) =>
-                {
-                    Debug.Log(string.Format("Capture error: " + e));
-                };
-
-                m_Jobs.Add(j);
-                image.Dispose();
-
-                float elapsedTime = Time.realtimeSinceStartup - captureStartTime;
-                Debug.Log(string.Format("Capture in {0} seconds", elapsedTime));
             }
 
             m_bCaptureRunning = false;
@@ -184,7 +181,7 @@ namespace Immersal.Samples.Mapping
             j.windowSize = 0;
             j.OnResult += (SDKConstructResult result) =>
             {
-                Debug.Log(string.Format("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount));
+                Debug.LogFormat("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount);
 
                 OnMapSubmitted?.Invoke();
 
@@ -201,10 +198,10 @@ namespace Immersal.Samples.Mapping
         {
             JobSetPrivacyAsync j = new JobSetPrivacyAsync();
             j.id = mapId;
-            j.privacy = isPublic ? 1 : 0;
+            j.privacy = isPublic ? (int)SDKJobPrivacy.Public : (int)SDKJobPrivacy.Private;
             j.OnResult += (SDKMapPrivacyResult result) =>
             {
-                Debug.Log(string.Format("Sharing mode set successfully, set to: {0}", j.privacy));
+                Debug.LogFormat("Sharing mode set successfully, set to: {0}", j.privacy);
             };
 
             m_Jobs.Add(j);

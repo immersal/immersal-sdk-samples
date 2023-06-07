@@ -33,7 +33,7 @@ namespace Immersal.Samples.Mapping.ActiveMapsList
 		{
             if(t.isOn && mapId > 0)
             {
-                Debug.Log(string.Format("toggle on: {0}", mapId));
+                Debug.LogFormat("toggle on: {0}", mapId);
                 m_ActiveMapsListControl.rootMapId = mapId;
             }
 		}

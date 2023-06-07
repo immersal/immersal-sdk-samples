@@ -1,5 +1,4 @@
 ﻿#if UNITY_IOS
-using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using System.IO;
@@ -11,9 +10,9 @@ public class iOSPostProcessBuild
 #if UNITY_IOS
 #pragma warning disable 0162
 	[PostProcessBuild]
-	public static void OnPostprocessBuild(BuildTarget target, string buildPath)
+	public static void OnPostprocessBuild(BuildTarget buildTarget, string buildPath)
 	{
-		if (target == BuildTarget.iOS)
+		if (buildTarget == BuildTarget.iOS)
 		{
 			string projectPath = PBXProject.GetPBXProjectPath(buildPath);
 			string plistPath = Path.Combine(buildPath, "Info.plist");
@@ -26,8 +25,18 @@ public class iOSPostProcessBuild
 
 			var pbxProject = new PBXProject();
 			pbxProject.ReadFromFile(projectPath);
-			pbxProject.SetBuildProperty(pbxProject.GetUnityFrameworkTargetGuid(), "ENABLE_BITCODE", "NO");
-			pbxProject.SetBuildProperty(pbxProject.GetUnityMainTargetGuid(), "ENABLE_BITCODE", "NO");
+			string target = pbxProject.GetUnityMainTargetGuid();
+			pbxProject.SetBuildProperty(target, "ENABLE_BITCODE", "NO");
+
+			target = pbxProject.TargetGuidByName(PBXProject.GetUnityTestTargetName());
+			pbxProject.SetBuildProperty(target, "ENABLE_BITCODE", "NO");
+
+			target = pbxProject.GetUnityFrameworkTargetGuid();
+			pbxProject.SetBuildProperty(target, "ENABLE_BITCODE", "NO");
+
+			target = pbxProject.TargetGuidByName("GameAssembly");
+			pbxProject.SetBuildProperty(target, "ENABLE_BITCODE", "NO");
+
 	        pbxProject.WriteToFile(projectPath);
 		}
 	}

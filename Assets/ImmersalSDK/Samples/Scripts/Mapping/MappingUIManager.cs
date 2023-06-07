@@ -67,6 +67,7 @@ namespace Immersal.Samples.Mapping
 
         public void LogoutButtonPressed()
         {
+	        visualizeManager.ResetMaps();
 	        LoginManager.Instance.Logout();
         }
 
@@ -87,7 +88,7 @@ namespace Immersal.Samples.Mapping
 
 		private void OnEnable()
 		{
-			loggedInAsText.text = "Logged in as " + PlayerPrefs.GetString("login");
+			loggedInAsText.text = string.Format("Logged in as {0}", PlayerPrefs.GetString("login"));
 		}
 
 		private void OnDisable()
