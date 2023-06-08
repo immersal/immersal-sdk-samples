@@ -15,7 +15,7 @@ using UnityEngine.UI;
 using NRKernal;
 using Immersal.AR;
 
-namespace Immersal.Samples.Util
+namespace Immersal.XR.Nreal
 {
 	[RequireComponent(typeof(Image))]
 	public class NRPoseIndicator : MonoBehaviour {

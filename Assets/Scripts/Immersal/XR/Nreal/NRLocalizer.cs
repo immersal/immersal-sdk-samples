@@ -12,33 +12,22 @@ Contact sdk@immersal.com for licensing requests.
 using UnityEngine;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NRKernal;
+using Immersal.AR;
 using Immersal.REST;
-using Unity.Collections.LowLevel.Unsafe;
 
-namespace Immersal.AR.Nreal
+namespace Immersal.XR.Nreal
 {
     public class NRLocalizer : LocalizerBase
 	{
 		[Tooltip("Disable if you want to use RGB video capture while localizing. Also disable Multithreaded Rendering.")]
 		[SerializeField]
 		private bool m_UseYUV;
-		[SerializeField]
-		private bool m_EnableLogging;
 
 		private static NRLocalizer instance = null;
 
         private CameraModelView CamTexture { get; set; }
-
-		private void LocalizerDebugLog(string message)
-		{
-			if (m_EnableLogging)
-			{
-				Debug.LogFormat("[NRLocalizer]: {0}", message);
-			}
-		}
 
 		public static NRLocalizer Instance
 		{
@@ -146,14 +135,13 @@ namespace Immersal.AR.Nreal
 		{
 			while (!CamTexture.DidUpdateThisFrame)
  			{
-				 await Task.Yield();
+				await Task.Yield();
  			}
 
 			if (m_PixelBuffer != IntPtr.Zero)
 			{
 				stats.localizationAttemptCount++;
 
-				Vector4 intrinsics;
 				Pose headPose = NRFrame.HeadPose;
 				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePose;
 				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
@@ -162,7 +150,7 @@ namespace Immersal.AR.Nreal
 				int height = CamTexture.Height;
 				Vector3 pos = Vector3.zero;
 				Quaternion rot = Quaternion.identity;
-				GetIntrinsics(out intrinsics);
+				GetIntrinsics(out Vector4 intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -198,7 +186,6 @@ namespace Immersal.AR.Nreal
 					rot *= Quaternion.Euler(0f, 0f, 180.0f);
 					pos = ARHelper.SwitchHandedness(pos);
 					rot = ARHelper.SwitchHandedness(rot);
-					
 					
 					MapOffset mo = ARSpace.mapIdToOffset[mapId];
 
@@ -246,7 +233,6 @@ namespace Immersal.AR.Nreal
 
 				JobLocalizeServerAsync j = new JobLocalizeServerAsync();
 
-				Vector4 intrinsics;
 				Pose headPose = NRFrame.HeadPose;
 				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePose;
 				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
@@ -256,7 +242,7 @@ namespace Immersal.AR.Nreal
 				int height = CamTexture.Height;
 				byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
 
-				GetIntrinsics(out intrinsics);
+				GetIntrinsics(out Vector4 intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -362,7 +348,6 @@ namespace Immersal.AR.Nreal
 
 				JobGeoPoseAsync j = new JobGeoPoseAsync();
 
-				Vector4 intrinsics;
 				Pose headPose = NRFrame.HeadPose;
 				Pose rgbCameraFromEyePose = NRFrame.EyePoseFromHead.RGBEyePose;
 				Vector3 camPos = headPose.position + rgbCameraFromEyePose.position;
@@ -372,7 +357,7 @@ namespace Immersal.AR.Nreal
 				int height = CamTexture.Height;
 				byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
 
-				GetIntrinsics(out intrinsics);
+				GetIntrinsics(out Vector4 intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
 
@@ -429,6 +414,9 @@ namespace Immersal.AR.Nreal
 							Quaternion mapRot;
 							Core.PosEcefToMap(out mapPos, ecef, mapToEcef);
 							Core.RotEcefToMap(out mapRot, rot, mapToEcef);
+							ARHelper.GetRotation(ref mapRot);
+							mapPos = ARHelper.SwitchHandedness(mapPos);
+							mapRot = ARHelper.SwitchHandedness(mapRot);
 							
 							Matrix4x4 offsetNoScale = Matrix4x4.TRS(mo.position, mo.rotation, Vector3.one);
 							Vector3 scaledPos = Vector3.Scale(mapPos, mo.scale);
@@ -440,6 +428,7 @@ namespace Immersal.AR.Nreal
 								mo.space.filter.RefinePose(m);
 							else
 								ARSpace.UpdateSpace(mo.space, m.GetColumn(3), m.rotation);
+							
 							LocalizerBase.GetLocalizerPose(out lastLocalizedPose, mapId, cloudSpace.GetColumn(3), cloudSpace.rotation, m.inverse, mapToEcef);
 							map.NotifySuccessfulLocalization(mapId);
 							OnPoseFound?.Invoke(lastLocalizedPose);
@@ -483,23 +472,20 @@ namespace Immersal.AR.Nreal
 
 			unsafe
 			{
-				ulong handle;
-				byte* ptr = (byte*)UnsafeUtility.PinGCArrayAndGetDataAddress(pixels, out handle);
-				m_PixelBuffer = (IntPtr)ptr;
-				UnsafeUtility.ReleaseGCObject(handle);
+				fixed (byte* pinnedData = pixels)
+				{
+					m_PixelBuffer = (IntPtr)pinnedData;
+				}
 			}
         }
 
         private void OnYUVCaptureUpdate(NRRGBCamTextureYUV.YUVTextureFrame frame)
         {
-			if (m_PixelBuffer == IntPtr.Zero)
+			unsafe
 			{
-				unsafe
+				fixed (byte* pinnedData = frame.YBuf)
 				{
-					ulong handle;
-					byte* ptr = (byte*)UnsafeUtility.PinGCArrayAndGetDataAddress(frame.YBuf, out handle);
-					m_PixelBuffer = (IntPtr)ptr;
-					UnsafeUtility.ReleaseGCObject(handle);
+					m_PixelBuffer = (IntPtr)pinnedData;
 				}
 			}
         }
