@@ -26,6 +26,7 @@ namespace Immersal.Samples.Mapping
         public const int MAX_VERTICES = 65535;
 
         [SerializeField] private bool m_SaveMapOnServer;
+        [SerializeField] private float m_CaptureInterval = 1.0f;
         [SerializeField] private float m_PointSize = 20f;
         [SerializeField] private Color m_PointColor = new Color(0.57f, 0.93f, 0.12f);
         [SerializeField] private ARSpace m_ArSpace;
@@ -169,6 +170,7 @@ namespace Immersal.Samples.Mapping
                 while (m_IsMapping)
                 {
                     await RealtimeCapture();
+                    await Task.Delay((int)(m_CaptureInterval * 1000));
                 }
             }
             else
@@ -243,6 +245,7 @@ namespace Immersal.Samples.Mapping
             {
                 GameObject go = new GameObject(string.Format("AR Map {0}-{1}", job.id, job.name));
                 go.transform.SetParent(root, false);
+                ARMap.pointSize = 0.5f;
                 ARMap arMap = go.AddComponent<ARMap>();
                 arMap.mapName = job.name;
                 arMap.privacy = job.privacy;

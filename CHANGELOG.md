@@ -4,6 +4,11 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.19.1] - 2023-06-21
+### Fixed
+- Core: Map construction would sometimes fail with a dataset that worked with 1.18.1
+- Samples: Changed all sample scenes to use the deprecated `ARPoseDriver`, until Unity fixes the `TrackedPoseDriver` in AR Foundation
+- Samples: Sample scenes on Android sometimes start with a black screen, with errors in adb console: "Failed to begin a new frame, ProcessSkybox will not render the skybox. Skipped rendering frame because GfxDevice is in invalid state (device lost)". Deleting the Library folder in the Unity project seems to fix this. This problem is related to Unity 2022 and AR Foundation.
 
 ## [1.19.0] - 2023-06-07
 ### Added
