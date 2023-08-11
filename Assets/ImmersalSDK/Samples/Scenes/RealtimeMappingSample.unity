@@ -1109,10 +1109,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8869940821398010349, guid: 181e478384bef4862b94db5a060df1b6, type: 3}
-      propertyPath: developerToken
-      value: 243524623462346233336624315464616b4545616531677a6b5a6b4939736b52596569757371516847655769336d6830767047652f5930
-      objectReference: {fileID: 0}
-    - target: {fileID: 8869940821398010349, guid: 181e478384bef4862b94db5a060df1b6, type: 3}
       propertyPath: m_DefaultServer
       value: 2
       objectReference: {fileID: 0}
