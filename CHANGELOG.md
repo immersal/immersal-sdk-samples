@@ -4,6 +4,18 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.19.2] - 2023-10-03
+### Changed
+- Unity to 2022.3.10f1
+- Updated Unity packages
+- Core: Updated plugin interface for `LocalizeImage()`, now returns a struct with the pose data and confidence value
+- Samples: Now use `TrackedPoseDriver` in favour of the deprecated `ARPoseDriver`
+### Added
+- Core: Added native plugins for Magic Leap 2 and HoloLens 2
+- Developer Portal: Password reset functionality
+### Fixed
+- Core: On-server localization now works when the map construction has reached the `sparse` state
+
 ## [1.19.1] - 2023-06-21
 ### Fixed
 - Core: Map construction would sometimes fail with a dataset that worked with 1.18.1

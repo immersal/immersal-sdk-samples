@@ -104,18 +104,26 @@ namespace Immersal.Samples
 
 					if (m_PixelBuffer != IntPtr.Zero)
 					{
-						// initialize variables to store Immersal localization results
-						Vector3 locPos = Vector3.zero;
-						Quaternion locRot = Quaternion.identity;
-
 						// localization done in an async task. Pose of camera (image) is in relation to the Spatial Map.
 						// note that currently the on-device plugin does return the usual mapId, but instead a runtime generated internal mapHandle of the map in device memory
 						float startTime = Time.realtimeSinceStartup;
-						Task<int> t = Task.Run(() =>
+						Task<LocalizeInfo> t = Task.Run(() =>
 						{
-							return Immersal.Core.LocalizeImage(out locPos, out locRot, image.width, image.height, ref intrinsics, m_PixelBuffer);
+							return Immersal.Core.LocalizeImage(image.width, image.height, ref intrinsics, m_PixelBuffer);
 						});
+
 						await t;
+
+						LocalizeInfo locInfo = t.Result;
+
+						// store Immersal localization results
+						Matrix4x4 resultMatrix = Matrix4x4.identity;
+						resultMatrix.m00 = locInfo.r00; resultMatrix.m01 = locInfo.r01; resultMatrix.m02 = locInfo.r02; resultMatrix.m03 = locInfo.px;
+						resultMatrix.m10 = locInfo.r10; resultMatrix.m11 = locInfo.r11; resultMatrix.m12 = locInfo.r12; resultMatrix.m13 = locInfo.py;
+						resultMatrix.m20 = locInfo.r20; resultMatrix.m21 = locInfo.r21; resultMatrix.m22 = locInfo.r22; resultMatrix.m23 = locInfo.pz;
+
+						Vector3 locPos = resultMatrix.GetColumn(3);
+						Quaternion locRot = resultMatrix.rotation;
 
 						// WARNING: added just to simulate high latency in localization as the camera continues moving during computation
 						await Task.Delay(Mathf.RoundToInt(m_simulatedLatency * 1000f));
@@ -132,7 +140,7 @@ namespace Immersal.Samples
 						Matrix4x4 trackerPoseDelta = trackerPoseBefore.inverse * trackerPoseAfter;
 
 						// get the user-friendly mapId from the mapHandle returned from localization
-						int mapHandle = t.Result;
+						int mapHandle = locInfo.handle;
 						int mapId = ARMap.MapHandleToId(mapHandle);
 						
 						// mapIds start at 0, -1 means localization failed. ARMap with matching mapId needs to be found in the scene 

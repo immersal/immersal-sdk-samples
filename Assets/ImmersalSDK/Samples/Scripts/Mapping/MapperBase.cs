@@ -1,12 +1,12 @@
 /*===============================================================================
-Copyright (C) 2022 Immersal - Part of Hexagon. All Rights Reserved.
+Copyright (C) 2023 Immersal - Part of Hexagon. All Rights Reserved.
 
 This file is part of the Immersal SDK.
 
 The Immersal SDK cannot be copied, distributed, or made available to
 third-parties for commercial purposes without written permission of Immersal Ltd.
 
-Contact sdk@immersal.com for licensing requests.
+Contact sales@immersal.com for licensing requests.
 ===============================================================================*/
 
 using System;
@@ -237,7 +237,7 @@ namespace Immersal.Samples.Mapping
 
             if (mapperSettings.downsampleWhenLocalizing)
             {
-                Immersal.Core.SetInteger("LocalizationMaxPixels", 1280*720);
+                Immersal.Core.SetInteger("LocalizationMaxPixels", 960*720);
             }
         }
 
@@ -634,7 +634,7 @@ namespace Immersal.Samples.Mapping
             m_Jobs.Add(j);
         }
 
-        public void NotifyIfConnected(icvCaptureInfo info)
+        public void NotifyIfConnected(CaptureInfo info)
         {
             Dispatch.Dispatch(() => {
                 if (!m_SessionFirstImage)
