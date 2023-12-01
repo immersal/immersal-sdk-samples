@@ -32,7 +32,7 @@ Note: Earlier versions of Unity and AR Foundation will still work with minimal s
 
 1. Clone this repository
 ```
-git clone https://github.com/immersal/arcloud-sdk-samples.git
+git clone https://github.com/immersal/immersal-sdk-samples.git
 ```
 2. Download our Unity Plugin (`ImmersalSDKvX_X_X.unitypackage`) from [here](https://developers.immersal.com/)
 3. Launch Unity, click on **Open Project**, navigate to the `immersal-sdk-samples` folder on your computer and press Apply/OK.
