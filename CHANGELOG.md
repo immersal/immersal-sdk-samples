@@ -4,6 +4,19 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2023-11-30
+### Changed
+### Added
+- REST: Added map copy, align and stitch requests
+- REST: Added device model logging to improve future localization method development
+- Core: Added configurable `solverType` to enable localization method selection
+- Core: Added new map construction parameters:
+  - `locFilter`, disabled by default
+  - `featureFilter`, 0 by default
+  - `mapCompression`, 0 by default
+### Fixed
+- Core: Android plugin; user validation (for real-time mapping and other Enterprise features)
+
 ## [1.19.2] - 2023-10-03
 ### Changed
 - Unity to 2022.3.10f1

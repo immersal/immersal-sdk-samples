@@ -172,13 +172,16 @@ namespace Immersal.Samples.Mapping
             m_bCaptureRunning = false;
         }
 
-        public void Construct(string mapName, bool preservePoses, bool isPublic)
+        public void Construct(string mapName, bool preservePoses, bool isPublic, bool mapTrim, int featureFilter, int compressionLevel)
         {
             JobConstructAsync j = new JobConstructAsync();
             j.name = mapName;
             j.featureCount = 600;
             j.preservePoses = preservePoses;
             j.windowSize = 0;
+            j.mapTrim = mapTrim;
+            j.featureFilter = featureFilter;
+            j.compressionLevel = compressionLevel;
             j.OnResult += (SDKConstructResult result) =>
             {
                 Debug.LogFormat("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount);

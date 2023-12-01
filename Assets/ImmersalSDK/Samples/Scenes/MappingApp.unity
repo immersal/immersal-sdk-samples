@@ -613,6 +613,7 @@ MonoBehaviour:
   m_UseServerLocalizer: 0
   m_MapIds: []
   m_EnableLogging: 1
+  m_localizeMethod: 0
 --- !u!1 &1662217841
 GameObject:
   m_ObjectHideFlags: 0

@@ -250,6 +250,7 @@ namespace Immersal.Samples.Mapping
         private void CompleteLogin()
         {
             loginErrorText.gameObject.SetActive(false);
+            m_Sdk.ValidateUser();
                 
             FadeOut();
 

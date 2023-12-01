@@ -177,6 +177,8 @@ namespace Immersal.Samples.Mapping
 
         public void TryLocalize()
         {
+            m_Sdk.Localizer.SolverType = mapperSettings.solverType;
+            
             if (mapperSettings.useGeoPoseLocalizer)
             {
                 SDKMapId[] mapIds = GetActiveMapIds();

@@ -10,15 +10,17 @@ Contact sales@immersal.com for licensing requests.
 ===============================================================================*/
 
 using System.IO;
+using Immersal.AR;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.Serialization;
 
 namespace Immersal.Samples.Mapping
 {
     public class MapperSettings : MonoBehaviour
     {
-        public const int VERSION = 12;
+        public const int VERSION = 13;
 
         public bool useGps { get; private set; } = true;
         public bool captureRgb { get; private set; } = false;
@@ -40,6 +42,10 @@ namespace Immersal.Samples.Mapping
         public int automaticCaptureMaxImages { get; private set; } = 40;
         public float automaticCaptureInterval { get; private set; } = 0.6f;
         public int windowSize { get; private set; } = 0;
+        public SolverType solverType { get; private set; } = 0;
+        public bool mapTrim { get; private set; } = false;
+        public int featureFilter { get; private set; } = 0;
+        public int compressionLevel { get; private set; } = 0;
 
         // workspace mode settings
         [SerializeField]
@@ -100,7 +106,19 @@ namespace Immersal.Samples.Mapping
         private TMP_InputField m_WindowSizeInput = null;
         [SerializeField]
         private string m_Filename = "settings.json";
+        [SerializeField]
+        private TMP_InputField m_FeatureFilterInput = null;
+        [SerializeField]
+        private Toggle m_MapTrimToggle = null;
+        [SerializeField]
+        private TMP_InputField m_CompressionLevelInput = null;
+        [SerializeField]
+        private GameObject m_LevelRestrictedParent = null;
+        [SerializeField]
+        private int m_LevelRequired = 99;
 
+        private int m_UserLevel = 0;
+        
         [System.Serializable]
         public struct MapperSettingsFile
         {
@@ -123,10 +141,14 @@ namespace Immersal.Samples.Mapping
             public bool useGeoPoseLocalizer;
             public bool useDifferentARSpaces;
             public bool preservePoses;
+            public bool mapTrim;
+            public int featureFilter;
+            public int compressionLevel;
             public bool automaticCapture;
             public int automaticCaptureMaxImages;
             public float automaticCaptureInterval;
             public int windowSize;
+            public SolverType solverType;
         }
         
         void Awake()
@@ -244,6 +266,26 @@ namespace Immersal.Samples.Mapping
             preservePoses = value;
             SaveSettingsToPrefs();
         }
+        
+        public void SetMapTrim(bool value)
+        {
+            mapTrim = value;
+            SaveSettingsToPrefs();
+        }
+        
+        public void SetFeatureFilter(string value)
+        {
+            int.TryParse(value, out int a);
+            featureFilter = a;
+            SaveSettingsToPrefs();
+        }
+        
+        public void SetCompressionLevel(string value)
+        {
+            int.TryParse(value, out int a);
+            compressionLevel = a;
+            SaveSettingsToPrefs();
+        }
 
         public void SetAutomaticCapture(bool value)
         {
@@ -273,6 +315,22 @@ namespace Immersal.Samples.Mapping
 
             windowSize = a;
             SaveSettingsToPrefs();
+        }
+
+        public void SetSolverType(SolverType solverType)
+        {
+            this.solverType = solverType;
+            SaveSettingsToPrefs();
+        }
+
+        public void UpdateLevelRestriction(int userLevel)
+        {
+            m_UserLevel = userLevel;
+
+            if (m_LevelRestrictedParent != null)
+            {
+                m_LevelRestrictedParent.SetActive(userLevel >= m_LevelRequired);
+            }
         }
 
         private void Start()
@@ -353,6 +411,18 @@ namespace Immersal.Samples.Mapping
 
                 m_WindowSizeInput.SetTextWithoutNotify(loadFile.windowSize.ToString());
                 windowSize = loadFile.windowSize;
+
+                solverType = loadFile.solverType;
+
+                if (m_UserLevel >= m_LevelRequired)
+                {
+                    m_MapTrimToggle.SetIsOnWithoutNotify(loadFile.mapTrim);
+                    mapTrim = loadFile.mapTrim;
+                    m_FeatureFilterInput.SetTextWithoutNotify(loadFile.featureFilter.ToString());
+                    featureFilter = loadFile.featureFilter;
+                    m_CompressionLevelInput.SetTextWithoutNotify(loadFile.compressionLevel.ToString());
+                    compressionLevel = loadFile.compressionLevel;
+                }
             }
             catch (FileNotFoundException e)
             {
@@ -392,7 +462,15 @@ namespace Immersal.Samples.Mapping
             saveFile.automaticCaptureMaxImages = automaticCaptureMaxImages;
             saveFile.automaticCaptureInterval = automaticCaptureInterval;
             saveFile.windowSize = windowSize;
+            saveFile.solverType = solverType;
 
+            if (m_UserLevel >= m_LevelRequired)
+            {
+                saveFile.mapTrim = mapTrim;
+                saveFile.featureFilter = featureFilter;
+                saveFile.compressionLevel = compressionLevel;
+            }
+            
             string jsonstring = JsonUtility.ToJson(saveFile, true);
             string dataPath = Path.Combine(Application.persistentDataPath, m_Filename);
             //Debug.Log(dataPath);
@@ -417,9 +495,17 @@ namespace Immersal.Samples.Mapping
             useDifferentARSpaces = true;
             m_PreservePosesToggle.SetIsOnWithoutNotify(false);
             preservePoses = false;
+            m_MapTrimToggle.SetIsOnWithoutNotify(false);
+            mapTrim = false;
+            m_FeatureFilterInput.SetTextWithoutNotify(0.ToString());
+            featureFilter = 0;
+            m_CompressionLevelInput.SetTextWithoutNotify(0.ToString());
+            compressionLevel = 0;
             m_AutomaticCaptureToggle.SetIsOnWithoutNotify(false);
             automaticCapture = false;
             EnableAutomaticCaptureUI(automaticCapture);
+
+            solverType = 0;
             
             automaticCaptureMaxImages = Mathf.RoundToInt(40);
             m_AutomaticCaptureMaxImagesSlider.value = automaticCaptureMaxImages;

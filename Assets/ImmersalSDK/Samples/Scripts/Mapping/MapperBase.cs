@@ -427,14 +427,19 @@ namespace Immersal.Samples.Mapping
 
         async void StatusPoll()
         {
+            int polledUserLevel = 0;
+            
             JobStatusAsync j = new JobStatusAsync();
             j.OnResult += (SDKStatusResult result) =>
             {
                 this.stats.imageCount = result.imageCount;
                 this.stats.imageMax = result.imageMax;
+                polledUserLevel = result.level;
             };
 
             await j.RunJobAsync();
+            mapperSettings.UpdateLevelRestriction(polledUserLevel);
+            
             await Task.Delay(3000);
 
             if (Application.isPlaying && m_enableStatusPolling)
@@ -626,6 +631,9 @@ namespace Immersal.Samples.Mapping
             j.featureCount = mapperSettings.mapDetailLevel;
             j.preservePoses = mapperSettings.preservePoses;
             j.windowSize = mapperSettings.windowSize;
+            j.mapTrim = mapperSettings.mapTrim;
+            j.featureFilter = mapperSettings.featureFilter;
+            j.compressionLevel = mapperSettings.compressionLevel;
             j.OnResult += (SDKConstructResult result) =>
             {
                 Debug.LogFormat("Started constructing a map width ID {0}, containing {1} images and detail level of {2}", result.id, result.size, j.featureCount);
