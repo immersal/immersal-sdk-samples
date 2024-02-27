@@ -5,13 +5,13 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/HWAR Scenes/MappingApp.unity
     guid: e651ad80db9b04aa0b633a350b38232d
   - enabled: 0
     path: Assets/HWAR Scenes/StartScene.unity
     guid: 72161e6b52f34428a9404bc08c0448f9
-  - enabled: 0
+  - enabled: 1
     path: Assets/HWAR Scenes/ContentPlacementSample.unity
     guid: 28523a00383e64b6aafa2517f5472dd7
   - enabled: 0
@@ -35,6 +35,8 @@ EditorBuildSettings:
     UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 6bbd0dc2d2128402bbbaa2ce6e9da053,
       type: 2}
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: 1d7613635aa834250b6d590842068b20,
+      type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 1d6c7bef80cf84a66a4089819b34312d,
       type: 2}
     com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: 61430ebb5678b4a2680a97641f470d65,
       type: 2}

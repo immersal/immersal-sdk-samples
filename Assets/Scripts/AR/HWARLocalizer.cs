@@ -110,10 +110,10 @@ namespace Immersal.AR
 
 				float startTime = Time.realtimeSinceStartup;
 
-                Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
+                Task<(byte[], CaptureInfo)> t = Task.Run(() =>
                 {
                     byte[] capture = new byte[channels * width * height + 8192];
-                    icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    CaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                     Array.Resize(ref capture, info.captureSize);
                     return (capture, info);
                 });
@@ -217,10 +217,10 @@ namespace Immersal.AR
 
 				float startTime = Time.realtimeSinceStartup;
 
-                Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
+                Task<(byte[], CaptureInfo)> t = Task.Run(() =>
                 {
                     byte[] capture = new byte[channels * width * height + 8192];
-                    icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+                    CaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
                     Array.Resize(ref capture, info.captureSize);
                     return (capture, info);
                 });
@@ -313,22 +313,33 @@ namespace Immersal.AR
 
 				HWARHelper.GetIntrinsics(out intrinsics, isHD, image.Width, image.Height);
 				HWARHelper.GetPlaneDataFast(ref m_PixelBuffer, image);
+				float[] rotArray = new float[4];
 
 				if (m_PixelBuffer != IntPtr.Zero)
 				{
-					Vector3 pos = Vector3.zero;
-					Quaternion rot = Quaternion.identity;
-
 					float startTime = Time.realtimeSinceStartup;
 
-					Task<int> t = Task.Run(() =>
+					Task<LocalizeInfo> t = Task.Run(() =>
 					{
-						return Immersal.Core.LocalizeImage(out pos, out rot, image.Width, image.Height, ref intrinsics, m_PixelBuffer);
+						if (SolverType == SolverType.Lean)
+							return Immersal.Core.LocalizeImage(image.Width, image.Height, ref intrinsics, m_PixelBuffer, rotArray);
+
+						return Immersal.Core.LocalizeImage(image.Width, image.Height, ref intrinsics, m_PixelBuffer);
 					});
 
 					await t;
+					
+					LocalizeInfo locInfo = t.Result;
 
-					int mapHandle = t.Result;
+					Matrix4x4 resultMatrix = Matrix4x4.identity;
+					resultMatrix.m00 = locInfo.r00; resultMatrix.m01 = locInfo.r01; resultMatrix.m02 = locInfo.r02; resultMatrix.m03 = locInfo.px;
+					resultMatrix.m10 = locInfo.r10; resultMatrix.m11 = locInfo.r11; resultMatrix.m12 = locInfo.r12; resultMatrix.m13 = locInfo.py;
+					resultMatrix.m20 = locInfo.r20; resultMatrix.m21 = locInfo.r21; resultMatrix.m22 = locInfo.r22; resultMatrix.m23 = locInfo.pz;
+
+					Vector3 pos = resultMatrix.GetColumn(3);
+					Quaternion rot = resultMatrix.rotation;
+					
+					int mapHandle = t.Result.handle;
 					int mapId = ARMap.MapHandleToId(mapHandle);
 					float elapsedTime = Time.realtimeSinceStartup - startTime;
 

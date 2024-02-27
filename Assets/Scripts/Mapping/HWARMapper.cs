@@ -101,7 +101,7 @@ namespace Immersal.Samples.Mapping
                 byte[] capture = new byte[channels * width * height + 8192];
                 int useMatching = mapperSettings.checkConnectivity ? 1 : 0;
 
-                Task<icvCaptureInfo> captureTask = Task.Run(() =>
+                Task<CaptureInfo> captureTask = Task.Run(() =>
                 {
                     return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels, useMatching);
                 });
@@ -163,26 +163,15 @@ namespace Immersal.Samples.Mapping
 
         public void TryLocalize()
         {
-            if (mapperSettings.useServerLocalizer)
+         if (mapperSettings.useGeoPoseLocalizer)
             {
-                int n = ARSpace.mapIdToMap.Count;
-                SDKMapId[] mapIds = new SDKMapId[n];
-
-                int count = 0;
-                foreach (int id in ARSpace.mapIdToMap.Keys)
-                {
-                    mapIds[count] = new SDKMapId();
-                    mapIds[count++].id = id;
-                }
-
-                if (m_UseGeoPose)
-                {
-                    m_Sdk.Localizer.LocalizeGeoPose(mapIds);
-                }
-                else
-                {
-                    m_Sdk.Localizer.LocalizeServer(mapIds);
-                }
+                SDKMapId[] mapIds = GetActiveMapIds();
+                m_Sdk.Localizer.LocalizeGeoPose(mapIds);
+            }
+            else if (mapperSettings.useServerLocalizer)
+            {
+                SDKMapId[] mapIds = GetActiveMapIds();
+                m_Sdk.Localizer.LocalizeServer(mapIds);
             }
             else
             {

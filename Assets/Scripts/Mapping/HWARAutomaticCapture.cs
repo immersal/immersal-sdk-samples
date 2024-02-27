@@ -117,7 +117,7 @@ namespace Immersal.Samples.Mapping
 
                 byte[] capture = new byte[channels * width * height + 8192];
 
-                Task<icvCaptureInfo> captureTask = Task.Run(() =>
+                Task<CaptureInfo> captureTask = Task.Run(() =>
                 {
                     return Core.CaptureImage(capture, capture.Length, pixels, width, height, channels, 0);
                 });
