@@ -137,7 +137,7 @@ namespace Immersal.XR.Nreal
  			{
 				await Task.Yield();
  			}
-
+			
 			if (m_PixelBuffer != IntPtr.Zero)
 			{
 				stats.localizationAttemptCount++;
@@ -148,20 +148,38 @@ namespace Immersal.XR.Nreal
 				Quaternion camRot = headPose.rotation * rgbCameraFromEyePose.rotation;
 				int width = CamTexture.Width;
 				int height = CamTexture.Height;
-				Vector3 pos = Vector3.zero;
-				Quaternion rot = Quaternion.identity;
 				GetIntrinsics(out Vector4 intrinsics);
 
 				float startTime = Time.realtimeSinceStartup;
-
-				Task<int> t = Task.Run(() =>
+				float[] rotArray = new float[4];
+				if (SolverType == SolverType.Lean)
 				{
-					return Immersal.Core.LocalizeImage(out pos, out rot, width, height, ref intrinsics, m_PixelBuffer);
+					Quaternion qRot = m_Cam.transform.rotation;
+					ARHelper.GetRotation(ref qRot);
+					qRot = ARHelper.SwitchHandedness(qRot);
+					rotArray = new float[4] { qRot.x, qRot.y, qRot.z, qRot.w };
+				}
+
+				Task<LocalizeInfo> t = Task.Run(() =>
+				{
+					if (SolverType == SolverType.Lean)
+						return Immersal.Core.LocalizeImage(width, height, ref intrinsics, m_PixelBuffer, rotArray);
+
+					return Immersal.Core.LocalizeImage(width, height, ref intrinsics, m_PixelBuffer);
 				});
 
 				await t;
+				LocalizeInfo locInfo = t.Result;
 
-				int mapHandle = t.Result;
+				Matrix4x4 resultMatrix = Matrix4x4.identity;
+				resultMatrix.m00 = locInfo.r00; resultMatrix.m01 = locInfo.r01; resultMatrix.m02 = locInfo.r02; resultMatrix.m03 = locInfo.px;
+				resultMatrix.m10 = locInfo.r10; resultMatrix.m11 = locInfo.r11; resultMatrix.m12 = locInfo.r12; resultMatrix.m13 = locInfo.py;
+				resultMatrix.m20 = locInfo.r20; resultMatrix.m21 = locInfo.r21; resultMatrix.m22 = locInfo.r22; resultMatrix.m23 = locInfo.pz;
+
+				Vector3 pos = resultMatrix.GetColumn(3);
+				Quaternion rot = resultMatrix.rotation;
+
+				int mapHandle = t.Result.handle;
 				int mapId = ARMap.MapHandleToId(mapHandle);
 				float elapsedTime = Time.realtimeSinceStartup - startTime;
 
@@ -246,10 +264,10 @@ namespace Immersal.XR.Nreal
 
 				float startTime = Time.realtimeSinceStartup;
 
-				Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
+				Task<(byte[], CaptureInfo)> t = Task.Run(() =>
 				{
 					byte[] capture = new byte[channels * width * height + 8192];
-					icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+					CaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
 					Array.Resize(ref capture, info.captureSize);
 					return (capture, info);
 				});
@@ -259,6 +277,17 @@ namespace Immersal.XR.Nreal
 				j.image = t.Result.Item1;
 				j.intrinsics = intrinsics;
 				j.mapIds = mapIds;
+				
+				j.solverType = (int)SolverType;
+				float[] rotArray = new float[4];
+				if (SolverType == SolverType.Lean)
+				{
+					Quaternion qRot = m_Cam.transform.rotation;
+					ARHelper.GetRotation(ref qRot);
+					qRot = ARHelper.SwitchHandedness(qRot);
+					rotArray = new float[4] { qRot.x, qRot.y, qRot.z, qRot.w };
+				}
+				j.camRot = rotArray;
 
 				j.OnResult += (SDKLocalizeResult result) =>
 				{
@@ -356,15 +385,29 @@ namespace Immersal.XR.Nreal
 				int width = CamTexture.Width;
 				int height = CamTexture.Height;
 				byte[] pixels = m_UseYUV ? (CamTexture as NRRGBCamTextureYUV).GetTexture().YBuf : GetYBufFromTexture((CamTexture as NRRGBCamTexture).GetTexture());
-
+				
+				j.mapIds = mapIds;
+				
+				j.solverType = (int)SolverType;
+				float[] rotArray = new float[4];
+				if (SolverType == SolverType.Lean)
+				{
+					Quaternion qRot = m_Cam.transform.rotation;
+					ARHelper.GetRotation(ref qRot);
+					qRot = ARHelper.SwitchHandedness(qRot);
+					rotArray = new float[4] { qRot.x, qRot.y, qRot.z, qRot.w };
+				}
+				j.camRot = rotArray;
+				
 				GetIntrinsics(out Vector4 intrinsics);
+				j.intrinsics = intrinsics;
 
 				float startTime = Time.realtimeSinceStartup;
 
-				Task<(byte[], icvCaptureInfo)> t = Task.Run(() =>
+				Task<(byte[], CaptureInfo)> t = Task.Run(() =>
 				{
 					byte[] capture = new byte[channels * width * height + 8192];
-					icvCaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
+					CaptureInfo info = Immersal.Core.CaptureImage(capture, capture.Length, pixels, width, height, channels);
 					Array.Resize(ref capture, info.captureSize);
 					return (capture, info);
 				});
@@ -372,9 +415,7 @@ namespace Immersal.XR.Nreal
 				await t;
 
 				j.image = t.Result.Item1;
-				j.intrinsics = intrinsics;
-				j.mapIds = mapIds;
-
+				
 				j.OnResult += (SDKGeoPoseResult result) =>
 				{
 					float elapsedTime = Time.realtimeSinceStartup - startTime;

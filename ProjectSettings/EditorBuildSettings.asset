@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/HelloImmersal.unity
+    path: Assets/NRSDKScenes/HelloImmersal.unity
     guid: 026b52fb0ac014cae8cdcf9e6e9763aa
   m_configObjects:
     UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 4b1d5a042e31248bd96476a68f09d908,

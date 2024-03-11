@@ -11,7 +11,7 @@
       <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
     </activity>
     <meta-data android:name="nreal_sdk" android:value="true" />
-    <meta-data android:name="com.nreal.supportDevices" android:value="NrealLight|NrealAir" />
+    <meta-data android:name="com.nreal.supportDevices" android:value="1|NrealLight|2|NrealAir" />
   </application>
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-permission android:name="android.permission.BLUETOOTH" />
