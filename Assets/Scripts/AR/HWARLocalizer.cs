@@ -123,6 +123,16 @@ namespace Immersal.AR
                 j.image = t.Result.Item1;
 				j.intrinsics = intrinsics;
 				j.mapIds = mapIds;
+				j.solverType = (int)SolverType;
+				float[] rotArray = new float[4];
+				if (SolverType == SolverType.Lean)
+				{
+					Quaternion qRot = m_Cam.transform.rotation;
+					ARHelper.GetRotation(ref qRot);
+					qRot = ARHelper.SwitchHandedness(qRot);
+					rotArray = new float[4] { qRot.x, qRot.y, qRot.z, qRot.w };
+				}
+				j.camRot = rotArray;
 
                 j.OnResult += (SDKLocalizeResult result) =>
                 {
@@ -211,6 +221,17 @@ namespace Immersal.AR
                 int height = image.Height;
 
                 j.mapIds = mapIds;
+                j.solverType = (int)SolverType;
+                float[] rotArray = new float[4];
+                if (SolverType == SolverType.Lean)
+                {
+	                Quaternion qRot = m_Cam.transform.rotation;
+	                ARHelper.GetRotation(ref qRot);
+	                qRot = ARHelper.SwitchHandedness(qRot);
+	                rotArray = new float[4] { qRot.x, qRot.y, qRot.z, qRot.w };
+                }
+				
+                j.camRot = rotArray;
 
                 HWARHelper.GetIntrinsics(out intrinsics, isHD, width, height);
 				HWARHelper.GetPlaneData(out pixels, image);

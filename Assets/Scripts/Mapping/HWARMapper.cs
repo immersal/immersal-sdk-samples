@@ -163,7 +163,7 @@ namespace Immersal.Samples.Mapping
 
         public void TryLocalize()
         {
-         if (mapperSettings.useGeoPoseLocalizer)
+            if (mapperSettings.useGeoPoseLocalizer)
             {
                 SDKMapId[] mapIds = GetActiveMapIds();
                 m_Sdk.Localizer.LocalizeGeoPose(mapIds);

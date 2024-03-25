@@ -32,7 +32,7 @@
 
         private void Start()
         {
-            //Init();
+            Init();
             bb.normal.background = null;
             bb.normal.textColor = new Color(1, 0, 0);
             bb.fontSize = 45;
@@ -43,8 +43,8 @@
         bool installRequested = false;
         void Init()
         {
-            if (ImmersalSDK.isHWAR)
-                return;
+            // if (ImmersalSDK.isHWAR)
+            //     return;
             
             try
             {
