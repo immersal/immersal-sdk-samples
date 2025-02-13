@@ -1,18 +1,14 @@
-﻿namespace Common
+﻿#if HWAR
+namespace Common
 {
-    using Immersal;
     using UnityEngine;
-#if HWAR
     using HuaweiARUnitySDK;
     using HuaweiARInternal;
-#endif
 
     public class SessionComponent : MonoBehaviour
     {
-    #if HWAR
         [Tooltip("config")]
         public ARConfigBase Config;
-
 
         private bool isFirstConnect = true;//this is used to avoid multiple permission request when it was rejected
         private bool isSessionCreated =false;
@@ -32,7 +28,7 @@
 
         private void Start()
         {
-            Init();
+            //Init();
             bb.normal.background = null;
             bb.normal.textColor = new Color(1, 0, 0);
             bb.fontSize = 45;
@@ -43,9 +39,6 @@
         bool installRequested = false;
         void Init()
         {
-            // if (ImmersalSDK.isHWAR)
-            //     return;
-            
             try
             {
                 switch (AREnginesApk.Instance.RequestInstall(!installRequested))
@@ -56,7 +49,6 @@
                     case ARInstallStatus.INSTALLED:
                         break;
                 }
-
             }
             catch (ARUnavailableConnectServerTimeOutException e)
             {
@@ -93,14 +85,14 @@
                 isEnableMask = Config.EnableMask;
             }
         }
+
         public void Update()
         {
-            _AppQuitOnEscape();
+            //_AppQuitOnEscape();
             AsyncTask.Update();
             //This function must be called before other Components' Update to ensure the accuracy of AREngine
             ARSession.Update();
         }
-
 
         public void OnApplicationPause(bool isPaused)
         {
@@ -125,7 +117,7 @@
                 catch (ARCameraPermissionDeniedException e)
                 {
                     ARDebug.LogError("camera permission is denied");
-                    errorMessage="This app require camera permission";
+                    errorMessage="This app requires camera permission";
                     Invoke("_DoQuit", 0.5f);
                 }
             }
@@ -163,6 +155,7 @@
                 }
             });
         }
+
         private void _ConnectToService()
         {
             try
@@ -173,7 +166,6 @@
                 ARSession.Resume();
                 ARSession.SetCameraTextureNameAuto();
                 ARSession.SetDisplayGeometry(Screen.width, Screen.height);
-                ImmersalSDK.isHWAR = true;
             }
             catch (ARCameraPermissionDeniedException e)
             {
@@ -208,6 +200,7 @@
             }
         }
 
+        /*
         private void _AppQuitOnEscape()
         {
             if (Input.GetKey(KeyCode.Escape))
@@ -215,10 +208,12 @@
                 Invoke("_DoQuit", 0.5f);
             }
         }
+        */
 
         private void _DoQuit()
         {
-            return;
+            Debug.Log("!!!!doquit");
+            ARDebug.LogError("    quit");
             Application.Quit();
         }
 
@@ -231,6 +226,6 @@
                 Application.Quit();
             }
         }
-    #endif
     }
 }
+#endif
