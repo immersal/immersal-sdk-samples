@@ -117,15 +117,18 @@ namespace Immersal.XR.Nreal
 
         public override void OnDestroy()
         {
-            CamTexture.Stop();
+			if (CamTexture != null)
+			{
+				CamTexture.Stop();
 
-			if (m_UseYUV)
-			{
-				(CamTexture as NRRGBCamTextureYUV).OnUpdate -= OnYUVCaptureUpdate;
-			}
-			else
-			{
-				(CamTexture as NRRGBCamTexture).OnUpdate -= OnRGBCaptureUpdate;
+				if (m_UseYUV)
+				{
+					(CamTexture as NRRGBCamTextureYUV).OnUpdate -= OnYUVCaptureUpdate;
+				}
+				else
+				{
+					(CamTexture as NRRGBCamTexture).OnUpdate -= OnRGBCaptureUpdate;
+				}
 			}
 
 			base.OnDestroy();

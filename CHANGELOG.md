@@ -4,6 +4,18 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2025-03-20
+### Changed
+- Updated project to work with Immersal SDK 1.20.0
+- Updated Unity version to 2022.3 LTS
+- Tested with NRSDK 2.1.1 on Nreal Light, Samsung Galaxy S21 and Nebula 3.5.0
+- Android API level to 31
+- Enabled URP (with multithreaded rendering off)
+- Remember to check [NRSDK Release Notes](https://docs.xreal.com/Release%20Note/NRSDK%202.1.0) and [Compatibility matrix](https://docs.xreal.com/XREALDevices/Compatibility)
+
+### Fixed
+- `NRLocalizer.cs`: Minor potential crash bug in `OnDestroy()`
+
 ## [1.18.0] - 2023-01-20
 ### Changed
 - Updated project to work with Immersal SDK 1.18.0
