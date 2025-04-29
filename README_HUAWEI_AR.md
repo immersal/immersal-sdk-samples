@@ -66,6 +66,7 @@ Before building the project, make sure to add the string `HWAR` to `Player Setti
 Build the project and install it on your device. Make sure to enable Developer Options and disable the `App Guard` feature on Huawei devices (otherwise, apps can only be installed via Huawei AppGallery).
 
 
+
 # 华为设备的支持
 
 Immersal支持任何适配了华为AR Engine的设备. 由于华为设备不同于通常的安卓设备, 华为设备不支持谷歌的ARCore, 部分设备支持华为的AR Engine. AR Engine类似于ARCore, 为设备提供了SLAM跟踪的能力. Immersal的适配是通过从AR Engine获得相机图片, 位姿和相关参数来实现的. 所以任何支持华为AR Engine的华为设备都可以支持. 请参考以下华为官方文档获知支持的型号名单:
@@ -123,11 +124,10 @@ public static extern NDKARStatus HwArFrame_acquirePreviewImage(IntPtr sessionHan
 ```
 
 ## Step 4. 
-打开`Scene/SimpleSample`场景, 在Hierarchy中选中`ImmersalSDK`对象, 选择`Immersal Server`, 在Unity界面中通过`Immersal SDK/Login`登陆你的Immersal账号.
-现在你可以导入你的地图, 开始开发.
+打开`Scene/SimpleSample`场景, 在Hierarchy中选中`ImmersalSDK`对象, 选择`Immersal Server`, 在Unity界面中通过`Immersal SDK/Login`登陆你的Immersal账号. 然后你可以导入你的地图, 开始开发.
 
 ## Step 5. 
 在构建项目之前，请确保在 `Player Settings / Other Settings / Scripting Define Symbols` 中添加了 `HWAR` 字符串。
 
-## Step 5. 
+## Step 6. 
 构建项目, 并安装至设备, 注意开启开发者选项, 并且禁用华为设备的'App Guard'功能(否则只能从华为官方商店安装应用).
