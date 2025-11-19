@@ -4,6 +4,16 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.20.1] - 2025-11-19
+### Changed
+- Samples: Unity version to latest 2022.3.67f2 LTS
+- Update Unity packages
+- Core: GeoPose ECEF/ENU handling
+### Added
+- Samples: RealtimeMappingSample now adds GPS lat/lon to uploaded maps
+### Fixed
+- Core: Android plugin; 16 KB page size fix
+
 ## [1.20.0] - 2023-11-30
 ### Changed
 ### Added

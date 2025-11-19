@@ -38,7 +38,6 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.4439372, g: 0.49315345, b: 0.5721989, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -201,6 +200,7 @@ MonoBehaviour:
   m_DeselectOnBackgroundClick: 1
   m_PointerBehavior: 0
   m_CursorLockBehavior: 0
+  m_ScrollDeltaPerTick: 6
 --- !u!1 &170076733
 GameObject:
   m_ObjectHideFlags: 0
@@ -594,12 +594,12 @@ MonoBehaviour:
   m_RequiresColorTexture: 0
   m_Version: 2
   m_TaaSettings:
-    quality: 3
-    frameInfluence: 0.1
-    jitterScale: 1
-    mipBias: 0
-    varianceClampScale: 0.9
-    contrastAdaptiveSharpening: 0
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
 --- !u!114 &730048170
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1234,6 +1234,7 @@ MonoBehaviour:
   m_UseServerLocalizer: 0
   m_MapIds: []
   m_EnableLogging: 0
+  m_SolverType: 0
 --- !u!1 &1377195107
 GameObject:
   m_ObjectHideFlags: 0
@@ -1648,6 +1649,7 @@ GameObject:
   - component: {fileID: 1675610399}
   - component: {fileID: 1675610398}
   - component: {fileID: 1675610397}
+  - component: {fileID: 1675610400}
   m_Layer: 0
   m_Name: RealtimeCaptureManager
   m_TagString: Untagged
@@ -1675,7 +1677,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f5600202ad6946578a2e9f6732992b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_SaveMapOnServer: 0
+  m_SaveMapOnServer: 1
   m_CaptureInterval: 0.5
   m_PointSize: 10
   m_PointColor: {r: 0.57, g: 0.93, b: 0.12, a: 1}
@@ -1704,6 +1706,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1675610400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1675610396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e6a0768a91bdea4880c85d63aeaa627, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1886863983
 GameObject:
   m_ObjectHideFlags: 0

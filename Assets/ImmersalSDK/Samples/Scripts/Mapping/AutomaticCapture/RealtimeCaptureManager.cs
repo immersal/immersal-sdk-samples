@@ -46,12 +46,14 @@ namespace Immersal.Samples.Mapping
         private MeshFilter m_MeshFilter = null;
         private MeshRenderer m_MeshRenderer = null;
         private ARMap m_ARMap = null;
+        private AutomaticCaptureLocationProvider m_LocationProvider = null;
 
         void Start()
         {
             m_Sdk = ImmersalSDK.Instance;
             m_MainCamera = Camera.main;
             m_CaptureButtonIcon.sprite = m_StartCaptureSprite;
+            m_LocationProvider = AutomaticCaptureLocationProvider.Instance;
             LogStatus("Initializing...");
             m_CaptureButton.interactable = false;
             InitMesh();
@@ -208,6 +210,14 @@ namespace Immersal.Samples.Mapping
                         JobMapUploadAsync j = new JobMapUploadAsync();
                         j.name = "RealtimeMap";
                         j.mapData = map;
+
+                        if (m_LocationProvider.gpsOn)
+                        {
+                            j.latitude = m_LocationProvider.latitude;
+                            j.longitude = m_LocationProvider.longitude;
+                            j.altitude = m_LocationProvider.altitude;
+                        }
+
                         j.OnError += (e) =>
                         {
                             Debug.LogError(e);
